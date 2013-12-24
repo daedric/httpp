@@ -1,0 +1,107 @@
+# Part of HTTPP.
+#
+# Distributed under the 3-clause BSD licence (See LICENCE.TXT file at the
+# project root).
+#
+# Copyright (c) 2013 Thomas Sanchez.  All rights reserved.
+#
+
+PROJECT(HTTPP C CXX)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+#CMAKE_POLICY(SET CMP0005 NEW)
+
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    MESSAGE(STATUS "Setting cmake build type to 'Release' as none was specified.")
+    SET(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
+endif()
+
+
+OPTION(BUILD_TESTS "Should the test be built")
+
+# Setting vars #################################################################
+SET(HTTPP_VERSION_MAJOR "0")
+SET(HTTPP_VERSION_MINOR "1")
+SET(HTTPP_VERSION_PATCH "0")
+
+SET(CPACK_PACKAGE_VERSION_MAJOR ${HTTPP_VERSION_MAJOR})
+SET(CPACK_PACKAGE_VERSION_MINOR ${HTTPP_VERSION_MINOR})
+SET(CPACK_PACKAGE_VERSION_PATCH ${HTTPP_VERSION_PATCH})
+
+SET(HTTPP_VERSION "${HTTPP_VERSION_MAJOR}.${HTTPP_VERSION_MINOR}.${HTTPP_VERSION_PATCH}")
+
+SET(CPACK_PACKAGE_VERSION ${HTTPP_VERSION})
+
+MESSAGE(STATUS "Cmake Version        : ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
+MESSAGE(STATUS "HTTPP Version        : ${HTTPP_VERSION}")
+MESSAGE(STATUS "Build Type           : ${CMAKE_BUILD_TYPE}")
+MESSAGE(STATUS "Build Tests          : ${BUILD_TESTS}")
+MESSAGE(STATUS "System               : ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_VERSION}")
+MESSAGE(STATUS "Install Prefix       : ${CMAKE_INSTALL_PREFIX}")
+MESSAGE(STATUS "Source Directory     : ${HTTPP_SOURCE_DIR}")
+
+
+IF (${CMAKE_CXX_COMPILER_ID} MATCHES GNU OR ${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
+  INCLUDE(CheckCXXCompilerFlag)
+  CHECK_CXX_COMPILER_FLAG(-std=c++11 HAVE_STD11)
+  CHECK_CXX_COMPILER_FLAG(-Wno-unused-local-typedefs HAVE_NOUNUSED_LOCAL_TYPEDEF)
+
+  IF (HAVE_NOUNUSED_LOCAL_TYPEDEF)
+        ADD_DEFINITIONS("-Wno-unused-local-typedefs")
+  ENDIF()
+
+  IF (NOT HAVE_STD11)
+      MESSAGE(FATAL_ERROR "No advanced standard C++ support (-std=c++11 not defined).")
+  ENDIF()
+
+  ADD_DEFINITIONS("-std=c++11 -Wextra -Wall")
+  IF (${CMAKE_BUILD_TYPE} MATCHES "DEBUG")
+        ADD_DEFINITIONS("-ggdb -g3")
+  ENDIF ()
+ENDIF()
+
+# Actual Stuff ################################################################
+
+#Thread
+FIND_PACKAGE(Threads)
+
+#Boost
+SET(Boost_USE_STATIC_LIBS    ON)
+SET(Boost_USE_MULTITHREADED  ON)
+SET(Boost_USE_STATIC_RUNTIME OFF)
+FIND_PACKAGE(Boost 1.54.0 COMPONENTS log log_setup unit_test_framework thread system REQUIRED)
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
+LINK_DIRECTORIES(${Boost_LIBRARY_DIR})
+
+INCLUDE_DIRECTORIES(include/)
+ADD_SUBDIRECTORY(include/)
+ADD_SUBDIRECTORY(src/)
+
+IF (${BUILD_TESTS})
+    ENABLE_TESTING()
+    ADD_SUBDIRECTORY(tests/)
+ENDIF()
+
+# CPack stuff ##################################################################
+
+SET(PACKAGE_NAME "HTTPP")
+SET(PACKAGE_FILE_NAME "${PACKAGE_NAME}-dev")
+
+SET(CPACK_PACKAGE_NAME "${PACKAGE_FILE_NAME}")
+SET(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME}")
+SET(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-dev")
+SET(CPACK_COMPONENTS_ALL binaries examples tests)
+SET(CPACK_PACKAGE_VENDOR "Thomas Sanchez")
+SET(CPACK_PACKAGE_CONTACT "Thomas Sanchez <thomas.sanchz@gmail.com>")
+SET(LIB_INSTALL_DIR, ${CMAKE_INSTALL_PREFIX})
+SET(BIN_INSTALL_DIR, ${CMAKE_INSTALL_PREFIX})
+SET(INCLUDE_INSTALL_DIR, ${CMAKE_INSTALL_PREFIX})
+
+IF (UNIX)
+    SET(CPACK_GENERATOR "DEB;TGZ")
+ENDIF (UNIX)
+
+INCLUDE(CPack)

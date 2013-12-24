@@ -1,0 +1,23 @@
+/*
+ * Part of HTTPP.
+ *
+ * Distributed under the 3-clause BSD licence (See LICENCE.TXT file at the
+ * project root).
+ *
+ * Copyright (c) 2013 Thomas Sanchez.  All rights reserved.
+ *
+ */
+
+#ifndef _HTTPP_VERSION_HPP_
+# define _HTTPP_VERSION_HPP_
+
+# define HTTPP_VERSION_MAJOR @HTTPP_VERSION_MAJOR@
+# define HTTPP_VERSION_MINOR @HTTPP_VERSION_MINOR@
+# define HTTPP_VERSION_PATCH @HTTPP_VERSION_PATCH@
+
+static inline const char* httpp_version()
+{
+    return "@HTTPP_VERSION@";
+}
+
+#endif // ! _HTTPP_VERSION_HPP_
