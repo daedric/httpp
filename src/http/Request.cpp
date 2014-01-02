@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, const Request& request)
     case Request::Method::PUT:
         os << "PUT ";
         break;
-    case Request::Method::DELETE:
+    case Request::Method::DELETE_:
         os << "DELETE ";
         break;
     case Request::Method::OPTIONS:

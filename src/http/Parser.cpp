@@ -101,7 +101,7 @@ static bool parse_method(Iterator& it, Request& request)
         case 'D':
             if (expect(it, "DELETE"))
             {
-                request.method = Request::Method::DELETE;
+                request.method = Request::Method::DELETE_;
                 return true;
             }
             break;

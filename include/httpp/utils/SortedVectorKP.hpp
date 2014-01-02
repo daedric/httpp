@@ -71,7 +71,7 @@ SortedVectorKP<K, V> create_sorted_vector(const std::vector<std::pair<K, V>>& ve
 }
 
 template <typename K, typename V>
-const V SortedVectorKP<K, V>::not_found_{};
+const V SortedVectorKP<K, V>::not_found_;
 
 } // namespace UTILS
 } // namespace HTTPP

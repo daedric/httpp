@@ -25,7 +25,7 @@ OPTION(BUILD_TESTS "Should the test be built")
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
 SET(HTTPP_VERSION_MINOR "1")
-SET(HTTPP_VERSION_PATCH "0")
+SET(HTTPP_VERSION_PATCH "1")
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${HTTPP_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${HTTPP_VERSION_MINOR})
@@ -62,6 +62,18 @@ IF (${CMAKE_CXX_COMPILER_ID} MATCHES GNU OR ${CMAKE_CXX_COMPILER_ID} MATCHES Cla
         ADD_DEFINITIONS("-ggdb -g3")
   ENDIF ()
 ENDIF()
+
+
+IF (WIN32 AND CMAKE_SYSTEM_VERSION)
+    SET(VER ${CMAKE_SYSTEM_VERSION})
+    STRING(REPLACE "." "" VER ${VER})
+    STRING(REGEX REPLACE "([0-9])" "0\\1" VER ${VER})
+
+    SET(VERSION "0x${VER}")
+    ADD_DEFINITIONS(-D_WIN32_WINNT=${VERSION})
+endif()
+
+
 
 # Actual Stuff ################################################################
 

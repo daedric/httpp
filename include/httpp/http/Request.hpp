@@ -30,7 +30,7 @@ struct Request
         GET,
         POST,
         PUT,
-        DELETE,
+        DELETE_, // '_' for msvc workaround
         OPTIONS,
         TRACE,
         CONNECT
