@@ -45,13 +45,14 @@ public:
     Value const& find(const Key& key) const
     {
         auto it = std::lower_bound(
-            begin(), end(), value_type{ key, Value{} }, &comparator);
-        if (it == end())
+            begin(), end(), value_type{ key, not_found_ }, &comparator);
+
+        if (it->first == key)
         {
-            return not_found_;
+            return it->second;
         }
 
-        return it->second;
+        return not_found_;
     }
 
     Value const& operator[](const Key& key) const

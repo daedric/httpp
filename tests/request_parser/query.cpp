@@ -122,6 +122,8 @@ BOOST_AUTO_TEST_CASE(test_http_header_query_parser_sorted)
     BOOST_CHECK_EQUAL(params["y"], "y");
     BOOST_CHECK_EQUAL(params["z"], "z");
 
+    BOOST_CHECK_EQUAL(params["something"], "");
+
     Request::QueryParam a {"a", "a"};
     Request::QueryParam b {"b", "b"};
     Request::QueryParam y {"y", "y"};
