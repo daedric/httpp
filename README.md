@@ -3,7 +3,11 @@ httpp
 
 Micro http server written in C++
 
-The motivation behind this little piece of code is to provide a really simple, yet efficient HTTP server.
+The motivation behind this little piece of code is to provide a really simple, yet efficient HTTP server to implement in-app webservice easily.
+
+The HttpServer will take care of the connections, request parsing and response generation. The handler on another hand is reponsible for implementing the "logic" behind the service. For example, the server has a very limited knowledge of the HTTP protocol…
+
+See an exampe [here](examples/echo/simple_echo_server.cpp)
 
 REQUIREMENTS
 ============
@@ -27,9 +31,17 @@ To build tests:
 
     $> cmake $HTTPP_PATH -DBUILD_TESTS=ON
 
+Examples:
+
+    $> cmake $HTTPP_PATH -DBUILD_EXAMPLES=ON
+
+To build the shared library version:
+
+    $> cmake $HTTPP_PATH -DBUILD_SHARED_LIBS=ON
+
 By default the build is in release mode, to change that you can:
 
     $> cmake $HTTPP_PATH -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=DEBUG
 
 
-The compilation has been tested on Mac OS X and GNU/Linux distros.
+The compilation and tests have been run on Windows (7, 8.1) , Mac OS X (Maverick) and GNU/Linux distro (Ubuntu).
