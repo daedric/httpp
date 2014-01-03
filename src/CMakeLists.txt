@@ -6,6 +6,7 @@
 # Copyright (c) 2013 Thomas Sanchez.  All rights reserved.
 #
 
+
 SET(SOURCES
     HttpServer.cpp
 
@@ -22,7 +23,15 @@ SET(SOURCES
 
 ADD_LIBRARY(httpp ${SOURCES})
 
-INSTALL(TARGETS httpp
+IF (${BUILD_SHARED_LIBS})
+    TARGET_LINK_LIBRARIES(httpp ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    INSTALL(TARGETS httpp
+        LIBRARY DESTINATION
+        lib COMPONENT library)
+ELSE()
+    INSTALL(TARGETS httpp
         ARCHIVE DESTINATION
         lib COMPONENT library)
+ENDIF()
+
 

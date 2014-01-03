@@ -20,7 +20,9 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 
-OPTION(BUILD_TESTS "Should the test be built")
+OPTION(BUILD_TESTS "Should the tests be built")
+OPTION(BUILD_EXAMPLES "Should the examples be built")
+OPTION(BUILD_SHARED_LIBS "Should the shared lib be built")
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
@@ -63,6 +65,9 @@ IF (${CMAKE_CXX_COMPILER_ID} MATCHES GNU OR ${CMAKE_CXX_COMPILER_ID} MATCHES Cla
   ENDIF ()
 ENDIF()
 
+IF (${BUILD_SHARED_LIBS})
+    ADD_DEFINITIONS("-DBOOST_LOG_DYN_LINK=1 -DBOOST_ALL_DYN_LINK=1")
+ENDIF()
 
 IF (WIN32 AND CMAKE_SYSTEM_VERSION)
     SET(VER ${CMAKE_SYSTEM_VERSION})
@@ -73,17 +78,22 @@ IF (WIN32 AND CMAKE_SYSTEM_VERSION)
     ADD_DEFINITIONS(-D_WIN32_WINNT=${VERSION})
 endif()
 
-
-
 # Actual Stuff ################################################################
 
 #Thread
 FIND_PACKAGE(Threads)
 
 #Boost
-SET(Boost_USE_STATIC_LIBS    ON)
+IF (${BUILD_SHARED_LIBS})
+    SET(Boost_USE_STATIC_LIBS    OFF)
+ELSE()
+    SET(Boost_USE_STATIC_LIBS    ON)
+ENDIF()
+
 SET(Boost_USE_MULTITHREADED  ON)
-SET(Boost_USE_STATIC_RUNTIME OFF)
+
+MESSAGE(STATUS "Boost static library use     : ${Boost_USE_STATIC_LIBS}")
+
 FIND_PACKAGE(Boost 1.54.0 COMPONENTS log log_setup unit_test_framework thread system REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
 LINK_DIRECTORIES(${Boost_LIBRARY_DIR})
@@ -91,6 +101,10 @@ LINK_DIRECTORIES(${Boost_LIBRARY_DIR})
 INCLUDE_DIRECTORIES(include/)
 ADD_SUBDIRECTORY(include/)
 ADD_SUBDIRECTORY(src/)
+
+IF (${BUILD_EXAMPLES})
+    ADD_SUBDIRECTORY(examples/)
+ENDIF()
 
 IF (${BUILD_TESTS})
     ENABLE_TESTING()
