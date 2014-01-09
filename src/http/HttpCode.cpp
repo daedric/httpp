@@ -15,6 +15,9 @@ std::string HTTPP::HTTP::getDefaultMessage(HttpCode code)
     switch (code)
     {
 
+    default:
+        return "Unknown";
+
     case HttpCode::Continue:
         return "Continue";
 
