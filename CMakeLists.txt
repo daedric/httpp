@@ -79,9 +79,13 @@ IF (WIN32 AND CMAKE_SYSTEM_VERSION)
 endif()
 
 # Actual Stuff ################################################################
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${HTTPP_SOURCE_DIR}/CMakeScripts)
 
 #Thread
-FIND_PACKAGE(Threads)
+FIND_PACKAGE(Threads REQUIRED)
+
+#TCMALLOC
+FIND_PACKAGE(TCMALLOC)
 
 #Boost
 IF (${BUILD_SHARED_LIBS})

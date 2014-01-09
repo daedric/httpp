@@ -10,7 +10,20 @@ MACRO(ADD_HTTPP_EXAMPLE ex_name sources)
 
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/httpp/include)
     ADD_EXECUTABLE(${ex_name} ${sources})
-    TARGET_LINK_LIBRARIES(${ex_name} httpp ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ARGN})
+    SET(DEFAULT_LIBRARIES
+        ${Boost_LIBRARIES}
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${ARGN})
+
+    IF (NOT ${BUILD_SHARED_LIBS} AND TCMALLOC_FOUND)
+        # when building shared library, the example will inherits from all the
+        # libraries the httpp target is linked with.
+        SET(DEFAULT_LIBRARIES
+            ${DEFAULT_LIBRARIES}
+            ${TCMALLOC_LIBRARIES})
+    ENDIF()
+
+    TARGET_LINK_LIBRARIES(${ex_name} httpp ${DEFAULT_LIBRARIES})
 
 ENDMACRO()
 
