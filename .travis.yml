@@ -21,8 +21,8 @@ install:
     - sudo apt-get install g++-4.8;
     - wget http://jaist.dl.sourceforge.net/boost/boost_1_54_0.tar.bz2
     - tar -xf boost_1_54_0.tar.bz2
-    - ( cd boost_1_54_0  && ./bootstrap.sh --prefix=/usr && sudo ./b2 -j2 architecture=x86 address-model=64 install ) > /dev/null
-    - rm -rf boost_1_54_0
+    - ( cd boost_1_54_0  && ./bootstrap.sh --prefix=/usr && sudo ./b2 -j2 release architecture=x86 address-model=64 --with-system --with-thread --with-test --with-log install ) > /dev/null
+    - sudo rm -rf boost_1_54_0
 
 before_script:
     # update compilers
@@ -33,5 +33,5 @@ script:
     - mkdir build
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} -DBUILD_TESTS=${BUILD_TESTS} -DBUILD_EXAMPLES=${BUILD_EXAMPLES} ..
-    - make
+    - make VERBOSE=1
     - make test
