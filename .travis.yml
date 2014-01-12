@@ -6,10 +6,11 @@ compiler:
     - gcc
 
 env:
+    # static build does not work with gcc on travis for some reason
     - BUILD_EXAMPLES="ON" BUILD_TESTS="ON" BUILD_SHARED_LIBS="ON" CMAKE_BUILD_TYPE="Release"
-    - BUILD_EXAMPLES="ON" BUILD_TESTS="ON" BUILD_SHARED_LIBS="OFF" CMAKE_BUILD_TYPE="Release"
+      #- BUILD_EXAMPLES="ON" BUILD_TESTS="ON" BUILD_SHARED_LIBS="OFF" CMAKE_BUILD_TYPE="Release"
     - BUILD_EXAMPLES="ON" BUILD_TESTS="ON" BUILD_SHARED_LIBS="ON" CMAKE_BUILD_TYPE="Debug"
-    - BUILD_EXAMPLES="ON" BUILD_TESTS="ON" BUILD_SHARED_LIBS="OFF" CMAKE_BUILD_TYPE="Debug"
+      #- BUILD_EXAMPLES="ON" BUILD_TESTS="ON" BUILD_SHARED_LIBS="OFF" CMAKE_BUILD_TYPE="Debug"
 
 before_install:
     - sudo add-apt-repository ppa:ubuntu-toolchain-r/test --yes # libstdc++-4.8
