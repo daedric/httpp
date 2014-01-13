@@ -1,3 +1,5 @@
+[![Build Status](http://travis-ci.org/daedric/httpp.png)](http://travis-ci.org/daedric/httpp)
+
 httpp
 =====
 
