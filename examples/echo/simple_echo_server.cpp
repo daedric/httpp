@@ -33,6 +33,11 @@ void body_handler(const Request& request, Connection* connection,
         HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
         connection->sendResponse(); // connection pointer may become invalid
 
+        auto end = Request::Clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+            end - request.received);
+        std::cout << "Request handled in: " << elapsed.count() << "us"
+                  << std::endl;
     }
     else if (ec)
     {
@@ -58,6 +63,11 @@ void handler(Connection* connection, Request&& request)
             .setBody("request received: " + out.str());
         HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
         connection->sendResponse(); // connection pointer may become invalid
+        auto end = Request::Clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+            end - request.received);
+        std::cout << "Request handled in: " << elapsed.count() << "us"
+                  << std::endl;
     }
     else
     {

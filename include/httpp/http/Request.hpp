@@ -14,6 +14,7 @@
 # include <string>
 # include <vector>
 # include <iosfwd>
+# include <chrono>
 
 # include "httpp/utils/SortedVectorKP.hpp"
 
@@ -24,6 +25,10 @@ namespace HTTP
 
 struct Request
 {
+
+    using Clock = std::chrono::steady_clock;
+    using TimePoint = Clock::time_point;
+
     enum class Method
     {
         HEAD,
@@ -36,6 +41,7 @@ struct Request
         CONNECT
     };
 
+    const TimePoint received = Clock::now();
     Method method;
     std::string uri;
     int major;
