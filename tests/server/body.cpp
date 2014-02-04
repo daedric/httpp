@@ -119,6 +119,7 @@ BOOST_AUTO_TEST_CASE(listener)
     );
 
     HttpServer server;
+    server.start();
     server.setSink(&handler);
     server.bind("localhost");
 

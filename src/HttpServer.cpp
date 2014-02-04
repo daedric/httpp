@@ -20,7 +20,6 @@ HttpServer::HttpServer(size_t threads)
 : service_(threads)
 , pool_(threads, service_)
 {
-    start();
 }
 
 HttpServer::~HttpServer()
@@ -31,14 +30,14 @@ HttpServer::~HttpServer()
     }
 }
 
-void HttpServer::start()
+void HttpServer::start(ThreadInit fct)
 {
     if (running_)
     {
         return;
     }
     running_ = true;
-    pool_.start();
+    pool_.start(fct);
 }
 
 void HttpServer::stop()

@@ -15,6 +15,7 @@
 # include <vector>
 # include <thread>
 # include <memory>
+# include <functional>
 
 # include <boost/asio/io_service.hpp>
 
@@ -25,6 +26,9 @@ namespace UTILS
 
 class ThreadPool
 {
+public:
+    using ThreadInit = std::function<void()>;
+
 public:
     ThreadPool(size_t nb_thread, boost::asio::io_service& service);
     ~ThreadPool();
@@ -41,7 +45,7 @@ public:
         service_.post(std::forward<Callable>(callable));
     }
 
-    void start();
+    void start(ThreadInit fct = ThreadInit());
     void stop();
 
 private:

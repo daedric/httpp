@@ -31,6 +31,7 @@ class HttpServer
 public:
     using ConnectionPtr = HTTP::Connection*; //std::shared_ptr<HTTP::Connection>;
     using SinkCb = std::function<void (ConnectionPtr, HTTP::Request&&)>;
+    using ThreadInit = UTILS::ThreadPool::ThreadInit;
 
 public:
     HttpServer(size_t threads = 1);
@@ -42,10 +43,10 @@ public:
         sink_ = cb;
     }
 
-private:
-    void start();
+    void start(ThreadInit fct = ThreadInit());
     void stop();
 
+private:
     void start_accept(AcceptorPtr acceptor);
     void accept_callback(const boost::system::error_code& error,
                          AcceptorPtr acceptor,

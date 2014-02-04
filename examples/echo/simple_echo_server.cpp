@@ -85,6 +85,7 @@ void handler(Connection* connection, Request&& request)
 int main(int, char**)
 {
     HttpServer server;
+    server.start();
     server.setSink(&handler);
     server.bind("localhost", "8080");
     server.bind("localhost", "8081");

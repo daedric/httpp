@@ -10,6 +10,8 @@
 
 #include "httpp/utils/ThreadPool.hpp"
 
+#include <atomic>
+
 namespace HTTPP
 {
 namespace UTILS
@@ -39,7 +41,7 @@ ThreadPool::ThreadPool(ThreadPool&& pool)
     pool.running_ = false;
 }
 
-void ThreadPool::start()
+void ThreadPool::start(ThreadInit fct)
 {
     if (running_)
     {
@@ -48,9 +50,24 @@ void ThreadPool::start()
 
     work_.reset(new boost::asio::io_service::work(service_));
     running_ = true;
+
+    std::atomic<std::size_t> init_called = {0};
     for (size_t i = 0; i < nb_thread_; ++i)
     {
-        threads_.emplace_back([this]{this->service_.run();});
+        threads_.emplace_back([this, fct, &init_called]
+                              {
+                                  if (fct)
+                                  {
+                                      fct();
+                                  }
+                                  ++init_called;
+                                  this->service_.run();
+                              });
+    }
+
+    while (init_called != nb_thread_)
+    {
+        std::this_thread::yield();
     }
 }
 
