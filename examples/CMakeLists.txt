@@ -18,7 +18,9 @@ MACRO(ADD_HTTPP_EXAMPLE ex_name sources)
 
     IF (NOT ${BUILD_SHARED_LIBS})
 
-        SET(DEFAULT_LIBRARIES ${DEFAULT_LIBRARIES} rt)
+        IF (UNIX)
+            SET(DEFAULT_LIBRARIES ${DEFAULT_LIBRARIES} rt)
+        ENDIF()
 
         IF (TCMALLOC_FOUND)
             # when building shared library, the example will inherits from all the
