@@ -24,10 +24,8 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
 {
     static std::string body_read;
 
-    std::cout.write(buffer, n) << std::endl;
     if (ec == boost::asio::error::eof)
     {
-        std::cout << "Body read: " << body_read << std::endl;
         (gconnection->response() = Response(HTTP::HttpCode::Ok))
             .connectionShouldBeClosed(true);
         gconnection->sendResponse();
@@ -47,7 +45,6 @@ void handler(Connection* connection, Request&& request)
     gconnection = connection;
     auto headers = request.getSortedHeaders();
     auto size = std::stoi(headers["Content-Length"]);
-    std::cout << "Read a size of : " << size << std::endl;
     connection->readBody(size, &body_handler);
 }
 
