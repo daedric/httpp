@@ -19,34 +19,11 @@ namespace HTTPP
 namespace UTILS
 {
 
-static inline void url_decode(std::string& fragment)
-{
-    try
-    {
-        std::replace(std::begin(fragment), std::end(fragment), '+', ' ');
+bool url_decode(std::string& fragment, bool replace_plus = true);
+std::string decode(const std::string& fragment, bool replace_plus = true);
 
-        size_t idx = fragment.find('%');
-        while (idx != std::string::npos)
-        {
-            const std::string& data = fragment.substr(idx + 1, 2);
-            int encoded_char = std::stoi(data, nullptr, 16);
-            fragment.replace(idx, 3, 1, static_cast<char>(encoded_char));
-            idx = fragment.find('%', idx + 1);
-        }
-    }
-    catch (std::exception const& ex)
-    {
-        BOOST_LOG_TRIVIAL(error) << "Cannot url_decode: " << fragment
-                                 << ", exception: " << ex.what();
-    }
-}
-
-static inline std::string url_decode(const std::string& fragment)
-{
-    std::string copy = fragment;
-    url_decode(copy);
-    return copy;
-}
+bool url_encode(std::string& fragment);
+std::string encode(const std::string& fragment);
 
 } // namespace UTILS
 } // namespace HTTPP

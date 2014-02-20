@@ -4,12 +4,12 @@
  * Distributed under the 3-clause BSD licence (See LICENCE.TXT file at the
  * project root).
  *
- * Copyright (c) 2013 Thomas Sanchez.  All rights reserved.
+ * Copyright (c) 2014 Thomas Sanchez.  All rights reserved.
  *
  */
 
-#ifndef _HTTPP_HTPP_HTTP_CODE_HPP_
-# define _HTTPP_HTPP_HTTP_CODE_HPP_
+#ifndef HTTPP_HTTP_PROTOCOL_HPP_
+# define HTTPP_HTTP_PROTOCOL_HPP_
 
 # include <string>
 
@@ -17,6 +17,23 @@ namespace HTTPP
 {
 namespace HTTP
 {
+
+using KV = std::pair<std::string, std::string>;
+using Header = KV;
+
+enum class Method
+{
+    HEAD,
+    GET,
+    POST,
+    PUT,
+    DELETE_, // '_' for msvc workaround
+    OPTIONS,
+    TRACE,
+    CONNECT
+};
+
+std::string to_string(Method method);
 
 enum class HttpCode : unsigned int
 {
@@ -49,4 +66,5 @@ std::string getDefaultMessage(HttpCode code);
 } // namespace HTTP
 } // namespace HTTPP
 
-#endif // ! _HTTPP_HTPP_HTTP_CODE_HPP_
+#endif // !HTTPP_HTTP_PROTOCOL_HPP_
+

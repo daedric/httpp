@@ -12,7 +12,9 @@
 # define _HTTPP_HTPP_CONNECTION_HPP_
 
 # include <string>
+# include <functional>
 # include <boost/asio.hpp>
+# include <boost/log/trivial.hpp>
 
 # include "Response.hpp"
 
@@ -32,6 +34,7 @@ class Connection
 
 public:
     static const size_t BUF_SIZE;
+    using Callback = std::function<void ()>;
 
     Connection(HTTPP::HttpServer& handler,
                boost::asio::io_service& service,
@@ -69,18 +72,38 @@ public:
             buffer_.clear();
         }
 
+        if (!body_size)
+        {
+            callable(boost::asio::error::eof, nullptr, 0);
+            return;
+        }
+
         auto size_to_read = std::min(BUF_SIZE, body_size);
-        buffer_.reserve(size_to_read);
+
+        buffer_.resize(size_to_read);
         socket_.async_read_some(
             boost::asio::buffer(buffer_),
             [size_to_read, callable, this](const boost::system::error_code& ec,
                                            size_t size) mutable
             {
-                callable(ec, buffer_.data(), size);
                 size_to_read -= size;
+
+                if (size_to_read && ec == boost::asio::error::eof)
+                {
+                    BOOST_LOG_TRIVIAL(error)
+                        << "EOF detected while reading the body";
+                    callable(boost::asio::error::eof, nullptr, 0);
+                    return;
+                }
+
                 if (size)
                 {
-                    readBody(size, callable);
+                    callable(ec, buffer_.data(), size);
+                }
+
+                if (size_to_read)
+                {
+                    readBody(size_to_read, callable);
                 }
                 else
                 {
@@ -90,11 +113,14 @@ public:
     }
 
     void sendResponse();
+    void sendContinue(Callback&& cb);
 
 private:
     void start();
     void read_request();
     void recycle();
+
+    void sendResponse(Callback&& cb);
 
 private:
     HTTPP::HttpServer& handler_;

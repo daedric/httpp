@@ -9,13 +9,19 @@
 
 SET(SOURCES
     HttpServer.cpp
+    HttpClient.cpp
 
+    http/client/curl_parser.cpp
     http/Connection.cpp
     http/Parser.cpp
+    http/Protocol.cpp
     http/Request.cpp
-    http/HttpCode.cpp
     http/Response.cpp
+    http/URL.cpp
     http/Utils.cpp
+
+    http/client/Request.cpp
+    http/client/Response.cpp
 
     utils/ThreadPool.cpp
 )
@@ -25,17 +31,17 @@ ADD_LIBRARY(httpp ${SOURCES})
 
 IF (${BUILD_SHARED_LIBS})
 
+    SET(DEFAULT_LIBRARIES
+        ${Boost_LIBRARIES}
+        ${CURL_LIBRARIES}
+        ${CMAKE_THREAD_LIBS_INIT}
+        rt)
+
     IF (TCMALLOC_FOUND)
         SET(DEFAULT_LIBRARIES
             ${DEFAULT_LIBRARIES}
             ${TCMALLOC_LIBRARIES})
     ENDIF()
-
-    SET(DEFAULT_LIBRARIES
-        ${Boost_LIBRARIES}
-        ${CMAKE_THREAD_LIBS_INIT}
-        rt)
-
 
     TARGET_LINK_LIBRARIES(httpp ${DEFAULT_LIBRARIES})
     INSTALL(TARGETS httpp

@@ -67,14 +67,14 @@ static bool parse_method(Iterator& it, Request& request)
         case 'H':
             if (expect(it, "HEAD"))
             {
-                request.method = Request::Method::HEAD;
+                request.method = Method::HEAD;
                 return true;
             }
             break;
         case 'G':
             if (expect(it, "GET"))
             {
-                request.method = Request::Method::GET;
+                request.method = Method::GET;
                 return true;
             }
             break;
@@ -85,7 +85,7 @@ static bool parse_method(Iterator& it, Request& request)
             {
                 if (expect(it, "OST"))
                 {
-                    request.method = Request::Method::POST;
+                    request.method = Method::POST;
                     return true;
                 }
             }
@@ -93,7 +93,7 @@ static bool parse_method(Iterator& it, Request& request)
             {
                 if (expect(it, "UT"))
                 {
-                    request.method = Request::Method::PUT;
+                    request.method = Method::PUT;
                     return true;
                 }
             }
@@ -101,21 +101,21 @@ static bool parse_method(Iterator& it, Request& request)
         case 'D':
             if (expect(it, "DELETE"))
             {
-                request.method = Request::Method::DELETE_;
+                request.method = Method::DELETE_;
                 return true;
             }
             break;
         case 'O':
             if (expect(it, "OPTIONS"))
             {
-                request.method = Request::Method::OPTIONS;
+                request.method = Method::OPTIONS;
                 return true;
             }
             break;
         case 'T':
             if (expect(it, "TRACE"))
             {
-                request.method = Request::Method::TRACE;
+                request.method = Method::TRACE;
                 return true;
             }
             break;
@@ -123,7 +123,7 @@ static bool parse_method(Iterator& it, Request& request)
         case 'C':
             if (expect(it, "CONNECT"))
             {
-                request.method = Request::Method::CONNECT;
+                request.method = Method::CONNECT;
                 return true;
             }
             break;
@@ -171,11 +171,9 @@ static bool parse_uri(Iterator& it, Request& request)
             std::string value;
 
             bool res = consumeUntil(it, key, "&= ");
-            UTILS::url_decode(key);
-
             if (match(it, '=')) {
                 res = res && consumeUntil(it, value, "& ");
-                UTILS::url_decode(value);
+                res = res && UTILS::url_decode(value);
                 request.query_params.emplace_back(std::move(key), std::move(value));
             }
             else
@@ -183,6 +181,10 @@ static bool parse_uri(Iterator& it, Request& request)
                 request.query_params.emplace_back(std::move(key), "");
             }
 
+            if (!res)
+            {
+                return res;
+            }
         } while (match(it, '&'));
     }
 

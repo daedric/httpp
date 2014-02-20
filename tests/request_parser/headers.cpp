@@ -19,11 +19,9 @@ using HTTPP::UTILS::VectorStreamBuf;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Parser;
 
-using H = Request::Header;
-
 namespace std
 {
-ostream& operator<<(ostream& os, const H& h)
+ostream& operator<<(ostream& os, const HTTPP::HTTP::Header& h)
 {
     return os << h.first << ": " << h.second;
 }
@@ -52,12 +50,12 @@ BOOST_AUTO_TEST_CASE(parser_streambuf)
     std::string remaining(vect.data(), vect.size());
     BOOST_CHECK_EQUAL(remaining, "qwertyuiop");
 
-    BOOST_CHECK_EQUAL(request.headers[0], H("Test", "coucou"));
-    BOOST_CHECK_EQUAL(request.headers[1], H("Salut", "Toi"));
-    BOOST_CHECK_EQUAL(request.headers[2], H("Content-Type", ""));
-    BOOST_CHECK_EQUAL(request.headers[3], H("Hello", "world!"));
-    BOOST_CHECK_EQUAL(request.headers[4], H("Incomplete2", ""));
-    BOOST_CHECK_EQUAL(request.headers[5], H("Test2", "Test3"));
+    BOOST_CHECK_EQUAL(request.headers[0], HTTPP::HTTP::Header("Test", "coucou"));
+    BOOST_CHECK_EQUAL(request.headers[1], HTTPP::HTTP::Header("Salut", "Toi"));
+    BOOST_CHECK_EQUAL(request.headers[2], HTTPP::HTTP::Header("Content-Type", ""));
+    BOOST_CHECK_EQUAL(request.headers[3], HTTPP::HTTP::Header("Hello", "world!"));
+    BOOST_CHECK_EQUAL(request.headers[4], HTTPP::HTTP::Header("Incomplete2", ""));
+    BOOST_CHECK_EQUAL(request.headers[5], HTTPP::HTTP::Header("Test2", "Test3"));
 }
 
 

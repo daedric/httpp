@@ -16,6 +16,7 @@
 # include <iosfwd>
 # include <chrono>
 
+# include "Protocol.hpp"
 # include "httpp/utils/SortedVectorKP.hpp"
 
 namespace HTTPP
@@ -29,25 +30,14 @@ struct Request
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
 
-    enum class Method
-    {
-        HEAD,
-        GET,
-        POST,
-        PUT,
-        DELETE_, // '_' for msvc workaround
-        OPTIONS,
-        TRACE,
-        CONNECT
-    };
-
     const TimePoint received = Clock::now();
     Method method;
     std::string uri;
     int major;
     int minor;
 
-    using QueryParam = std::pair<std::string, std::string>;
+    using QueryParam = KV;
+
     std::vector<QueryParam> query_params;
 
     auto getSortedQueryParams() const -> decltype(UTILS::create_sorted_vector(query_params))
@@ -55,7 +45,6 @@ struct Request
         return UTILS::create_sorted_vector(query_params);
     }
 
-    using Header = std::pair<std::string, std::string>;
     std::vector<Header> headers;
 
     auto getSortedHeaders() const -> decltype(UTILS::create_sorted_vector(headers))

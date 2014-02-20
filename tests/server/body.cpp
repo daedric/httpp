@@ -33,7 +33,7 @@ static const std::string REQUEST =
     "User-Agent: curl/7.32.0\r\n"
     "Host: localhost:8000\r\n"
     "Accept: */*\r\n"
-    "Content-Length: 275\r\n"
+    "Content-Length: 274\r\n"
     "Content-Type: application/x-www-form-urlencoded\r\n"
     "\r\n"
     "PREFIX ?= /usr/local\n"

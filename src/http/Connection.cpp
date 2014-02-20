@@ -125,30 +125,45 @@ void Connection::read_request()
     }
 }
 
-void Connection::sendResponse()
+void Connection::sendResponse(Callback&& cb)
 {
     response_.sendResponse(socket_,
-                           [this](boost::system::error_code const& ec, size_t)
+                           [cb, this](boost::system::error_code const& ec, size_t)
                            {
-                                if (ec)
-                                {
-                                    if (ec != boost::asio::error::operation_aborted)
-                                    {
-                                        handler_.connection_error(this, ec);
-                                        return;
-                                    }
+        if (ec)
+        {
+            if (ec != boost::asio::error::operation_aborted)
+            {
+                handler_.connection_error(this, ec);
+                return;
+            }
 
-                                    pool_.post([this]
-                                               {
-                                                   BOOST_LOG_TRIVIAL(debug) << "Disconnect client after an error "
-                                                                               "occured";
-                                                   disconnect(this);
-                                               });
-                                    return;
-                                }
+            pool_.post([this]
+                       {
+                           BOOST_LOG_TRIVIAL(debug)
+                               << "Disconnect client after an error "
+                                  "occured";
+                           disconnect(this);
+                       });
+            return;
+        }
 
-                                this->recycle();
-                           });
+        cb();
+    });
+}
+
+void Connection::sendResponse()
+{
+    sendResponse([this] { recycle(); });
+}
+
+void Connection::sendContinue(Callback&& cb)
+{
+    response_
+        .setBody("")
+        .setCode(HttpCode::Continue);
+
+    sendResponse(std::move(cb));
 }
 
 void Connection::recycle()
@@ -160,7 +175,10 @@ void Connection::recycle()
     }
     else
     {
-        handler_.connection_recycle(this);
+        if (response_.isComplete())
+        {
+            handler_.connection_recycle(this);
+        }
     }
 }
 

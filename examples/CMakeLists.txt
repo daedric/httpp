@@ -12,6 +12,7 @@ MACRO(ADD_HTTPP_EXAMPLE ex_name sources)
     ADD_EXECUTABLE(${ex_name} ${sources})
     SET(DEFAULT_LIBRARIES
         ${Boost_LIBRARIES}
+        ${CURL_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
         ${ARGN})
 

@@ -18,6 +18,8 @@
 # include <functional>
 
 # include <boost/asio/io_service.hpp>
+# include <boost/asio/deadline_timer.hpp>
+# include <boost/asio/strand.hpp>
 
 namespace HTTPP
 {
@@ -47,6 +49,14 @@ public:
 
     void start(ThreadInit fct = ThreadInit());
     void stop();
+
+    using Strand = boost::asio::io_service::strand;
+    using Timer = boost::asio::deadline_timer;
+
+    boost::asio::io_service& getService()
+    {
+        return service_;
+    }
 
 private:
     boost::asio::io_service& service_;

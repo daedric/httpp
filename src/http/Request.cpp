@@ -17,39 +17,12 @@ namespace HTTP
 {
 std::ostream& operator<<(std::ostream& os, const Request& request)
 {
-    switch (request.method)
-    {
-    case Request::Method::HEAD:
-        os << "HEAD ";
-        break;
-    case Request::Method::GET:
-        os << "GET ";
-        break;
-    case Request::Method::POST:
-        os << "POST ";
-        break;
-    case Request::Method::PUT:
-        os << "PUT ";
-        break;
-    case Request::Method::DELETE_:
-        os << "DELETE ";
-        break;
-    case Request::Method::OPTIONS:
-        os << "OPTIONS ";
-        break;
-    case Request::Method::TRACE:
-        os << "TRACE ";
-        break;
-    case Request::Method::CONNECT:
-        os << "CONNECT ";
-        break;
-    }
-
+    os << to_string(request.method) << " ";
     std::string uri = request.uri;
     if (!request.query_params.empty())
     {
         uri += '?';
-        for (auto const& q: request.query_params)
+        for (auto const& q : request.query_params)
         {
             uri += q.first + "=" + q.second + "&";
         }

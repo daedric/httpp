@@ -4,13 +4,42 @@
  * Distributed under the 3-clause BSD licence (See LICENCE.TXT file at the
  * project root).
  *
- * Copyright (c) 2013 Thomas Sanchez.  All rights reserved.
+ * Copyright (c) 2014 Thomas Sanchez.  All rights reserved.
  *
  */
 
-#include "httpp/http/HttpCode.hpp"
+#include "httpp/http/Protocol.hpp"
+#include <string>
 
-std::string HTTPP::HTTP::getDefaultMessage(HttpCode code)
+namespace HTTPP
+{
+namespace HTTP
+{
+
+std::string to_string(Method method)
+{
+    switch (method)
+    {
+        default:
+            return "UNKNOWN";
+        case Method::GET:
+            return "GET";
+        case Method::POST:
+            return "POST";
+        case Method::PUT:
+            return "PUT";
+        case Method::HEAD:
+            return "HEAD";
+        case Method::CONNECT:
+            return "CONNECT";
+        case Method::TRACE:
+            return "TRACE";
+        case Method::OPTIONS:
+            return "OPTIONS";
+    }
+}
+
+std::string getDefaultMessage(HttpCode code)
 {
     switch (code)
     {
@@ -60,3 +89,6 @@ std::string HTTPP::HTTP::getDefaultMessage(HttpCode code)
         return "HttpVersionNotSupported";
     }
 }
+
+} // namespace HTTP
+} // namespace HTTPP
