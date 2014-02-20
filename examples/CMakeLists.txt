@@ -18,7 +18,7 @@ MACRO(ADD_HTTPP_EXAMPLE ex_name sources)
 
     IF (NOT ${BUILD_SHARED_LIBS})
 
-        IF (UNIX)
+        IF (UNIX AND NOT APPLE)
             SET(DEFAULT_LIBRARIES ${DEFAULT_LIBRARIES} rt)
         ENDIF()
 
