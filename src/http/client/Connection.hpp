@@ -87,7 +87,13 @@ struct Connection
         if (http_headers)
         {
             curl_slist_free_all(http_headers);
+            http_headers = nullptr;
         }
+
+        expect_header = true;
+        expect_continue = false;
+        header.clear();
+        buffer.clear();
 
         promise = std::promise<client::Response>();
     }
@@ -224,6 +230,7 @@ struct Connection
             }
 
             conn_setopt(CURLOPT_HTTPPOST, post);
+            expect_continue = true;
         }
 
         if (!request.content_.empty())
@@ -301,6 +308,7 @@ struct Connection
                 redirection = conn_getinfo<long>(CURLINFO_REDIRECT_COUNT);
             }
 
+            redirection += expect_continue ? 1 : 0;
             while (redirection)
             {
                 header.clear();
@@ -340,6 +348,7 @@ struct Connection
 
     std::promise<client::Response> promise;
     bool expect_header = true;
+    bool expect_continue = false;
     std::vector<char> header;
     std::vector<char> buffer;
 
