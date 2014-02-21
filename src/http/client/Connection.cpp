@@ -54,7 +54,9 @@ Connection::~Connection()
 
     if (!result_notified)
     {
-        throw std::runtime_error("Destroy a non completed connection");
+        BOOST_LOG_TRIVIAL(error) << "Destroy a not completed connection";
+        complete(std::make_exception_ptr(
+            std::runtime_error("Destroy a non completed connection")));
     }
 }
 
@@ -67,6 +69,10 @@ void Connection::init()
     }
 
     curl_easy_reset(handle);
+
+    conn_setopt(CURLOPT_HEADERFUNCTION, &writeHd);
+    conn_setopt(CURLOPT_WRITEHEADER, this);
+
     conn_setopt(CURLOPT_WRITEFUNCTION, &writefn);
     conn_setopt(CURLOPT_WRITEDATA, this);
     conn_setopt(CURLOPT_ERRORBUFFER, this->error_buffer);
@@ -74,13 +80,15 @@ void Connection::init()
     conn_setopt(CURLOPT_OPENSOCKETDATA, this);
     conn_setopt(CURLOPT_OPENSOCKETFUNCTION, &opensocket);
 
+    conn_setopt(CURLOPT_ERRORBUFFER, this->error_buffer);
+    conn_setopt(CURLOPT_PRIVATE, this);
+
     if (http_headers)
     {
         curl_slist_free_all(http_headers);
         http_headers = nullptr;
     }
 
-    expect_header = true;
     expect_continue = false;
     header.clear();
     buffer.clear();
@@ -94,30 +102,20 @@ Connection::createConnection(boost::asio::io_service& service)
     return ConnectionPtr(new Connection(service));
 }
 
+size_t Connection::writeHd(char* buffer, size_t size, size_t nmemb, void* userdata)
+{
+    Connection* conn = (Connection*)userdata;
+    auto actual_size = size * nmemb;
+    conn->header.insert(std::end(conn->header), buffer, buffer + actual_size);
+    return actual_size;
+}
+
 size_t Connection::writefn(char* buffer, size_t size, size_t nmemb, void* userdata)
 {
     Connection* conn = (Connection*)userdata;
 
     auto actual_size = size * nmemb;
     conn->buffer.insert(std::end(conn->buffer), buffer, buffer + actual_size);
-    if (conn->expect_header)
-    {
-
-        auto begin = std::begin(conn->buffer);
-        auto end = std::end(conn->buffer);
-        auto it = std::search(begin,
-                                end,
-                                std::begin(HEADER_BODY_SEP),
-                                std::end(HEADER_BODY_SEP));
-
-        if (it != end)
-        {
-            conn->expect_header = false;
-            conn->header.insert(std::end(conn->header), begin, it + 2);
-            conn->buffer.erase(begin, it + 4);
-        }
-    }
-
     return actual_size;
 }
 
@@ -167,8 +165,30 @@ curl_socket_t Connection::opensocket(void* clientp,
 
 void Connection::configureRequest(HTTPP::HTTP::Method method)
 {
-    std::string method_str = to_string(method);
-    conn_setopt(CURLOPT_CUSTOMREQUEST, method_str.data());
+
+    switch (method)
+    {
+     case HTTPP::HTTP::Method::GET:
+        conn_setopt(CURLOPT_HTTPGET, 1L);
+        break;
+     case HTTPP::HTTP::Method::POST:
+        conn_setopt(CURLOPT_POST, 1L);
+        break;
+     case HTTPP::HTTP::Method::PUT:
+        conn_setopt(CURLOPT_PUT, 1L);
+        break;
+     case HTTPP::HTTP::Method::HEAD:
+        conn_setopt(CURLOPT_NOBODY, 1L);
+        break;
+
+     case HTTPP::HTTP::Method::DELETE_:
+     case HTTPP::HTTP::Method::OPTIONS:
+     case HTTPP::HTTP::Method::TRACE:
+     case HTTPP::HTTP::Method::CONNECT:
+         std::string method_str = to_string(method);
+         conn_setopt(CURLOPT_CUSTOMREQUEST, method_str.data());
+         break;
+    }
 
     if (!request.query_params_.empty())
     {
@@ -238,15 +258,12 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
 
         conn_setopt(CURLOPT_POSTFIELDS, request.content_.data());
         conn_setopt(CURLOPT_POSTFIELDSIZE, request.content_.size());
-        conn_setopt(CURLOPT_POST, 1L);
     }
 
     conn_setopt(CURLOPT_NOSIGNAL, 1L);
 
     // only on curl > 7.25, disable it for now
     //conn_setopt(CURLOPT_TCP_KEEPALIVE, 1L);
-
-    conn_setopt(CURLOPT_HEADER, 1L);
 
     if (!request.http_headers_.empty())
     {
@@ -290,19 +307,16 @@ void Connection::buildResponse(CURLcode code)
         redirection += expect_continue ? 1 : 0;
         while (redirection)
         {
-            header.clear();
-
-            auto begin = std::begin(buffer);
-            auto end = std::end(buffer);
+            auto begin = std::begin(header);
+            auto end = std::end(header);
             auto it = std::search(begin,
-                                    end,
-                                    std::begin(HEADER_BODY_SEP),
-                                    std::end(HEADER_BODY_SEP));
+                                  end,
+                                  std::begin(HEADER_BODY_SEP),
+                                  std::end(HEADER_BODY_SEP));
 
             if (it != end)
             {
-                header.insert(std::end(header), begin, it + 2);
-                buffer.erase(begin, it + 4);
+                header.erase(std::begin(header), it + 4);
             }
 
             --redirection;
@@ -322,6 +336,8 @@ void Connection::buildResponse(CURLcode code)
 
 void Connection::complete(std::exception_ptr ex)
 {
+    result_notified = true;
+
     if (ex)
     {
         promise.set_exception(ex);
@@ -331,7 +347,6 @@ void Connection::complete(std::exception_ptr ex)
         promise.set_value(std::move(response));
     }
 
-    result_notified = true;
     if (completion_handler)
     {
         completion_handler(promise.get_future());

@@ -99,10 +99,7 @@ private:
 
     void finalize_response_headers()
     {
-        if (!body_.empty())
-        {
-            headers_.emplace_back("Content-Length", std::to_string(body_.size()));
-        }
+        headers_.emplace_back("Content-Length", std::to_string(body_.size()));
     }
 
 private:

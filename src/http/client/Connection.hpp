@@ -77,6 +77,7 @@ struct Connection
     static ConnectionPtr createConnection(boost::asio::io_service& service);
 
     static size_t writefn(char* buffer, size_t size, size_t nmemb, void* userdata);
+    static size_t writeHd(char* buffer, size_t size, size_t nmemb, void* userdata);
     static curl_socket_t opensocket(void* clientp,
                                     curlsocktype purpose,
                                     struct curl_sockaddr* address);
@@ -95,7 +96,6 @@ struct Connection
 
     std::promise<client::Response> promise;
     CompletionHandler completion_handler;
-    bool expect_header = true;
     bool expect_continue = false;
     std::vector<char> header;
     std::vector<char> buffer;

@@ -165,11 +165,30 @@ void Manager::checkHandles()
 void Manager::performOp(Connection* connection, int action)
 {
     int still_running = 0;
+
+    int operation = CURL_CSELECT_ERR;
+    if (action & CURL_POLL_IN)
+    {
+        operation |= CURL_CSELECT_IN;
+    }
+
+    if (action & CURL_POLL_OUT)
+    {
+        operation |= CURL_CSELECT_OUT;
+    }
+
+    if (action & CURL_POLL_INOUT)
+    {
+        operation |= CURL_CSELECT_IN | CURL_CSELECT_OUT;
+    }
+
     auto rc = curl_multi_socket_action(
-        handler, connection->socket.native_handle(), action, &still_running);
+        handler, connection->socket.native_handle(), operation, &still_running);
     if (rc != CURLM_OK)
     {
-        throw std::runtime_error(curl_multi_strerror(rc));
+        auto exc = std::make_exception_ptr(std::runtime_error(curl_multi_strerror(rc)));
+        connection->complete(exc);
+        std::rethrow_exception(exc);
     }
 
     checkHandles();
@@ -177,6 +196,10 @@ void Manager::performOp(Connection* connection, int action)
     if (still_running <= 0)
     {
         timer.cancel();
+    }
+    else
+    {
+        poll(connection, action);
     }
 }
 
@@ -205,6 +228,11 @@ void Manager::poll(Connection* connection, int action)
         tcp_socket.async_write_some(
             boost::asio::null_buffers(),
             strand.wrap(std::bind(&Manager::performOp, this, connection, action)));
+    }
+    else
+    {
+        connection->complete(std::make_exception_ptr(
+            std::runtime_error("Unknow poll operation requested")));
     }
 }
 

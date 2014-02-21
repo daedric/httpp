@@ -35,7 +35,8 @@ void handler(Connection* connection, Request&& request)
     {
         connection->response()
             .setCode(HTTP::HttpCode::MovedPermentaly)
-            .addHeader("Location", "http://localhost:" + std::to_string(port + 1));
+            .addHeader("Location", "http://localhost:" + std::to_string(port + 1))
+            .setBody("");
         connection->sendResponse();
     }
     else
