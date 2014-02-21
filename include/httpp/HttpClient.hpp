@@ -16,7 +16,7 @@
 # include <memory>
 # include <future>
 
-# include <boost/asio.hpp>
+# include <boost/asio/io_service.hpp>
 
 # include "utils/ThreadPool.hpp"
 # include "http/Protocol.hpp"
@@ -26,23 +26,26 @@
 namespace HTTPP
 {
 
+namespace HTTP { namespace client { namespace detail { struct Manager; } } }
+
 class HttpClient
 {
-    struct Manager;
 
 public:
     using Request = HTTP::client::Request;
     using Response = HTTP::client::Response;
     using Future = std::future<Response>;
+    using CompletionHandler = std::function<void (Future&&)>;
 
     HttpClient(size_t nb_thread = 2);
     HttpClient(const HttpClient&) = delete;
     HttpClient& operator=(const HttpClient&) = delete;
     ~HttpClient();
 
-#define METHOD(m)                  \
-    Response m(Request&& request); \
-    Future async_ ## m(Request&& request);
+#define METHOD(m)                        \
+    Response m(Request&& request);       \
+    Future async_##m(Request&& request); \
+    void async_##m(Request&& request, CompletionHandler&&);
 
     METHOD(post);
     METHOD(get);
@@ -56,12 +59,15 @@ public:
 #undef METHOD
 
 private:
+    void handleRequest(HTTP::Method method,
+                       Request&& request,
+                       CompletionHandler&& handler);
     Future handleRequest(HTTP::Method method, Request&& request);
 
 private:
     boost::asio::io_service service_;
     UTILS::ThreadPool pool_;
-    std::unique_ptr<Manager> manager;
+    std::unique_ptr<HTTP::client::detail::Manager> manager;
 };
 
 } // namespace HTTPP

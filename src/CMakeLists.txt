@@ -11,7 +11,6 @@ SET(SOURCES
     HttpServer.cpp
     HttpClient.cpp
 
-    http/client/curl_parser.cpp
     http/Connection.cpp
     http/Parser.cpp
     http/Protocol.cpp
@@ -20,6 +19,9 @@ SET(SOURCES
     http/URL.cpp
     http/Utils.cpp
 
+    http/client/curl_parser.cpp
+    http/client/Connection.cpp
+    http/client/Manager.cpp
     http/client/Request.cpp
     http/client/Response.cpp
 

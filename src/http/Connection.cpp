@@ -86,6 +86,7 @@ void Connection::read_request()
         {
             BOOST_LOG_TRIVIAL(warning)
                 << "Invalid request received from: " << source();
+            BOOST_LOG_TRIVIAL(error) << std::string(buffer_.data(), size_);
 
             response_ = Response(
                     HttpCode::BadRequest,
