@@ -105,14 +105,13 @@ struct Connection
         conn->buffer.insert(std::end(conn->buffer), buffer, buffer + actual_size);
         if (conn->expect_header)
         {
-            static char const MARKER[] = { '\r', '\n', '\r', '\n' };
 
             auto begin = std::begin(conn->buffer);
             auto end = std::end(conn->buffer);
             auto it = std::search(begin,
                                   end,
-                                  std::begin(MARKER),
-                                  std::end(MARKER));
+                                  std::begin(HEADER_BODY_SEP),
+                                  std::end(HEADER_BODY_SEP));
 
             if (it != end)
             {
@@ -295,9 +294,35 @@ struct Connection
 
             request.connection_.reset(this);
             response.request = std::move(request);
+
+            long redirection = 0;
+            if (request.follow_redirect_)
+            {
+                redirection = conn_getinfo<long>(CURLINFO_REDIRECT_COUNT);
+            }
+
+            while (redirection)
+            {
+                header.clear();
+
+                auto begin = std::begin(buffer);
+                auto end = std::end(buffer);
+                auto it = std::search(begin,
+                                    end,
+                                    std::begin(HEADER_BODY_SEP),
+                                    std::end(HEADER_BODY_SEP));
+
+                if (it != end)
+                {
+                    header.insert(std::end(header), begin, it + 2);
+                    buffer.erase(begin, it + 4);
+                }
+
+                --redirection;
+            }
+
             response.body.swap(buffer);
             parseCurlResponseHeader(header, response);
-
             promise.set_value(std::move(response));
         }
         catch (...)

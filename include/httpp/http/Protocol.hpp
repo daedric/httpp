@@ -21,6 +21,8 @@ namespace HTTP
 using KV = std::pair<std::string, std::string>;
 using Header = KV;
 
+static char const HEADER_BODY_SEP[] = { '\r', '\n', '\r', '\n' };
+
 enum class Method
 {
     HEAD,
