@@ -8,19 +8,20 @@
  *
  */
 
-#include <curl/curl.h>
-#include <memory>
-#include <future>
-#include <iostream>
-#include <vector>
+#ifndef HTTPP_HTTP_CLIENT_DETAIL_CONNECTION_HPP_
+# define HTTPP_HTTP_CLIENT_DETAIL_CONNECTION_HPP_
 
-#include <boost/log/trivial.hpp>
-#include <boost/asio.hpp>
-#include <boost/algorithm/string.hpp>
+# include <curl/curl.h>
+# include <memory>
+# include <future>
+# include <vector>
 
-#include "httpp/http/Protocol.hpp"
-#include "httpp/http/client/Request.hpp"
-#include "httpp/http/client/Response.hpp"
+# include <boost/log/trivial.hpp>
+# include <boost/asio.hpp>
+
+# include "httpp/http/Protocol.hpp"
+# include "httpp/http/client/Request.hpp"
+# include "httpp/http/client/Response.hpp"
 
 namespace HTTPP {
 namespace HTTP {
@@ -106,3 +107,5 @@ struct Connection
 } // namespace client
 } // namespace HTTP
 } // namespace HTTPP
+
+#endif // !HTTPP_HTTP_CLIENT_DETAIL_CONNECTION_HPP_
