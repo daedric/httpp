@@ -156,7 +156,7 @@ void Manager::checkHandles()
                 BOOST_LOG_TRIVIAL(error) << "Cannot unregister easy handle";
             }
 
-            pool.post([result, conn]
+            pool.post([result, conn, easy, this]
                       { conn->buildResponse(result); });
         }
     }

@@ -52,10 +52,20 @@ Connection::~Connection()
         curl_easy_cleanup(handle);
     }
 
+    if (!result_notified)
+    {
+        throw std::runtime_error("Destroy a non completed connection");
+    }
 }
 
 void Connection::init()
 {
+
+    if (!result_notified)
+    {
+        throw std::runtime_error("Recycle a not completed connection");
+    }
+
     curl_easy_reset(handle);
     conn_setopt(CURLOPT_WRITEFUNCTION, &writefn);
     conn_setopt(CURLOPT_WRITEDATA, this);
@@ -249,14 +259,16 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
 
         conn_setopt(CURLOPT_HTTPHEADER, http_headers);
     }
+
+    result_notified = false;
 }
 
 void Connection::buildResponse(CURLcode code)
 {
     if (code != CURLE_OK)
     {
-        complete(std::make_exception_ptr(
-            std::runtime_error(curl_easy_strerror(code))));
+        complete(std::make_exception_ptr(std::runtime_error(
+            curl_easy_strerror(code) + std::string(this->error_buffer))));
 
         delete this;
         return;
@@ -319,6 +331,7 @@ void Connection::complete(std::exception_ptr ex)
         promise.set_value(std::move(response));
     }
 
+    result_notified = true;
     if (completion_handler)
     {
         completion_handler(promise.get_future());

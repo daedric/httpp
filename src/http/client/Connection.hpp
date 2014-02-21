@@ -99,6 +99,7 @@ struct Connection
     bool expect_continue = false;
     std::vector<char> header;
     std::vector<char> buffer;
+    std::atomic_bool result_notified = { true };
 
     struct curl_slist* http_headers = nullptr;
 };

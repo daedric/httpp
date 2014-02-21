@@ -93,7 +93,15 @@ HttpClient::Future HttpClient::handleRequest(HTTP::Method method, Request&& requ
     }                                                                   \
     HttpClient::Response HttpClient::m(Request&& request)               \
     {                                                                   \
-        return async_##m(std::move(request)).get();                     \
+        auto fut = async_##m(std::move(request));                       \
+        if (fut.valid())                                                \
+        {                                                               \
+            return fut.get();                                           \
+        }                                                               \
+        else                                                            \
+        {                                                               \
+            throw std::runtime_error("invalid future");                 \
+        }                                                               \
     }                                                                   \
     void HttpClient::async_##m(Request&& request,                       \
                                CompletionHandler&& completion_handler)  \
