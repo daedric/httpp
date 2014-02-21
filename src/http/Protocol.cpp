@@ -36,6 +36,8 @@ std::string to_string(Method method)
             return "TRACE";
         case Method::OPTIONS:
             return "OPTIONS";
+        case Method::DELETE_:
+            return "DELETE";
     }
 }
 
