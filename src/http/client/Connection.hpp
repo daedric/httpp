@@ -88,6 +88,7 @@ struct Connection
     void complete(std::exception_ptr ex = nullptr);
 
     CURL* handle;
+    int poll_action = 0;
     char error_buffer[CURL_ERROR_SIZE] = { 0 };
     boost::asio::ip::tcp::socket socket;
 

@@ -8,14 +8,13 @@
  *
  */
 
-#ifndef HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
-# define HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
-
 #include "Manager.hpp"
 
 #include <exception>
 #include <stdexcept>
 #include <atomic>
+#include <mutex>
+#include <functional>
 
 #include "Connection.hpp"
 
@@ -132,6 +131,7 @@ int Manager::sock_cb(CURL* easy,
     }
 
     Connection* connection = (Connection*)socket_private;
+    connection->poll_action = what;
     manager->poll(connection, what);
     return 0;
 }
@@ -166,24 +166,8 @@ void Manager::performOp(Connection* connection, int action)
 {
     int still_running = 0;
 
-    int operation = CURL_CSELECT_ERR;
-    if (action & CURL_POLL_IN)
-    {
-        operation |= CURL_CSELECT_IN;
-    }
-
-    if (action & CURL_POLL_OUT)
-    {
-        operation |= CURL_CSELECT_OUT;
-    }
-
-    if (action & CURL_POLL_INOUT)
-    {
-        operation |= CURL_CSELECT_IN | CURL_CSELECT_OUT;
-    }
-
     auto rc = curl_multi_socket_action(
-        handler, connection->socket.native_handle(), operation, &still_running);
+        handler, connection->socket.native_handle(), action, &still_running);
     if (rc != CURLM_OK)
     {
         auto exc = std::make_exception_ptr(std::runtime_error(curl_multi_strerror(rc)));
@@ -199,7 +183,10 @@ void Manager::performOp(Connection* connection, int action)
     }
     else
     {
-        poll(connection, action);
+        if (action == connection->poll_action)
+        {
+            poll(connection, connection->poll_action);
+        }
     }
 }
 
@@ -269,5 +256,3 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr connection)
 } // namespace client
 } // namespace HTTP
 } // namespace HTTPP
-#endif // !HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
-

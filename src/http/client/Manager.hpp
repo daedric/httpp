@@ -8,7 +8,13 @@
  *
  */
 
+#ifndef HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
+# define HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
+
 # include <curl/curl.h>
+# include <memory>
+# include <stdexcept>
+
 # include <boost/log/trivial.hpp>
 
 # include "httpp/http/Protocol.hpp"
@@ -64,7 +70,9 @@ struct Manager
     UTILS::ThreadPool::Strand strand;
     UTILS::ThreadPool::Timer timer;
 };
-    } // namespace detail
-    } // namespace client
-    } // namespace HTTP
+} // namespace detail
+} // namespace client
+} // namespace HTTP
 } // namespace HTTPP
+
+#endif // ! HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
