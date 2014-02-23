@@ -246,16 +246,6 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
 
     if (!request.content_.empty())
     {
-        curl_formadd(&post,
-                        &last,
-                        CURLFORM_BUFFER,
-                        "content",
-                        CURLFORM_BUFFERPTR,
-                        request.content_.data(),
-                        CURLFORM_BUFFERLENGTH,
-                        request.content_.size(),
-                        CURLFORM_END);
-
         conn_setopt(CURLOPT_POSTFIELDS, request.content_.data());
         conn_setopt(CURLOPT_POSTFIELDSIZE, request.content_.size());
     }

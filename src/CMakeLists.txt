@@ -23,7 +23,6 @@ SET(SOURCES
     http/client/Connection.cpp
     http/client/Manager.cpp
     http/client/Request.cpp
-    http/client/Response.cpp
 
     utils/ThreadPool.cpp
 )
