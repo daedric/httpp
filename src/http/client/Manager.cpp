@@ -61,6 +61,7 @@ Manager::~Manager()
     {
         curl_multi_cleanup(handler);
     }
+    timer.cancel();
 }
 
 void Manager::timer_cb(const boost::system::error_code& error)
@@ -91,8 +92,8 @@ int Manager::curl_timer_cb(CURLM*, long timeout_ms, void* userdata)
     if (timeout_ms > 0)
     {
         manager->timer.expires_from_now(boost::posix_time::millisec(timeout_ms));
-        manager->timer.async_wait(
-            std::bind(&Manager::timer_cb, manager, std::placeholders::_1));
+        manager->timer.async_wait(manager->strand.wrap(
+            std::bind(&Manager::timer_cb, manager, std::placeholders::_1)));
     }
     else
     {
