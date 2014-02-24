@@ -174,13 +174,11 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
      case HTTPP::HTTP::Method::POST:
         conn_setopt(CURLOPT_POST, 1L);
         break;
-     case HTTPP::HTTP::Method::PUT:
-        conn_setopt(CURLOPT_PUT, 1L);
-        break;
      case HTTPP::HTTP::Method::HEAD:
         conn_setopt(CURLOPT_NOBODY, 1L);
         break;
 
+     case HTTPP::HTTP::Method::PUT:
      case HTTPP::HTTP::Method::DELETE_:
      case HTTPP::HTTP::Method::OPTIONS:
      case HTTPP::HTTP::Method::TRACE:
