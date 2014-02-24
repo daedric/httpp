@@ -16,6 +16,8 @@
 # include <thread>
 # include <memory>
 # include <functional>
+# include <string>
+# include <atomic>
 
 # include <boost/asio/io_service.hpp>
 # include <boost/asio/deadline_timer.hpp>
@@ -32,10 +34,13 @@ public:
     using ThreadInit = std::function<void()>;
 
 public:
-    ThreadPool(size_t nb_thread, boost::asio::io_service& service);
+    ThreadPool(size_t nb_thread, const std::string& name = "");
+    ThreadPool(size_t nb_thread,
+               boost::asio::io_service& service,
+               const std::string& name = "");
     ~ThreadPool();
 
-    ThreadPool(ThreadPool&& pool);
+    ThreadPool(ThreadPool&&);
     ThreadPool& operator=(ThreadPool&&) = delete;
 
     ThreadPool(const ThreadPool&) = delete;
@@ -44,7 +49,7 @@ public:
     template <typename Callable>
     void post(Callable&& callable)
     {
-        service_.post(std::forward<Callable>(callable));
+        service_->post(std::forward<Callable>(callable));
     }
 
     void start(ThreadInit fct = ThreadInit());
@@ -55,15 +60,20 @@ public:
 
     boost::asio::io_service& getService()
     {
-        return service_;
+        return *service_;
     }
 
 private:
-    boost::asio::io_service& service_;
+    void run(ThreadInit fct);
+
+private:
+    std::shared_ptr<boost::asio::io_service> service_;
     bool running_ = false;
     size_t nb_thread_;
     std::unique_ptr<boost::asio::io_service::work> work_;
     std::vector<std::thread> threads_;
+    std::string name_;
+    std::atomic_uint running_threads_ = { 0 };
 };
 
 }

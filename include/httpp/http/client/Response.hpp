@@ -24,9 +24,8 @@ namespace HTTP
 namespace client
 {
 
-class Response
+struct Response
 {
-public:
     HTTPP::HTTP::HttpCode code;
     std::vector<Header> headers;
     auto getSortedHeaders() const -> decltype(UTILS::create_sorted_vector(headers))
@@ -36,8 +35,6 @@ public:
 
     std::vector<char> body;
     Request request;
-
-private:
 };
 
 } // namespace client

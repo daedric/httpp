@@ -24,7 +24,7 @@ using HTTP::client::detail::Connection;
 using HTTP::client::detail::Manager;
 
 HttpClient::HttpClient(size_t nb_thread)
-: pool_(nb_thread, service_)
+: pool_(nb_thread, service_, "HttpClient ThreadPool")
 , manager(new Manager(pool_))
 {
     pool_.start();

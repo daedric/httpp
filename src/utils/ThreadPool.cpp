@@ -12,14 +12,29 @@
 
 #include <atomic>
 
+#include <boost/log/trivial.hpp>
+
 namespace HTTPP
 {
 namespace UTILS
 {
 
-ThreadPool::ThreadPool(size_t nb_thread, boost::asio::io_service& service)
-: service_(service)
+static void empty_deleter(boost::asio::io_service*)
+{}
+
+ThreadPool::ThreadPool(size_t nb_thread, const std::string& name)
+: service_(std::make_shared<boost::asio::io_service>(nb_thread))
 , nb_thread_(nb_thread)
+, name_(name)
+{
+}
+
+ThreadPool::ThreadPool(size_t nb_thread,
+                       boost::asio::io_service& service,
+                       const std::string& name)
+: service_(std::addressof(service), &empty_deleter)
+, nb_thread_(nb_thread)
+, name_(name)
 {
 }
 
@@ -48,27 +63,42 @@ void ThreadPool::start(ThreadInit fct)
         return;
     }
 
-    work_.reset(new boost::asio::io_service::work(service_));
-    running_ = true;
-
-    std::atomic<std::size_t> init_called = {0};
-    for (size_t i = 0; i < nb_thread_; ++i)
+    if (!name_.empty())
     {
-        threads_.emplace_back([this, fct, &init_called]
-                              {
-                                  if (fct)
-                                  {
-                                      fct();
-                                  }
-                                  ++init_called;
-                                  this->service_.run();
-                              });
+        name_ = "[Pool: " + name_ + "] ";
     }
 
-    while (init_called != nb_thread_)
+    work_.reset(new boost::asio::io_service::work(*service_));
+    for (size_t i = 0; i < nb_thread_; ++i)
+    {
+        threads_.emplace_back(std::bind(&ThreadPool::run, this, fct));
+    }
+
+    while (running_threads_ != nb_thread_)
     {
         std::this_thread::yield();
     }
+
+    running_ = true;
+}
+
+void ThreadPool::run(ThreadInit fct)
+{
+    ++running_threads_;
+    BOOST_LOG_TRIVIAL(debug) << name_ << "start thread: #"
+                             << std::this_thread::get_id();
+    if (fct)
+    {
+        BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
+                                 << "] call init fct";
+        fct();
+    }
+
+    BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
+                             << "] call run()";
+    this->service_->run();
+    BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
+                             << "] is stopping";
 }
 
 void ThreadPool::stop()
@@ -80,7 +110,7 @@ void ThreadPool::stop()
 
     running_ = false;
     work_.reset();
-    service_.stop();
+    service_->stop();
     for (auto& th : threads_)
     {
         if (th.joinable())

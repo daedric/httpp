@@ -21,10 +21,15 @@
 static std::once_flag curl_init_flag;
 static void init_curl()
 {
+    BOOST_LOG_TRIVIAL(info) << "initialize libcurl";
     if (curl_global_init(CURL_GLOBAL_ALL) != 0)
     {
         throw std::runtime_error("Cannot initialize curl");
     }
+
+    ::atexit(&::curl_global_cleanup);
+
+    BOOST_LOG_TRIVIAL(info) << "curl initialized";
 }
 
 namespace HTTPP
@@ -87,8 +92,6 @@ int Manager::curl_timer_cb(CURLM*, long timeout_ms, void* userdata)
 {
     Manager* manager = (Manager*)userdata;
 
-    manager->timer.cancel();
-
     if (timeout_ms > 0)
     {
         manager->timer.expires_from_now(boost::posix_time::millisec(timeout_ms));
@@ -97,8 +100,12 @@ int Manager::curl_timer_cb(CURLM*, long timeout_ms, void* userdata)
     }
     else
     {
-        boost::system::error_code error; /*success*/
-        manager->timer_cb(error);
+        manager->timer.cancel();
+        manager->strand.post([manager]
+                             {
+                                 boost::system::error_code error; /*success*/
+                                 manager->timer_cb(error);
+                             });
     }
 
     return 0;
