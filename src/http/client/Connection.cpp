@@ -12,10 +12,10 @@
 
 #include <curl/curl.h>
 #include <memory>
-#include <future>
 #include <iostream>
 #include <vector>
 
+#include <boost/thread/future.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
@@ -93,7 +93,7 @@ void Connection::init()
     header.clear();
     buffer.clear();
 
-    promise = std::promise<client::Response>();
+    promise = boost::promise<client::Response>();
 }
 
 Connection::ConnectionPtr
@@ -330,7 +330,14 @@ void Connection::complete(std::exception_ptr ex)
 
     if (ex)
     {
-        promise.set_exception(ex);
+        try
+        {
+            std::rethrow_exception(ex);
+        }
+        catch (...)
+        {
+            promise.set_exception(boost::current_exception());
+        }
     }
     else
     {

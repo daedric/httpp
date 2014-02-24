@@ -149,6 +149,7 @@ void Manager::checkHandles()
 
             Connection* conn;
             curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
+            conn->poll_action = 0;
             auto rc = curl_multi_remove_handle(handler, easy);
 
             if (rc != CURLM_OK)

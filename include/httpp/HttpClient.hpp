@@ -14,8 +14,8 @@
 # include <string>
 # include <vector>
 # include <memory>
-# include <future>
 
+# include <boost/thread/future.hpp>
 # include <boost/asio/io_service.hpp>
 
 # include "utils/ThreadPool.hpp"
@@ -34,7 +34,7 @@ class HttpClient
 public:
     using Request = HTTP::client::Request;
     using Response = HTTP::client::Response;
-    using Future = std::future<Response>;
+    using Future = boost::unique_future<Response>;
     using CompletionHandler = std::function<void (Future&&)>;
 
     HttpClient(size_t nb_thread = 2);

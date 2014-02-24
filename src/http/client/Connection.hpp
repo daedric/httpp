@@ -13,9 +13,10 @@
 
 # include <curl/curl.h>
 # include <memory>
-# include <future>
 # include <vector>
+# include <atomic>
 
+# include <boost/thread/future.hpp>
 # include <boost/log/trivial.hpp>
 # include <boost/asio.hpp>
 
@@ -37,7 +38,7 @@ struct Connection
     using ConnectionPtr = std::unique_ptr<Connection>;
 
     // duplicate alias from HttpClient
-    using Future = std::future<Response>;
+    using Future = boost::unique_future<Response>;
     using CompletionHandler = std::function<void (Future&&)>;
 
     Connection(boost::asio::io_service& service);
@@ -95,7 +96,7 @@ struct Connection
     client::Request request;
     client::Response response;
 
-    std::promise<client::Response> promise;
+    boost::promise<client::Response> promise;
     CompletionHandler completion_handler;
     bool expect_continue = false;
     std::vector<char> header;
