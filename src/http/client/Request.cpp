@@ -45,6 +45,12 @@ Request& Request::url(const std::string& u)
     return *this;
 }
 
+Request& Request::addToUrl(const std::string& path)
+{
+    url_ += path;
+    return *this;
+}
+
 Request& Request::joinUrlPath(const std::string& dir, bool trailing_sep)
 {
     if (!url_.empty())

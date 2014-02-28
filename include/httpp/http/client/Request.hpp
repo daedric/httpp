@@ -48,6 +48,10 @@ public:
     ~Request();
 
     Request& url(const std::string& url);
+
+    // unsafe, catenate current url + path
+    Request& addToUrl(const std::string& path);
+
     Request& joinUrlPath(const std::string& dir, bool trailing_sep = false);
     Request& addUrlVariable(const std::string& var, const std::string& val);
     Request& followRedirect(bool b = true);
