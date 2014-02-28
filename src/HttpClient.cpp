@@ -46,8 +46,10 @@ HttpClient::~HttpClient()
     pool_.stop();
 }
 
-HttpClient::AsyncHandler HttpClient::handleRequest(
-    HTTP::Method method, Request&& request, CompletionHandler&& completion_handler)
+std::pair<HttpClient::Future, HttpClient::AsyncHandler>
+HttpClient::handle_request(HTTP::Method method,
+                           Request&& request,
+                           CompletionHandler completion_handler)
 {
     Connection::ConnectionPtr connection;
 
@@ -60,36 +62,26 @@ HttpClient::AsyncHandler HttpClient::handleRequest(
         connection = Connection::createConnection(service_);
     }
 
-    connection->init();
+    connection->init(manager->sockets);
     connection->request = std::move(request);
-    connection->completion_handler = std::move(completion_handler);
 
+    Future fut;
     AsyncHandler hndl;
-    hndl.connection_ = connection.get();
-    manager->handleRequest(method, std::move(connection));
-    return hndl;
-}
 
-HttpClient::Future HttpClient::handleRequest(HTTP::Method method, Request&& request)
-{
-    Connection::ConnectionPtr connection;
-
-    if (request.connection_)
+    if (completion_handler)
     {
-        connection = std::move(request.connection_);
+        connection->completion_handler = std::move(completion_handler);
+        hndl.connection_ = connection.get();
     }
     else
     {
-        connection = Connection::createConnection(service_);
+        fut = std::move(connection->promise.get_future());
     }
 
-    connection->init();
-    connection->request = std::move(request);
-    auto future = connection->promise.get_future();
-
     manager->handleRequest(method, std::move(connection));
-    return future;
+    return std::make_pair(std::move(fut), hndl);
 }
+
 
 #define METHOD_post POST
 #define METHOD_get GET
@@ -100,29 +92,30 @@ HttpClient::Future HttpClient::handleRequest(HTTP::Method method, Request&& requ
 #define METHOD_trace TRACE
 #define METHOD_connect CONNECT
 
-#define METHOD(m)                                                       \
-    HttpClient::Future HttpClient::async_##m(Request&& req)             \
-    {                                                                   \
-        return handleRequest(HTTP::Method::METHOD_##m, std::move(req)); \
-    }                                                                   \
-    HttpClient::Response HttpClient::m(Request&& request)               \
-    {                                                                   \
-        auto fut = async_##m(std::move(request));                       \
-        if (fut.valid())                                                \
-        {                                                               \
-            return fut.get();                                           \
-        }                                                               \
-        else                                                            \
-        {                                                               \
-            throw std::runtime_error("invalid future");                 \
-        }                                                               \
-    }                                                                   \
-    HttpClient::AsyncHandler HttpClient::async_##m(                     \
-        Request&& request, CompletionHandler&& completion_handler)      \
-    {                                                                   \
-        return handleRequest(HTTP::Method::METHOD_##m,                  \
-                             std::move(request),                        \
-                             std::move(completion_handler));            \
+#define METHOD(m)                                                              \
+    HttpClient::Future HttpClient::async_##m(Request&& req)                    \
+    {                                                                          \
+        return handle_request(HTTP::Method::METHOD_##m, std::move(req)).first; \
+    }                                                                          \
+    HttpClient::Response HttpClient::m(Request&& request)                      \
+    {                                                                          \
+        Future fut = async_##m(std::move(request));                            \
+                                                                               \
+        if (fut.valid())                                                       \
+        {                                                                      \
+            return fut.get();                                                  \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            throw std::runtime_error("invalid future");                        \
+        }                                                                      \
+    }                                                                          \
+    HttpClient::AsyncHandler HttpClient::async_##m(                            \
+        Request&& request, CompletionHandler&& completion_handler)             \
+    {                                                                          \
+        return handle_request(HTTP::Method::METHOD_##m,                        \
+                              std::move(request),                              \
+                              std::move(completion_handler)).second;           \
     }
 
 METHOD(post);

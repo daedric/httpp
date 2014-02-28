@@ -42,6 +42,7 @@ struct Connection
     using CompletionHandler = std::function<void (Future&&)>;
 
     Connection(boost::asio::io_service& service);
+
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
     ~Connection();
@@ -73,8 +74,7 @@ struct Connection
         return data;
     }
 
-
-    void init();
+    void init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& sockets);
     static ConnectionPtr createConnection(boost::asio::io_service& service);
 
     static size_t writefn(char* buffer, size_t size, size_t nmemb, void* userdata);
@@ -83,17 +83,26 @@ struct Connection
                                     curlsocktype purpose,
                                     struct curl_sockaddr* address);
 
+    static int closesocket(void* clientp, curl_socket_t socket);
+
     void configureRequest(HTTPP::HTTP::Method method);
     void cancel();
 
     void buildResponse(CURLcode code);
     void complete(std::exception_ptr ex = nullptr);
+    void setSocket(curl_socket_t socket);
+
+
+
 
     CURL* handle;
     std::atomic_bool is_polling = { false };
     int poll_action = 0;
     char error_buffer[CURL_ERROR_SIZE] = { 0 };
-    boost::asio::ip::tcp::socket socket;
+
+    boost::asio::io_service& service;
+    boost::asio::ip::tcp::socket* socket = nullptr;
+    std::map<curl_socket_t, boost::asio::ip::tcp::socket*>* sockets;
 
     client::Request request;
     client::Response response;

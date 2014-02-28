@@ -33,7 +33,7 @@ namespace detail {
 
 Connection::Connection(boost::asio::io_service& service)
 : handle(curl_easy_init())
-, socket(service)
+, service(service)
 {
     if (!handle)
     {
@@ -66,7 +66,9 @@ Connection::~Connection()
     }
 }
 
-void Connection::init()
+void Connection::init(
+    std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& sockets)
+
 {
 
     if (!result_notified)
@@ -76,15 +78,23 @@ void Connection::init()
 
     curl_easy_reset(handle);
 
+    this->sockets = std::addressof(sockets);
+
     conn_setopt(CURLOPT_HEADERFUNCTION, &writeHd);
     conn_setopt(CURLOPT_WRITEHEADER, this);
 
     conn_setopt(CURLOPT_WRITEFUNCTION, &writefn);
     conn_setopt(CURLOPT_WRITEDATA, this);
+
     conn_setopt(CURLOPT_ERRORBUFFER, this->error_buffer);
+
     conn_setopt(CURLOPT_PRIVATE, this);
+
     conn_setopt(CURLOPT_OPENSOCKETDATA, this);
     conn_setopt(CURLOPT_OPENSOCKETFUNCTION, &opensocket);
+
+    conn_setopt(CURLOPT_CLOSESOCKETDATA, this->sockets);
+    conn_setopt(CURLOPT_CLOSESOCKETFUNCTION, &closesocket);
 
     conn_setopt(CURLOPT_ERRORBUFFER, this->error_buffer);
     conn_setopt(CURLOPT_PRIVATE, this);
@@ -101,6 +111,10 @@ void Connection::init()
 
     promise = boost::promise<client::Response>();
     cancel_promise = boost::promise<void>();
+    completion_handler = CompletionHandler();
+    response = Response();
+    is_polling = false;
+    poll_action = 0;
 }
 
 Connection::ConnectionPtr
@@ -127,34 +141,24 @@ size_t Connection::writefn(char* buffer, size_t size, size_t nmemb, void* userda
 }
 
 curl_socket_t Connection::opensocket(void* clientp,
-                                        curlsocktype purpose,
-                                        struct curl_sockaddr* address)
+                                     curlsocktype purpose,
+                                     struct curl_sockaddr* address)
 {
     Connection* conn = (Connection*)clientp;
 
     if (purpose == CURLSOCKTYPE_IPCXN)
     {
         boost::system::error_code ec;
-
-        {
-            // if a connection is recycled but the remote endpoint close
-            // the connection we can't use the CLOSESOCKET hook since the
-            // curl_multi_cleanup when cleaning the connection cache can
-            // call it even if the Connection has been destroyed. Since the
-            // curl_multi_remove_handle has been called, it is certainly a
-            // bug in curl.
-
-            boost::system::error_code ec;
-            conn->socket.close(ec);
-        }
+        boost::asio::ip::tcp::socket* socket =
+            new boost::asio::ip::tcp::socket(conn->service);
 
         if (address->family == AF_INET)
         {
-            conn->socket.open(boost::asio::ip::tcp::v4(), ec);
+            socket->open(boost::asio::ip::tcp::v4(), ec);
         }
         else
         {
-            conn->socket.open(boost::asio::ip::tcp::v6(), ec);
+            socket->open(boost::asio::ip::tcp::v6(), ec);
         }
 
         if (ec)
@@ -164,10 +168,41 @@ curl_socket_t Connection::opensocket(void* clientp,
             return CURL_SOCKET_BAD;
         }
 
-        return conn->socket.native_handle();
+        auto handle = socket->native_handle();
+        (*conn->sockets)[handle] = socket;
+        return handle;
     }
 
     return CURL_SOCKET_BAD;
+}
+
+int Connection::closesocket(void* clientp, curl_socket_t curl_socket)
+{
+    std::map<curl_socket_t, boost::asio::ip::tcp::socket*>* sockets;
+    sockets = (decltype(sockets)) clientp;
+
+    auto it = sockets->find(curl_socket);
+    if (it == std::end(*sockets))
+    {
+        BOOST_LOG_TRIVIAL(error) << "Cannot find a socket to close";
+        return 1;
+    }
+
+    delete it->second;
+    sockets->erase(it);
+    return 0;
+}
+
+void Connection::setSocket(curl_socket_t curl_socket)
+{
+    auto it = sockets->find(curl_socket);
+    if (it == std::end(*sockets))
+    {
+        throw std::runtime_error("Cannot find socket: " +
+                                 std::to_string(curl_socket));
+    }
+
+    socket = it->second;
 }
 
 void Connection::configureRequest(HTTPP::HTTP::Method method)
@@ -283,7 +318,7 @@ void Connection::cancel()
     if (is_polling)
     {
         boost::system::error_code ec;
-        socket.cancel(ec);
+        socket->cancel(ec);
     }
 }
 

@@ -123,7 +123,7 @@ int Manager::sock_cb(CURL* easy,
                      curl_socket_t s,
                      int what,
                      void* multi_private,
-                     void* socket_private)
+                     void*)
 {
     Manager* manager = (Manager*)multi_private;
 
@@ -132,21 +132,15 @@ int Manager::sock_cb(CURL* easy,
         return 0;
     }
 
-    if (!socket_private)
+    Connection* connection;
+    auto rc = curl_easy_getinfo(easy, CURLINFO_PRIVATE, &connection);
+    if (rc != CURLE_OK)
     {
-        void* v = nullptr;
-        auto rc = curl_easy_getinfo(easy, CURLINFO_PRIVATE, &v);
-        if (rc != CURLE_OK)
-        {
-            throw std::runtime_error("Cannot get private info:" +
-                                     std::string(curl_easy_strerror(rc)));
-        }
-
-        curl_multi_assign(manager->handler, s, v);
-        socket_private = v;
+        throw std::runtime_error("Cannot get private info:" +
+                                 std::string(curl_easy_strerror(rc)));
     }
 
-    Connection* connection = (Connection*)socket_private;
+    connection->setSocket(s);
     connection->poll_action = what;
     manager->poll(connection, what);
     return 0;
@@ -234,7 +228,7 @@ void Manager::performOp(Connection* connection, int action)
     }
 
     auto rc = curl_multi_socket_action(
-        handler, connection->socket.native_handle(), action, &still_running);
+        handler, connection->socket->native_handle(), action, &still_running);
     if (rc != CURLM_OK)
     {
         auto exc = std::make_exception_ptr(std::runtime_error(curl_multi_strerror(rc)));
@@ -269,7 +263,7 @@ void Manager::poll(Connection* connection, int action)
         return;
     }
 
-    boost::asio::ip::tcp::socket& tcp_socket = connection->socket;
+    boost::asio::ip::tcp::socket& tcp_socket = *connection->socket;
 
     if (action == CURL_POLL_IN)
     {

@@ -75,10 +75,10 @@ public:
 #undef METHOD
 
 private:
-    AsyncHandler handleRequest(HTTP::Method method,
-                               Request&& request,
-                               CompletionHandler&& handler);
-    Future handleRequest(HTTP::Method method, Request&& request);
+    std::pair<Future, AsyncHandler>
+    handle_request(HTTP::Method method,
+                   Request&& request,
+                   CompletionHandler handler = CompletionHandler());
 
 private:
     boost::asio::io_service service_;

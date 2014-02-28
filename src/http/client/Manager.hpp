@@ -14,8 +14,10 @@
 # include <curl/curl.h>
 # include <memory>
 # include <stdexcept>
+# include <map>
 
 # include <boost/log/trivial.hpp>
+# include <boost/asio.hpp>
 
 # include "httpp/http/Protocol.hpp"
 # include "httpp/utils/ThreadPool.hpp"
@@ -68,6 +70,8 @@ struct Manager
     void removeConnection(Connection* conn);
 
     void handleRequest(Method method, ConnectionPtr connection);
+
+    std::map<curl_socket_t, boost::asio::ip::tcp::socket*> sockets;
 
     CURLM* handler;
     UTILS::ThreadPool& pool;
