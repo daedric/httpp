@@ -26,7 +26,10 @@
 namespace HTTPP
 {
 
-namespace HTTP { namespace client { namespace detail { struct Manager; } } }
+namespace HTTP { namespace client { namespace detail {
+struct Manager;
+struct Connection;
+} } }
 
 class HttpClient
 {
@@ -37,6 +40,19 @@ public:
     using Future = boost::unique_future<Response>;
     using CompletionHandler = std::function<void (Future&&)>;
 
+    // AsyncHandler is garanteed to be valid until the completion handler is
+    // called.  If an async operation is rescheduled, the old AsyncHandler
+    // CANNOT be reused
+    class AsyncHandler
+    {
+        friend class HttpClient;
+        public:
+            void cancelOperation();
+
+        private:
+            HTTP::client::detail::Connection* connection_;
+    };
+
     HttpClient(size_t nb_thread = 2);
     HttpClient(const HttpClient&) = delete;
     HttpClient& operator=(const HttpClient&) = delete;
@@ -45,7 +61,7 @@ public:
 #define METHOD(m)                        \
     Response m(Request&& request);       \
     Future async_##m(Request&& request); \
-    void async_##m(Request&& request, CompletionHandler&&);
+    AsyncHandler async_##m(Request&& request, CompletionHandler&&);
 
     METHOD(post);
     METHOD(get);
@@ -59,9 +75,9 @@ public:
 #undef METHOD
 
 private:
-    void handleRequest(HTTP::Method method,
-                       Request&& request,
-                       CompletionHandler&& handler);
+    AsyncHandler handleRequest(HTTP::Method method,
+                               Request&& request,
+                               CompletionHandler&& handler);
     Future handleRequest(HTTP::Method method, Request&& request);
 
 private:

@@ -84,11 +84,13 @@ struct Connection
                                     struct curl_sockaddr* address);
 
     void configureRequest(HTTPP::HTTP::Method method);
+    void cancel();
 
     void buildResponse(CURLcode code);
     void complete(std::exception_ptr ex = nullptr);
 
     CURL* handle;
+    std::atomic_bool is_polling = { false };
     int poll_action = 0;
     char error_buffer[CURL_ERROR_SIZE] = { 0 };
     boost::asio::ip::tcp::socket socket;
@@ -102,6 +104,8 @@ struct Connection
     std::vector<char> header;
     std::vector<char> buffer;
     std::atomic_bool result_notified = { true };
+    std::atomic_bool is_canceled = { false };
+    boost::promise<void> cancel_promise;
 
     struct curl_slist* http_headers = nullptr;
 };

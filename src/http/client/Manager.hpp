@@ -63,12 +63,18 @@ struct Manager
     void performOp(Connection* connection, int action);
     void poll(Connection* connection, int action);
 
+    void handleCancelledConnections();
+    void removeConnection(CURL* easy);
+    void removeConnection(Connection* conn);
+
     void handleRequest(Method method, ConnectionPtr connection);
 
     CURLM* handler;
     UTILS::ThreadPool& pool;
     UTILS::ThreadPool::Strand strand;
     UTILS::ThreadPool::Timer timer;
+
+    std::vector<Connection*> current_connections;
 };
 } // namespace detail
 } // namespace client

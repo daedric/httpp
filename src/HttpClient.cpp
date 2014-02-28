@@ -23,6 +23,17 @@ namespace HTTPP
 using HTTP::client::detail::Connection;
 using HTTP::client::detail::Manager;
 
+void HttpClient::AsyncHandler::cancelOperation()
+{
+    if (connection_)
+    {
+        auto future = connection_->cancel_promise.get_future();
+        connection_->cancel();
+        future.get();
+        connection_ = nullptr;
+    }
+}
+
 HttpClient::HttpClient(size_t nb_thread)
 : pool_(nb_thread, service_, "HttpClient ThreadPool")
 , manager(new Manager(pool_))
@@ -35,9 +46,8 @@ HttpClient::~HttpClient()
     pool_.stop();
 }
 
-void HttpClient::handleRequest(HTTP::Method method,
-                               Request&& request,
-                               CompletionHandler&& completion_handler)
+HttpClient::AsyncHandler HttpClient::handleRequest(
+    HTTP::Method method, Request&& request, CompletionHandler&& completion_handler)
 {
     Connection::ConnectionPtr connection;
 
@@ -53,7 +63,11 @@ void HttpClient::handleRequest(HTTP::Method method,
     connection->init();
     connection->request = std::move(request);
     connection->completion_handler = std::move(completion_handler);
+
+    AsyncHandler hndl;
+    hndl.connection_ = connection.get();
     manager->handleRequest(method, std::move(connection));
+    return hndl;
 }
 
 HttpClient::Future HttpClient::handleRequest(HTTP::Method method, Request&& request)
@@ -103,12 +117,12 @@ HttpClient::Future HttpClient::handleRequest(HTTP::Method method, Request&& requ
             throw std::runtime_error("invalid future");                 \
         }                                                               \
     }                                                                   \
-    void HttpClient::async_##m(Request&& request,                       \
-                               CompletionHandler&& completion_handler)  \
+    HttpClient::AsyncHandler HttpClient::async_##m(                     \
+        Request&& request, CompletionHandler&& completion_handler)      \
     {                                                                   \
-        handleRequest(HTTP::Method::METHOD_##m,                         \
-                      std::move(request),                               \
-                      std::move(completion_handler));                   \
+        return handleRequest(HTTP::Method::METHOD_##m,                  \
+                             std::move(request),                        \
+                             std::move(completion_handler));            \
     }
 
 METHOD(post);

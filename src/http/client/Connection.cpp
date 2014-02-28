@@ -19,6 +19,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/exception_ptr.hpp>
 
 #include "httpp/http/Protocol.hpp"
 #include "httpp/http/client/Request.hpp"
@@ -52,11 +53,16 @@ Connection::~Connection()
         curl_easy_cleanup(handle);
     }
 
-    if (!result_notified)
+    if (!is_canceled && !result_notified)
     {
         BOOST_LOG_TRIVIAL(error) << "Destroy a not completed connection";
         complete(std::make_exception_ptr(
             std::runtime_error("Destroy a non completed connection")));
+    }
+
+    if (is_canceled)
+    {
+        cancel_promise.set_value();
     }
 }
 
@@ -94,6 +100,7 @@ void Connection::init()
     buffer.clear();
 
     promise = boost::promise<client::Response>();
+    cancel_promise = boost::promise<void>();
 }
 
 Connection::ConnectionPtr
@@ -268,8 +275,28 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
     result_notified = false;
 }
 
+void Connection::cancel()
+{
+    BOOST_LOG_TRIVIAL(debug) << "Cancel operation on connection";
+    is_canceled = true;
+
+    if (is_polling)
+    {
+        boost::system::error_code ec;
+        socket.cancel(ec);
+    }
+}
+
 void Connection::buildResponse(CURLcode code)
 {
+    if (is_canceled)
+    {
+        BOOST_LOG_TRIVIAL(debug)
+            << "Operation cancelled detected, skip response building";
+        delete this;
+        return;
+    }
+
     if (code != CURLE_OK)
     {
         complete(std::make_exception_ptr(std::runtime_error(

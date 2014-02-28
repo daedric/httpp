@@ -62,6 +62,13 @@ Manager::Manager(UTILS::ThreadPool& pool)
 
 Manager::~Manager()
 {
+    auto conns = std::move(current_connections);
+    for (auto conn : conns)
+    {
+        removeConnection(conn);
+        delete conn;
+    }
+
     if (handler)
     {
         curl_multi_cleanup(handler);
@@ -94,6 +101,7 @@ int Manager::curl_timer_cb(CURLM*, long timeout_ms, void* userdata)
 
     if (timeout_ms > 0)
     {
+        manager->handleCancelledConnections();
         manager->timer.expires_from_now(boost::posix_time::millisec(timeout_ms));
         manager->timer.async_wait(manager->strand.wrap(
             std::bind(&Manager::timer_cb, manager, std::placeholders::_1)));
@@ -144,8 +152,53 @@ int Manager::sock_cb(CURL* easy,
     return 0;
 }
 
+void Manager::removeConnection(Connection* conn)
+{
+    auto rc = curl_multi_remove_handle(handler, conn->handle);
+
+    if (rc != CURLM_OK)
+    {
+        BOOST_LOG_TRIVIAL(error)
+            << "Cannot unregister easy handle: " << curl_multi_strerror(rc);
+    }
+
+    current_connections.erase(std::find(std::begin(current_connections),
+                                        std::end(current_connections),
+                                        conn),
+                              std::end(current_connections));
+}
+
+void Manager::removeConnection(CURL* easy)
+{
+    Connection* conn;
+    curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
+    removeConnection(conn);
+}
+
+void Manager::handleCancelledConnections()
+{
+    decltype(current_connections) copy;
+    copy.swap(current_connections);
+
+    for (auto conn : copy)
+    {
+        if (conn->is_canceled)
+        {
+            BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
+            removeConnection(conn);
+            delete conn;
+        }
+        else
+        {
+            current_connections.emplace_back(conn);
+        }
+    }
+}
+
 void Manager::checkHandles()
 {
+    handleCancelledConnections();
+
     CURLMsg* msg;
     int msgs_left = 0;
     while ((msg = curl_multi_info_read(handler, &msgs_left)))
@@ -158,12 +211,7 @@ void Manager::checkHandles()
             Connection* conn;
             curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
             conn->poll_action = 0;
-            auto rc = curl_multi_remove_handle(handler, easy);
-
-            if (rc != CURLM_OK)
-            {
-                BOOST_LOG_TRIVIAL(error) << "Cannot unregister easy handle";
-            }
+            removeConnection(conn);
 
             pool.post([result, conn, easy, this]
                       { conn->buildResponse(result); });
@@ -174,6 +222,16 @@ void Manager::checkHandles()
 void Manager::performOp(Connection* connection, int action)
 {
     int still_running = 0;
+
+    connection->is_polling = false;
+
+    if (connection->is_canceled)
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
+        removeConnection(connection);
+        delete connection;
+        return;
+    }
 
     auto rc = curl_multi_socket_action(
         handler, connection->socket.native_handle(), action, &still_running);
@@ -201,29 +259,47 @@ void Manager::performOp(Connection* connection, int action)
 
 void Manager::poll(Connection* connection, int action)
 {
+    connection->is_polling = true;
+
+    if (connection->is_canceled)
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
+        removeConnection(connection);
+        delete connection;
+        return;
+    }
+
     boost::asio::ip::tcp::socket& tcp_socket = connection->socket;
 
     if (action == CURL_POLL_IN)
     {
-        tcp_socket.async_read_some(
-            boost::asio::null_buffers(),
-            strand.wrap(std::bind(&Manager::performOp, this, connection, action)));
+        tcp_socket.async_read_some(boost::asio::null_buffers(),
+                                   strand.wrap(std::bind(&Manager::performOp,
+                                                         this,
+                                                         connection,
+                                                         action)));
     }
     else if (action == CURL_POLL_OUT)
     {
-        tcp_socket.async_write_some(
-            boost::asio::null_buffers(),
-            strand.wrap(std::bind(&Manager::performOp, this, connection, action)));
+        tcp_socket.async_write_some(boost::asio::null_buffers(),
+                                    strand.wrap(std::bind(&Manager::performOp,
+                                                          this,
+                                                          connection,
+                                                          action)));
     }
     else if (action == CURL_POLL_INOUT)
     {
-        tcp_socket.async_read_some(
-            boost::asio::null_buffers(),
-            strand.wrap(std::bind(&Manager::performOp, this, connection, action)));
+        tcp_socket.async_read_some(boost::asio::null_buffers(),
+                                   strand.wrap(std::bind(&Manager::performOp,
+                                                         this,
+                                                         connection,
+                                                         action)));
 
-        tcp_socket.async_write_some(
-            boost::asio::null_buffers(),
-            strand.wrap(std::bind(&Manager::performOp, this, connection, action)));
+        tcp_socket.async_write_some(boost::asio::null_buffers(),
+                                    strand.wrap(std::bind(&Manager::performOp,
+                                                          this,
+                                                          connection,
+                                                          action)));
     }
     else
     {
@@ -257,7 +333,10 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr connection)
                             << "Error scheduling a new request: " << message;
                         conn->complete(std::make_exception_ptr(
                             std::runtime_error(message)));
+                        return;
                     }
+
+                    current_connections.emplace_back(conn);
                 });
 }
 
