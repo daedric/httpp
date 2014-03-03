@@ -64,7 +64,7 @@ public:
     void clear();
 
 private:
-    std::unique_ptr<detail::Connection> connection_;
+    std::shared_ptr<detail::Connection> connection_;
     std::string url_;
     bool follow_redirect_ = false;
 

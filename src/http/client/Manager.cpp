@@ -66,7 +66,6 @@ Manager::~Manager()
     for (auto conn : conns)
     {
         removeConnection(conn);
-        delete conn;
     }
 
     if (handler)
@@ -146,7 +145,7 @@ int Manager::sock_cb(CURL* easy,
     return 0;
 }
 
-void Manager::removeConnection(Connection* conn)
+void Manager::removeConnection(std::shared_ptr<Connection> conn)
 {
     auto rc = curl_multi_remove_handle(handler, conn->handle);
 
@@ -160,6 +159,11 @@ void Manager::removeConnection(Connection* conn)
                                         std::end(current_connections),
                                         conn),
                               std::end(current_connections));
+}
+
+void Manager::removeConnection(Connection* conn)
+{
+    removeConnection(conn->shared_from_this());
 }
 
 void Manager::removeConnection(CURL* easy)
@@ -180,7 +184,6 @@ void Manager::handleCancelledConnections()
         {
             BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
             removeConnection(conn);
-            delete conn;
         }
         else
         {
@@ -205,10 +208,13 @@ void Manager::checkHandles()
             Connection* conn;
             curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
             conn->poll_action = 0;
-            removeConnection(conn);
 
-            pool.post([result, conn, easy, this]
-                      { conn->buildResponse(result); });
+            auto shared_ptr = conn->shared_from_this();
+            removeConnection(shared_ptr);
+
+
+            pool.post([result, shared_ptr, easy, this]
+                      { shared_ptr->buildResponse(result); });
         }
     }
 }
@@ -223,7 +229,6 @@ void Manager::performOp(Connection* connection, int action)
     {
         BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
         removeConnection(connection);
-        delete connection;
         return;
     }
 
@@ -259,7 +264,6 @@ void Manager::poll(Connection* connection, int action)
     {
         BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
         removeConnection(connection);
-        delete connection;
         return;
     }
 
@@ -302,10 +306,8 @@ void Manager::poll(Connection* connection, int action)
     }
 }
 
-void Manager::handleRequest(Method method, Connection::ConnectionPtr connection)
+void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
 {
-
-    Connection* conn = connection.release();
 
     strand.post([this, method, conn]()
                 {

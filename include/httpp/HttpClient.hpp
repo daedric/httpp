@@ -51,7 +51,7 @@ public:
             void cancelOperation();
 
         private:
-            HTTP::client::detail::Connection* connection_;
+            std::weak_ptr<HTTP::client::detail::Connection> connection_;
     };
 
     HttpClient(size_t nb_thread = 2);

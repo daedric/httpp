@@ -33,9 +33,9 @@ void parseCurlResponseHeader(const std::vector<char>& headers,
 
 namespace detail {
 
-struct Connection
+struct Connection : public std::enable_shared_from_this<Connection>
 {
-    using ConnectionPtr = std::unique_ptr<Connection>;
+    using ConnectionPtr = std::shared_ptr<Connection>;
 
     // duplicate alias from HttpClient
     using Future = boost::unique_future<Response>;

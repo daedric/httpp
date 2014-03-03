@@ -49,3 +49,33 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
     BOOST_LOG_TRIVIAL(error) << "operation cancelled";
 }
 
+void handler2(Connection* c, Request&&)
+{
+    c->response().setCode(HTTPP::HTTP::HttpCode::Ok);
+    c->sendResponse();
+}
+
+BOOST_AUTO_TEST_CASE(late_cancel)
+{
+    HttpServer server;
+    server.start();
+    server.setSink(&handler2);
+    server.bind("localhost", "8080");
+
+    HttpClient client;
+
+    HttpClient::Request request;
+    request.url("http://localhost:8080");
+
+    auto handler = client.async_get(std::move(request),
+                                    [](HttpClient::Future&& fut)
+                                    {
+        BOOST_LOG_TRIVIAL(debug) << "Response received";
+        fut.get();
+    });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    handler.cancelOperation();
+    BOOST_LOG_TRIVIAL(error) << "operation cancelled";
+}
+

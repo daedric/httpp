@@ -25,12 +25,13 @@ using HTTP::client::detail::Manager;
 
 void HttpClient::AsyncHandler::cancelOperation()
 {
-    if (connection_)
+    auto ptr = connection_.lock();
+    if (ptr)
     {
-        auto future = connection_->cancel_promise.get_future();
-        connection_->cancel();
+        auto future = ptr->cancel_promise.get_future();
+        ptr->cancel();
+        ptr.reset();
         future.get();
-        connection_ = nullptr;
     }
 }
 
@@ -71,7 +72,7 @@ HttpClient::handle_request(HTTP::Method method,
     if (completion_handler)
     {
         connection->completion_handler = std::move(completion_handler);
-        hndl.connection_ = connection.get();
+        hndl.connection_ = connection->shared_from_this();
     }
     else
     {

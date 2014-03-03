@@ -121,7 +121,7 @@ void Connection::init(
 Connection::ConnectionPtr
 Connection::createConnection(boost::asio::io_service& service)
 {
-    return ConnectionPtr(new Connection(service));
+    return std::make_shared<Connection>(service);
 }
 
 size_t Connection::writeHd(char* buffer, size_t size, size_t nmemb, void* userdata)
@@ -331,7 +331,6 @@ void Connection::buildResponse(CURLcode code)
             << "Operation cancelled detected, skip response building";
 
         complete(std::make_exception_ptr(HTTPP::UTILS::OperationAborted()));
-        delete this;
         return;
     }
 
@@ -339,8 +338,6 @@ void Connection::buildResponse(CURLcode code)
     {
         complete(std::make_exception_ptr(std::runtime_error(
             curl_easy_strerror(code) + std::string(this->error_buffer))));
-
-        delete this;
         return;
     }
     try
@@ -348,7 +345,7 @@ void Connection::buildResponse(CURLcode code)
         response.code = static_cast<HTTPP::HTTP::HttpCode>(
             conn_getinfo<long>(CURLINFO_RESPONSE_CODE));
 
-        request.connection_.reset(this);
+        request.connection_ = shared_from_this();
         response.request = std::move(request);
 
         long redirection = 0;

@@ -33,7 +33,7 @@ struct Connection;
 struct Manager
 {
     using Method = HTTPP::HTTP::Method;
-    using ConnectionPtr = std::unique_ptr<Connection>;
+    using ConnectionPtr = std::shared_ptr<Connection>;
 
     Manager(UTILS::ThreadPool& pool);
     Manager(const Manager&) = delete;
@@ -67,6 +67,7 @@ struct Manager
 
     void handleCancelledConnections();
     void removeConnection(CURL* easy);
+    void removeConnection(std::shared_ptr<Connection> conn);
     void removeConnection(Connection* conn);
 
     void handleRequest(Method method, ConnectionPtr connection);
@@ -78,7 +79,7 @@ struct Manager
     UTILS::ThreadPool::Strand strand;
     UTILS::ThreadPool::Timer timer;
 
-    std::vector<Connection*> current_connections;
+    std::vector<std::shared_ptr<Connection>> current_connections;
 };
 } // namespace detail
 } // namespace client
