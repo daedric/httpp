@@ -62,8 +62,8 @@ struct Manager
                        void* socket_private);
 
     void checkHandles();
-    void performOp(Connection* connection, int action);
-    void poll(Connection* connection, int action);
+    void performOp(std::shared_ptr<Connection> connection, int action);
+    void poll(std::shared_ptr<Connection> connection, int action);
 
     void handleCancelledConnections();
     void removeConnection(CURL* easy);

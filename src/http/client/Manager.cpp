@@ -141,7 +141,7 @@ int Manager::sock_cb(CURL* easy,
 
     connection->setSocket(s);
     connection->poll_action = what;
-    manager->poll(connection, what);
+    manager->poll(connection->shared_from_this(), what);
     return 0;
 }
 
@@ -219,7 +219,7 @@ void Manager::checkHandles()
     }
 }
 
-void Manager::performOp(Connection* connection, int action)
+void Manager::performOp(std::shared_ptr<Connection> connection, int action)
 {
     int still_running = 0;
 
@@ -256,7 +256,7 @@ void Manager::performOp(Connection* connection, int action)
     }
 }
 
-void Manager::poll(Connection* connection, int action)
+void Manager::poll(std::shared_ptr<Connection> connection, int action)
 {
     connection->is_polling = true;
 
