@@ -80,6 +80,8 @@ void parseCurlResponseHeader(const std::vector<char>& headers, Response& respons
             throw std::runtime_error("Invalid Header, expect \\r\\n at "
                                      "the end of an header");
         }
+        ++it;
+        ++it;
     }
 }
 

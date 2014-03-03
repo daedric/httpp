@@ -34,6 +34,8 @@ void handler(Connection* connection, Request&& request)
         .setCode(HTTP::HttpCode::NoContent)
         .setBody("Ok")
         .addHeader("hello", "world")
+        .addHeader("testy", "lol")
+        .addHeader("coucou", "salut")
         .connectionShouldBeClosed(true);
     connection->sendResponse();
 }
@@ -51,10 +53,13 @@ BOOST_AUTO_TEST_CASE(send_and_parse_header)
     request
         .url("http://localhost:8080")
         .addHeader("test", "toto")
-        .addHeader("titi", ":lol:");
+        .addHeader("titi", ":lol:")
+        .followRedirect(true);
 
     auto response = client.get(std::move(request));
     auto headers = response.getSortedHeaders();
     BOOST_CHECK_EQUAL(headers["hello"], "world");
+    BOOST_CHECK_EQUAL(headers["testy"], "lol");
+    BOOST_CHECK_EQUAL(headers["coucou"], "salut");
 }
 
