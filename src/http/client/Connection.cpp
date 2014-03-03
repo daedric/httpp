@@ -24,6 +24,7 @@
 #include "httpp/http/Protocol.hpp"
 #include "httpp/http/client/Request.hpp"
 #include "httpp/http/client/Response.hpp"
+#include "httpp/utils/Exception.hpp"
 
 namespace HTTPP {
 namespace HTTP {
@@ -328,6 +329,8 @@ void Connection::buildResponse(CURLcode code)
     {
         BOOST_LOG_TRIVIAL(debug)
             << "Operation cancelled detected, skip response building";
+
+        complete(std::make_exception_ptr(HTTPP::UTILS::OperationAborted()));
         delete this;
         return;
     }

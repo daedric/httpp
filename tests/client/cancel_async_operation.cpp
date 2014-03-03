@@ -39,9 +39,11 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
         .joinUrlPath("test")
         .joinUrlPath("kiki", true);
 
-    auto handler = client.async_get(std::move(request),
-                                    [](HttpClient::Future&&)
-                                    { BOOST_CHECK(false); });
+    auto handler = client.async_get(
+        std::move(request),
+        [](HttpClient::Future&& fut)
+        { BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted); });
+
     std::this_thread::sleep_for(std::chrono::seconds(1));
     handler.cancelOperation();
     BOOST_LOG_TRIVIAL(error) << "operation cancelled";

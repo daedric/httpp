@@ -18,6 +18,7 @@
 # include <boost/thread/future.hpp>
 # include <boost/asio/io_service.hpp>
 
+# include "utils/Exception.hpp"
 # include "utils/ThreadPool.hpp"
 # include "http/Protocol.hpp"
 # include "http/client/Request.hpp"
