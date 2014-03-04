@@ -115,6 +115,7 @@ void Connection::init(
     completion_handler = CompletionHandler();
     response = Response();
     is_polling = false;
+    is_canceled = false;
     poll_action = 0;
 }
 
@@ -386,6 +387,13 @@ void Connection::buildResponse(CURLcode code)
 
 void Connection::complete(std::exception_ptr ex)
 {
+    if (result_notified)
+    {
+        BOOST_LOG_TRIVIAL(error)
+            << "Response already notified, cancel notification";
+        return;
+    }
+
     result_notified = true;
 
     if (ex)

@@ -57,8 +57,13 @@ HttpClient::handle_request(HTTP::Method method,
     if (request.connection_)
     {
         connection = std::move(request.connection_);
+        if (connection.use_count() != 1)
+        {
+            connection.reset(); // avoid any problem
+        }
     }
-    else
+
+    if (!connection)
     {
         connection = Connection::createConnection(service_);
     }
