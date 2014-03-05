@@ -96,6 +96,8 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
                 BOOST_LOG_TRIVIAL(error)
                     << "Error during accept: " << error.message();
             }
+
+            delete connection;
         }
         else
         {
@@ -106,6 +108,10 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
         }
 
         start_accept(acceptor);
+    }
+    else
+    {
+        delete connection;
     }
 }
 
