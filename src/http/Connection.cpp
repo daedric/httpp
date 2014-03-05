@@ -64,6 +64,7 @@ void Connection::start()
 {
     size_ = 0;
     buffer_.resize(BUF_SIZE);
+    response_ = Response();
     read_request();
 }
 
