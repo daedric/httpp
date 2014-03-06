@@ -315,11 +315,16 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                     {
                         conn->configureRequest(method);
                     }
-                    catch (...)
+                    catch (const std::exception& exc)
                     {
+                        BOOST_LOG_TRIVIAL(error)
+                            << "Error when configuring the request: "
+                            << exc.what();
                         conn->complete(std::current_exception());
                         return;
                     }
+
+                    current_connections.emplace_back(conn);
 
                     auto rc = curl_multi_add_handle(handler, conn->handle);
                     if (rc != CURLM_OK)
@@ -327,12 +332,12 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                         std::string message = curl_multi_strerror(rc);
                         BOOST_LOG_TRIVIAL(error)
                             << "Error scheduling a new request: " << message;
+                        removeConnection(conn);
                         conn->complete(std::make_exception_ptr(
                             std::runtime_error(message)));
                         return;
                     }
 
-                    current_connections.emplace_back(conn);
                 });
 }
 

@@ -377,8 +377,10 @@ void Connection::buildResponse(CURLcode code)
         parseCurlResponseHeader(header, response);
         complete();
     }
-    catch (...)
+    catch (const std::exception& exc)
     {
+        BOOST_LOG_TRIVIAL(error)
+            << "Error when building the response: " << exc.what();
         complete(std::current_exception());
         return;
     }
@@ -387,7 +389,8 @@ void Connection::buildResponse(CURLcode code)
 
 void Connection::complete(std::exception_ptr ex)
 {
-    if (result_notified)
+    bool expected = false;
+    if (!result_notified.compare_exchange_strong(expected, true))
     {
         BOOST_LOG_TRIVIAL(error)
             << "Response already notified, cancel notification";
