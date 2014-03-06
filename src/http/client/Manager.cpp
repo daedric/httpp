@@ -126,13 +126,15 @@ int Manager::sock_cb(CURL* easy,
 {
     Manager* manager = (Manager*)multi_private;
 
+    Connection* conn;
+    auto rc = curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
+    auto connection = conn->shared_from_this();
+
     if (what == CURL_POLL_REMOVE)
     {
         return 0;
     }
 
-    Connection* connection;
-    auto rc = curl_easy_getinfo(easy, CURLINFO_PRIVATE, &connection);
     if (rc != CURLE_OK)
     {
         throw std::runtime_error("Cannot get private info:" +
@@ -141,24 +143,34 @@ int Manager::sock_cb(CURL* easy,
 
     connection->setSocket(s);
     connection->poll_action = what;
-    manager->poll(connection->shared_from_this(), what);
+    manager->poll(std::move(connection), what);
     return 0;
 }
 
-void Manager::removeConnection(std::shared_ptr<Connection> conn)
+void Manager::removeHandle(CURL* easy)
 {
-    auto rc = curl_multi_remove_handle(handler, conn->handle);
+    auto rc = curl_multi_remove_handle(handler, easy);
 
     if (rc != CURLM_OK)
     {
         BOOST_LOG_TRIVIAL(error)
             << "Cannot unregister easy handle: " << curl_multi_strerror(rc);
     }
+}
 
-    current_connections.erase(std::find(std::begin(current_connections),
-                                        std::end(current_connections),
-                                        conn),
-                              std::end(current_connections));
+void Manager::removeConnection(std::shared_ptr<Connection> conn)
+{
+    removeHandle(conn->handle);
+
+    auto it = current_connections.find(conn);
+    if (it == std::end(current_connections))
+    {
+        BOOST_LOG_TRIVIAL(error) << "Cannot find connection: " << conn
+                                 << " to delete";
+        return;
+    }
+
+    current_connections.erase(it);
 }
 
 void Manager::removeConnection(Connection* conn)
@@ -178,16 +190,16 @@ void Manager::handleCancelledConnections()
     decltype(current_connections) copy;
     copy.swap(current_connections);
 
-    for (auto conn : copy)
+    for (auto& conn : copy)
     {
         if (conn->is_canceled)
         {
             BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
-            removeConnection(conn);
+            removeHandle(conn->handle);
         }
         else
         {
-            current_connections.emplace_back(conn);
+            current_connections.insert(std::move(conn));
         }
     }
 }
@@ -324,7 +336,17 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                         return;
                     }
 
-                    current_connections.emplace_back(conn);
+                    auto pair = current_connections.insert(conn);
+
+                    if (!pair.second)
+                    {
+                        BOOST_LOG_TRIVIAL(error)
+                            << "Connection already present: " << conn;
+                        conn->complete(std::make_exception_ptr(std::runtime_error(
+                            "Cannot schedule an operation for an already "
+                            "managed connection")));
+                        return;
+                    }
 
                     auto rc = curl_multi_add_handle(handler, conn->handle);
                     if (rc != CURLM_OK)

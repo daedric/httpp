@@ -56,7 +56,8 @@ Connection::~Connection()
 
     if (!is_canceled && !result_notified)
     {
-        BOOST_LOG_TRIVIAL(error) << "Destroy a not completed connection";
+        BOOST_LOG_TRIVIAL(error)
+            << "Destroy a not completed connection: " << this;
         complete(std::make_exception_ptr(
             std::runtime_error("Destroy a non completed connection")));
     }
@@ -67,11 +68,8 @@ Connection::~Connection()
     }
 }
 
-void Connection::init(
-    std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& sockets)
-
+void Connection::init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& sockets)
 {
-
     if (!result_notified)
     {
         throw std::runtime_error("Recycle a not completed connection");

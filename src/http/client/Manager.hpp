@@ -15,6 +15,7 @@
 # include <memory>
 # include <stdexcept>
 # include <map>
+# include <set>
 
 # include <boost/log/trivial.hpp>
 # include <boost/asio.hpp>
@@ -66,6 +67,7 @@ struct Manager
     void poll(std::shared_ptr<Connection> connection, int action);
 
     void handleCancelledConnections();
+    void removeHandle(CURL* easy);
     void removeConnection(CURL* easy);
     void removeConnection(std::shared_ptr<Connection> conn);
     void removeConnection(Connection* conn);
@@ -79,7 +81,7 @@ struct Manager
     UTILS::ThreadPool::Strand strand;
     UTILS::ThreadPool::Timer timer;
 
-    std::vector<std::shared_ptr<Connection>> current_connections;
+    std::set<std::shared_ptr<Connection>> current_connections;
 };
 } // namespace detail
 } // namespace client
