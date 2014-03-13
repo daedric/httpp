@@ -84,7 +84,6 @@ void ThreadPool::start(ThreadInit fct)
 
 void ThreadPool::run(ThreadInit fct)
 {
-    ++running_threads_;
     BOOST_LOG_TRIVIAL(debug) << name_ << "start thread: #"
                              << std::this_thread::get_id();
     if (fct)
@@ -96,6 +95,7 @@ void ThreadPool::run(ThreadInit fct)
 
     BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
                              << "] call run()";
+    ++running_threads_;
     this->service_->run();
     BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
                              << "] is stopping";
