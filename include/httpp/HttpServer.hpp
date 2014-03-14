@@ -74,6 +74,8 @@ private:
     bool running_ = false;
     boost::asio::io_service service_;
     UTILS::ThreadPool pool_;
+    std::atomic_int running_acceptors_ = { 0 };
+    std::atomic_int connection_count_ = { 0 };
     std::vector<AcceptorPtr> acceptors_;
     SinkCb sink_;
 

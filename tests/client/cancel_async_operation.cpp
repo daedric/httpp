@@ -20,8 +20,11 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-void handler(Connection*, Request&&)
+
+static Connection* gconn = nullptr;
+void handler(Connection* connection, Request&&)
 {
+    gconn = connection;
 }
 
 BOOST_AUTO_TEST_CASE(cancel_async_operation)
@@ -46,6 +49,7 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     handler.cancelOperation();
+    Connection::release(gconn);
     BOOST_LOG_TRIVIAL(error) << "operation cancelled";
 }
 

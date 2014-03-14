@@ -7,3 +7,4 @@
 #
 
 ADD_HTTPP_TEST(server body)
+ADD_HTTPP_TEST(server start_stop_server)

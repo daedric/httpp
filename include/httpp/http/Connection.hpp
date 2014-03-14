@@ -11,6 +11,8 @@
 #ifndef _HTTPP_HTPP_CONNECTION_HPP_
 # define _HTTPP_HTPP_CONNECTION_HPP_
 
+# include <atomic>
+# include <mutex>
 # include <string>
 # include <functional>
 # include <boost/asio.hpp>
@@ -78,6 +80,7 @@ public:
         auto size_to_read = std::min(BUF_SIZE, body_size);
 
         buffer_.resize(size_to_read);
+        std::lock_guard<std::mutex> lock(mutex_);
         socket_.async_read_some(
             boost::asio::buffer(buffer_),
             [size_to_read, callable, this](const boost::system::error_code& ec,
@@ -90,6 +93,13 @@ public:
                     BOOST_LOG_TRIVIAL(error)
                         << "EOF detected while reading the body";
                     callable(boost::asio::error::eof, nullptr, 0);
+                    return;
+                }
+
+                if (!size && ec)
+                {
+                    disown();
+                    callable(ec, nullptr, 0);
                     return;
                 }
 
@@ -113,6 +123,11 @@ public:
     void sendContinue(Callback&& cb);
 private:
     void start();
+
+    void disown() noexcept;
+    bool shouldBeDeleted() const noexcept;
+    void markToBeDeleted() noexcept;
+
     void cancel() noexcept;
     void close() noexcept;
 
@@ -123,9 +138,13 @@ private:
 
 private:
     HTTPP::HttpServer& handler_;
+    std::atomic_bool is_owned_ = { true };
+    std::atomic_bool should_be_deleted_ = { false };
     UTILS::ThreadPool& pool_;
     std::vector<char> buffer_;
     size_t size_ = 0;
+
+    std::mutex mutex_;
     boost::asio::ip::tcp::socket socket_;
     Response response_;
 };

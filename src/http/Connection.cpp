@@ -39,9 +39,13 @@ Connection::~Connection()
     BOOST_LOG_TRIVIAL(debug) << "Disconnect client";
     cancel();
     close();
-    // always ensure that the manager is not tracking the connection anymore,
-    // this is a required in case of one delete or call release on a connection.
-    handler_.destroy(this, false);
+
+    if (is_owned_)
+    {
+        BOOST_LOG_TRIVIAL(error) << "A connection is destroyed manually, this "
+                                    "should always be done by the HttpServer";
+        handler_.destroy(this, false);
+    }
 }
 
 void Connection::release(Connection* connection)
@@ -55,6 +59,32 @@ void Connection::cancel() noexcept
 {
     boost::system::error_code ec;
     socket_.cancel(ec);
+}
+
+void Connection::disown() noexcept
+{
+    bool expected = true;
+    if (!is_owned_.compare_exchange_strong(expected, false))
+    {
+        BOOST_LOG_TRIVIAL(warning) << "Disown a connection already disowned";
+    }
+}
+
+bool Connection::shouldBeDeleted() const noexcept
+{
+    return should_be_deleted_;
+}
+
+void Connection::markToBeDeleted() noexcept
+{
+    bool expected = false;
+    if (should_be_deleted_.compare_exchange_strong(expected, true))
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Connection marked to be deleted: " << this;
+        std::lock_guard<std::mutex> lock(mutex_);
+        cancel();
+        close();
+    }
 }
 
 void Connection::close() noexcept
@@ -135,33 +165,30 @@ void Connection::read_request()
             {
                 if (ec)
                 {
-                    if (ec != boost::asio::error::operation_aborted)
-                    {
-                        handler_.connection_error(this, ec);
-                    }
+                    handler_.connection_error(this, ec);
                     return ;
                 }
 
                 this->size_ += size;
                 read_request();
-            }
-        );
+            });
     }
 }
 
 void Connection::sendResponse(Callback&& cb)
 {
+    if (shouldBeDeleted())
+    {
+        handler_.destroy(this);
+        return;
+    }
+
     response_.sendResponse(socket_,
                            [cb, this](boost::system::error_code const& ec, size_t)
                            {
         if (ec)
         {
-            if (ec != boost::asio::error::operation_aborted)
-            {
-                handler_.connection_error(this, ec);
-                return;
-            }
-
+            handler_.connection_error(this, ec);
             return;
         }
 
@@ -171,6 +198,7 @@ void Connection::sendResponse(Callback&& cb)
 
 void Connection::sendResponse()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     sendResponse([this] { recycle(); });
 }
 
@@ -180,15 +208,16 @@ void Connection::sendContinue(Callback&& cb)
         .setBody("")
         .setCode(HttpCode::Continue);
 
+    std::lock_guard<std::mutex> lock(mutex_);
     sendResponse(std::move(cb));
 }
 
 void Connection::recycle()
 {
-    if (response_.connectionShouldBeClosed())
+    if (shouldBeDeleted() || response_.connectionShouldBeClosed())
     {
-        pool_.post([this]
-                   { handler_.destroy(this); });
+        handler_.destroy(this);
+        return;
     }
     else
     {
