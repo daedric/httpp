@@ -81,16 +81,15 @@ void HttpServer::bind(const std::string& address, const std::string& port)
     acceptors_.push_back(acc);
     start_accept(acc);
 }
+
 void HttpServer::mark(ConnectionPtr connection)
 {
-    BOOST_LOG_TRIVIAL(debug) << "Mark connection: " << connection;
     std::lock_guard<std::mutex> lock(connections_mutex_);
     connections_.emplace_back(connection);
 }
 
 void HttpServer::destroy(ConnectionPtr connection, bool release)
 {
-    BOOST_LOG_TRIVIAL(debug) << "Destroy connection: " << connection;
     {
         std::lock_guard<std::mutex> lock(connections_mutex_);
         auto it = std::find_if(std::begin(connections_),
