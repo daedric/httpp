@@ -44,6 +44,9 @@ public:
         sink_ = cb;
     }
 
+    int getNbConnection() const noexcept
+    { return connection_count_; }
+
     void start(ThreadInit fct = ThreadInit());
     void stop();
 
