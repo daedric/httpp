@@ -99,6 +99,7 @@ void ThreadPool::run(ThreadInit fct)
     this->service_->run();
     BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
                              << "] is stopping";
+    --running_threads_;
 }
 
 void ThreadPool::stop()
