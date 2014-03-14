@@ -51,6 +51,7 @@ void HttpServer::stop()
     for (auto acc : acceptors_)
     {
         boost::system::error_code ec;
+        acc->cancel(ec);
         acc->close(ec);
     }
 
@@ -87,31 +88,28 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
                                  AcceptorPtr acceptor,
                                  ConnectionPtr connection)
 {
+    if (error)
+    {
+        if (error != boost::asio::error::operation_aborted)
+        {
+            BOOST_LOG_TRIVIAL(error)
+                << "Error during accept: " << error.message();
+        }
+
+        delete connection;
+    }
+
     if (running_)
     {
-        if (error)
-        {
-            if (error != boost::asio::error::operation_aborted)
-            {
-                BOOST_LOG_TRIVIAL(error)
-                    << "Error during accept: " << error.message();
-            }
+        BOOST_LOG_TRIVIAL(debug)
+            << "New connection accepted from: " << connection->source();
 
-            delete connection;
-        }
-        else
-        {
-            BOOST_LOG_TRIVIAL(debug) << "New connection accepted from: "
-                << connection->source();
-
-            connection->start();
-        }
-
+        connection->start();
         start_accept(acceptor);
     }
     else
     {
-        delete connection;
+        HTTP::Connection::disconnect(connection);
     }
 }
 
