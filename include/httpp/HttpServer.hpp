@@ -14,6 +14,7 @@
 # include <string>
 # include <vector>
 # include <memory>
+# include <mutex>
 # include <boost/asio.hpp>
 
 # include "http/Connection.hpp"
@@ -58,6 +59,10 @@ private:
 
 private: // called by Connection
     friend class ::HTTPP::HTTP::Connection;
+
+    void mark(ConnectionPtr connection);
+    void destroy(ConnectionPtr connection, bool release = true);
+
     void connection_error(ConnectionPtr connection,
                           const boost::system::error_code& err);
 
@@ -71,6 +76,9 @@ private:
     UTILS::ThreadPool pool_;
     std::vector<AcceptorPtr> acceptors_;
     SinkCb sink_;
+
+    std::mutex connections_mutex_;
+    std::vector<ConnectionPtr> connections_;
 };
 
 } // namespace HTTPP

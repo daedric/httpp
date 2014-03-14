@@ -44,10 +44,7 @@ public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
 
-    static void disconnect(Connection* connection)
-    {
-        delete connection;
-    }
+    static void release(Connection* connection);
 
     std::string source() const;
 
@@ -114,9 +111,11 @@ public:
 
     void sendResponse();
     void sendContinue(Callback&& cb);
-
 private:
     void start();
+    void cancel() noexcept;
+    void close() noexcept;
+
     void read_request();
     void recycle();
 

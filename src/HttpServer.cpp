@@ -56,6 +56,20 @@ void HttpServer::stop()
     }
 
     acceptors_.clear();
+
+    std::vector<ConnectionPtr> connections_tmp;
+
+    {
+        // lock because current connection could be destroyed
+        std::lock_guard<std::mutex> lock(connections_mutex_);
+        connections_tmp = connections_;
+    }
+
+    for (auto connection : connections_tmp)
+    {
+        destroy(connection);
+    }
+
     pool_.stop();
 }
 
@@ -67,13 +81,43 @@ void HttpServer::bind(const std::string& address, const std::string& port)
     acceptors_.push_back(acc);
     start_accept(acc);
 }
+void HttpServer::mark(ConnectionPtr connection)
+{
+    BOOST_LOG_TRIVIAL(debug) << "Mark connection: " << connection;
+    std::lock_guard<std::mutex> lock(connections_mutex_);
+    connections_.emplace_back(connection);
+}
+
+void HttpServer::destroy(ConnectionPtr connection, bool release)
+{
+    BOOST_LOG_TRIVIAL(debug) << "Destroy connection: " << connection;
+    {
+        std::lock_guard<std::mutex> lock(connections_mutex_);
+        auto it = std::find_if(std::begin(connections_),
+                               std::end(connections_),
+                               [&](ConnectionPtr conn)
+                               { return connection == conn; });
+        if (it == std::end(connections_))
+        {
+            return;
+        }
+        else
+        {
+            connections_.erase(it);
+        }
+    }
+    if (release)
+    {
+        HTTP::Connection::release(connection);
+    }
+}
 
 void HttpServer::start_accept(AcceptorPtr acceptor)
 {
     if (running_)
     {
         auto connection = new HTTP::Connection(*this, service_, pool_);
-        //std::make_shared<HTTP::Connection>(*this, service_, pool_);
+        mark(connection);
 
         acceptor->async_accept(connection->socket_,
                                std::bind(&HttpServer::accept_callback,
@@ -91,7 +135,7 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
 
     if (error)
     {
-        HTTP::Connection::disconnect(connection);
+        destroy(connection);
 
         if (error == boost::asio::error::operation_aborted)
         {
@@ -115,7 +159,7 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
         }
         else
         {
-            HTTP::Connection::disconnect(connection);
+            destroy(connection);
         }
     }
 
@@ -192,8 +236,8 @@ void HttpServer::connection_error(ConnectionPtr connection,
             << "Got an error from a Connection: " << ec.message();
     }
 
-    pool_.post([connection]
-               { HTTP::Connection::disconnect(connection); });
+    pool_.post([this, connection]
+               { destroy(connection); });
 }
 
 void HttpServer::connection_recycle(ConnectionPtr connection)

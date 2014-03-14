@@ -37,6 +37,28 @@ Connection::Connection(HTTPP::HttpServer& handler,
 Connection::~Connection()
 {
     BOOST_LOG_TRIVIAL(debug) << "Disconnect client";
+    cancel();
+    close();
+    // always ensure that the manager is not tracking the connection anymore,
+    // this is a required in case of one delete or call release on a connection.
+    handler_.destroy(this, false);
+}
+
+void Connection::release(Connection* connection)
+{
+    connection->cancel();
+    connection->close();
+    delete connection;
+}
+
+void Connection::cancel() noexcept
+{
+    boost::system::error_code ec;
+    socket_.cancel(ec);
+}
+
+void Connection::close() noexcept
+{
     boost::system::error_code ec;
     socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
     socket_.close(ec);
@@ -140,13 +162,6 @@ void Connection::sendResponse(Callback&& cb)
                 return;
             }
 
-            pool_.post([this]
-                       {
-                           BOOST_LOG_TRIVIAL(debug)
-                               << "Disconnect client after an error "
-                                  "occured";
-                           disconnect(this);
-                       });
             return;
         }
 
@@ -173,7 +188,7 @@ void Connection::recycle()
     if (response_.connectionShouldBeClosed())
     {
         pool_.post([this]
-                   { disconnect(this); });
+                   { handler_.destroy(this); });
     }
     else
     {
