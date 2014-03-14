@@ -88,29 +88,38 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
                                  AcceptorPtr acceptor,
                                  ConnectionPtr connection)
 {
+
     if (error)
     {
-        if (error != boost::asio::error::operation_aborted)
+        HTTP::Connection::disconnect(connection);
+
+        if (error == boost::asio::error::operation_aborted)
+        {
+            BOOST_LOG_TRIVIAL(info) << "Cancel listener";
+        }
+        else
         {
             BOOST_LOG_TRIVIAL(error)
                 << "Error during accept: " << error.message();
         }
 
-        delete connection;
-    }
-
-    if (running_)
-    {
-        BOOST_LOG_TRIVIAL(debug)
-            << "New connection accepted from: " << connection->source();
-
-        connection->start();
-        start_accept(acceptor);
+        return;
     }
     else
     {
-        HTTP::Connection::disconnect(connection);
+        if (running_)
+        {
+            BOOST_LOG_TRIVIAL(debug)
+                << "New connection accepted from: " << connection->source();
+            connection->start();
+        }
+        else
+        {
+            HTTP::Connection::disconnect(connection);
+        }
     }
+
+    start_accept(acceptor);
 }
 
 HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
