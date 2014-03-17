@@ -170,12 +170,12 @@ SET(CONF_INCLUDE_DIRS "\${HTTPP_CMAKE_DIR}/${REL_INCLUDE_DIR}")
 CONFIGURE_FILE("HTTPPConfig.cmake.in"
                "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HTTPPConfig.cmake" @ONLY)
 
-install(FILES
+INSTALL(FILES
         "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HTTPPConfig.cmake"
         "${PROJECT_BINARY_DIR}/HTTPPConfigVersion.cmake"
         DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
 
-install(EXPORT httpp_target
+INSTALL(EXPORT httpp_target
         DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
 
 # CPack stuff ##################################################################
