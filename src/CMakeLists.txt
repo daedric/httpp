@@ -25,10 +25,14 @@ SET(SOURCES
     http/client/Request.cpp
 
     utils/ThreadPool.cpp
+
+    ${VERSION_TO_GENERATE}
 )
 
-
 ADD_LIBRARY(httpp ${SOURCES})
+
+SET_TARGET_PROPERTIES(httpp PROPERTIES
+                      PUBLIC_HEADER "${VERSION_GENERATED}")
 
 IF (${BUILD_SHARED_LIBS})
 
@@ -45,13 +49,12 @@ IF (${BUILD_SHARED_LIBS})
     ENDIF()
 
     TARGET_LINK_LIBRARIES(httpp ${DEFAULT_LIBRARIES})
-    INSTALL(TARGETS httpp
-        LIBRARY DESTINATION
-        lib COMPONENT library)
-ELSE()
-    INSTALL(TARGETS httpp
-        ARCHIVE DESTINATION
-        lib COMPONENT library)
 ENDIF()
+
+INSTALL(TARGETS httpp
+        EXPORT httpp_target
+        PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}/httpp" COMPONENT dev
+        ARCHIVE DESTINATION ${INSTALL_LIB_DIR} COMPONENT library
+        LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT library)
 
 

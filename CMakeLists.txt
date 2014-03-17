@@ -20,14 +20,34 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 
+set(INSTALL_LIB_DIR     lib     CACHE PATH "Installation directory for libraries")
+set(INSTALL_BIN_DIR     bin     CACHE PATH "Installation directory for executables")
+set(INSTALL_INCLUDE_DIR include CACHE PATH "Installation directory for header files")
+
+IF(WIN32 AND NOT CYGWIN)
+    SET(_CMAKE_DIR "CMake")
+ELSE()
+    SET(_CMAKE_DIR "lib/CMake/HTTPP")
+ENDIF()
+
+set(INSTALL_CMAKE_DIR "${_CMAKE_DIR}" CACHE PATH "Installation directory for CMake files")
+
+FOREACH(p LIB BIN INCLUDE CMAKE)
+    SET(var INSTALL_${p}_DIR)
+    IF(NOT IS_ABSOLUTE "${${var}}")
+        SET(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+    ENDIF()
+ENDFOREACH()
+
+
 OPTION(BUILD_TESTS "Should the tests be built")
 OPTION(BUILD_EXAMPLES "Should the examples be built")
 OPTION(BUILD_SHARED_LIBS "Should the shared lib be built")
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
-SET(HTTPP_VERSION_MINOR "2")
-SET(HTTPP_VERSION_PATCH "4")
+SET(HTTPP_VERSION_MINOR "3")
+SET(HTTPP_VERSION_PATCH "0")
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${HTTPP_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${HTTPP_VERSION_MINOR})
@@ -118,15 +138,47 @@ IF (${BUILD_TESTS})
     ADD_SUBDIRECTORY(tests/)
 ENDIF()
 
+
+# CMake export targets
+
+EXPORT(TARGETS httpp
+       FILE "${PROJECT_BINARY_DIR}/httpp_target.cmake")
+
+EXPORT(PACKAGE HTTPP)
+
+include(CMakePackageConfigHelpers)
+WRITE_BASIC_PACKAGE_VERSION_FILE("${PROJECT_BINARY_DIR}/HTTPPConfigVersion.cmake"
+                                 VERSION ${HTTPP_VERSION}
+                                 COMPATIBILITY ExactVersion)
+
+FILE(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
+SET(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${VERSION_GENERATED_DIR}")
+CONFIGURE_FILE("HTTPPConfig.cmake.in"
+               "${PROJECT_BINARY_DIR}/HTTPConfig.cmake" @ONLY)
+
+
+SET(CONF_INCLUDE_DIRS "\${HTTPP_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+CONFIGURE_FILE("HTTPPConfig.cmake.in"
+               "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HTTPPConfig.cmake" @ONLY)
+
+install(FILES
+        "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HTTPPConfig.cmake"
+        "${PROJECT_BINARY_DIR}/HTTPPConfigVersion.cmake"
+        DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+
+install(EXPORT httpp_target
+        DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+
 # CPack stuff ##################################################################
 
+SET(CPACK_SET_DESTDIR "ON")
 SET(PACKAGE_NAME "HTTPP")
 SET(PACKAGE_FILE_NAME "${PACKAGE_NAME}")
 
 SET(CPACK_PACKAGE_NAME "${PACKAGE_FILE_NAME}")
 SET(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME}")
 SET(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-dev")
-SET(CPACK_COMPONENTS_ALL binaries examples tests)
+SET(CPACK_COMPONENTS_ALL binaries examples dev)
 SET(CPACK_PACKAGE_VENDOR "Thomas Sanchez")
 SET(CPACK_PACKAGE_CONTACT "Thomas Sanchez <thomas.sanchz@gmail.com>")
 SET(LIB_INSTALL_DIR, ${CMAKE_INSTALL_PREFIX})

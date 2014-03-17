@@ -1,0 +1,21 @@
+# Part of HTTPP.
+#
+# Distributed under the 3-clause BSD licence (See LICENCE.TXT file at the
+# project root).
+#
+# Copyright (c) 2014 Thomas Sanchez.  All rights reserved.
+#
+
+# - Config file for the HTTPP package
+# It defines the following variables
+#  HTTPP_INCLUDE_DIRS - include directories for HTTPP
+#  HTTPP_LIBRARIES    - libraries to link against
+
+GET_FILENAME_COMPONENT(HTTPP_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+SET(HTTPP_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+
+IF(NOT TARGET httpp)
+  INCLUDE("${HTTPP_CMAKE_DIR}/httpp_target.cmake")
+ENDIF()
+
+SET(HTTPP_LIBRARIES httpp)
