@@ -146,10 +146,19 @@ EXPORT(TARGETS httpp
 
 EXPORT(PACKAGE HTTPP)
 
-include(CMakePackageConfigHelpers)
-WRITE_BASIC_PACKAGE_VERSION_FILE("${PROJECT_BINARY_DIR}/HTTPPConfigVersion.cmake"
-                                 VERSION ${HTTPP_VERSION}
-                                 COMPATIBILITY ExactVersion)
+if (${CMAKE_MAJOR_VERSION} EQUAL 2
+        AND ${CMAKE_MINOR_VERSION} EQUAL 8
+        AND ${CMAKE_PATCH_VERSION} LESS 8)
+
+    FILE(COPY "contrib/HTTPPConfigVersion.cmake"
+         DESTINATION ${PROJECT_BINARY_DIR})
+
+ELSE()
+    INCLUDE(CMakePackageConfigHelpers)
+    WRITE_BASIC_PACKAGE_VERSION_FILE("${PROJECT_BINARY_DIR}/HTTPPConfigVersion.cmake"
+                                     VERSION ${HTTPP_VERSION}
+                                     COMPATIBILITY ExactVersion)
+ENDIF()
 
 FILE(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
 SET(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${VERSION_GENERATED_DIR}")
