@@ -42,11 +42,6 @@ public:
     };
 
 public:
-    Request();
-    Request(Request&&) noexcept;
-    Request& operator=(Request&&) noexcept;
-    ~Request();
-
     Request& url(const std::string& url);
 
     // unsafe, catenate current url + path
@@ -64,7 +59,6 @@ public:
     void clear();
 
 private:
-    std::shared_ptr<detail::Connection> connection_;
     std::string url_;
     bool follow_redirect_ = false;
 

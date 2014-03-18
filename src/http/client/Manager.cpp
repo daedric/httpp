@@ -41,11 +41,11 @@ namespace client
 namespace detail
 {
 
-Manager::Manager(UTILS::ThreadPool& pool)
+Manager::Manager(UTILS::ThreadPool& io, UTILS::ThreadPool& dispatch)
 : handler(nullptr)
-, pool(pool)
-, strand(pool.getService())
-, timer(pool.getService())
+, io(io)
+, dispatch(dispatch)
+, timer(io.getService())
 {
     std::call_once(curl_init_flag, &init_curl);
     handler = curl_multi_init();
@@ -62,17 +62,43 @@ Manager::Manager(UTILS::ThreadPool& pool)
 
 Manager::~Manager()
 {
-    auto conns = std::move(current_connections);
-    for (auto conn : conns)
-    {
-        removeConnection(conn);
-    }
+    BOOST_LOG_TRIVIAL(debug) << "Manager deleted: " << this;
+
+    running = false;
+
+    boost::system::error_code ec;
+    timer.cancel(ec);
+
+    std::promise<void> promise;
+    auto future = promise.get_future();
+
+    io.post([this, &promise]
+            {
+                auto conns = current_connections;
+                for (auto& conn : conns)
+                {
+                    conn.first->cancel();
+                }
+
+                checkHandles();
+                conns.clear();
+                promise.set_value();
+            });
+
+    future.get();
 
     if (handler)
     {
         curl_multi_cleanup(handler);
+        handler = nullptr;
     }
-    timer.cancel();
+
+    if (!sockets.empty() || !current_connections.empty())
+    {
+        BOOST_LOG_TRIVIAL(error)
+            << "There are still curl socket opened: " << sockets.size() << ", "
+            << current_connections.size();
+    }
 }
 
 void Manager::timer_cb(const boost::system::error_code& error)
@@ -100,19 +126,26 @@ int Manager::curl_timer_cb(CURLM*, long timeout_ms, void* userdata)
 
     if (timeout_ms > 0)
     {
-        manager->handleCancelledConnections();
-        manager->timer.expires_from_now(boost::posix_time::millisec(timeout_ms));
-        manager->timer.async_wait(manager->strand.wrap(
-            std::bind(&Manager::timer_cb, manager, std::placeholders::_1)));
+        if (manager->running)
+        {
+            manager->timer.expires_from_now(
+                boost::posix_time::millisec(timeout_ms));
+            manager->timer.async_wait(
+                std::bind(&Manager::timer_cb, manager, std::placeholders::_1));
+        }
+        else
+        {
+            return -1;
+        }
     }
     else
     {
-        manager->timer.cancel();
-        manager->strand.post([manager]
-                             {
-                                 boost::system::error_code error; /*success*/
-                                 manager->timer_cb(error);
-                             });
+        manager->io.dispatch([manager]
+                {
+                    manager->timer.cancel();
+                    boost::system::error_code error;
+                    manager->timer_cb(error);
+                });
     }
 
     return 0;
@@ -149,6 +182,8 @@ int Manager::sock_cb(CURL* easy,
 
 void Manager::removeHandle(CURL* easy)
 {
+    BOOST_LOG_TRIVIAL(debug) << "RemoveHandle Manager: " << this
+                             << ": handle: " << easy;
     auto rc = curl_multi_remove_handle(handler, easy);
 
     if (rc != CURLM_OK)
@@ -160,54 +195,22 @@ void Manager::removeHandle(CURL* easy)
 
 void Manager::removeConnection(std::shared_ptr<Connection> conn)
 {
-    removeHandle(conn->handle);
 
     auto it = current_connections.find(conn);
     if (it == std::end(current_connections))
     {
         BOOST_LOG_TRIVIAL(error) << "Cannot find connection: " << conn
                                  << " to delete";
+        throw std::runtime_error("Cannot find connection to delete");
         return;
     }
 
+    removeHandle(conn->handle);
     current_connections.erase(it);
-}
-
-void Manager::removeConnection(Connection* conn)
-{
-    removeConnection(conn->shared_from_this());
-}
-
-void Manager::removeConnection(CURL* easy)
-{
-    Connection* conn;
-    curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
-    removeConnection(conn);
-}
-
-void Manager::handleCancelledConnections()
-{
-    decltype(current_connections) copy;
-    copy.swap(current_connections);
-
-    for (auto& conn : copy)
-    {
-        if (conn->is_canceled)
-        {
-            BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
-            removeHandle(conn->handle);
-        }
-        else
-        {
-            current_connections.insert(std::move(conn));
-        }
-    }
 }
 
 void Manager::checkHandles()
 {
-    handleCancelledConnections();
-
     CURLMsg* msg;
     int msgs_left = 0;
     while ((msg = curl_multi_info_read(handler, &msgs_left)))
@@ -224,28 +227,51 @@ void Manager::checkHandles()
             auto shared_ptr = conn->shared_from_this();
             removeConnection(shared_ptr);
 
-
-            pool.post([result, shared_ptr, easy, this]
-                      { shared_ptr->buildResponse(result); });
+            dispatch.post([result, shared_ptr, easy, this]
+                          { shared_ptr->buildResponse(result); });
         }
     }
+
+    for (auto& cancelled : cancelled_connections)
+    {
+        cancelled.first->poll_action = 0;
+        removeConnection(cancelled.first);
+        cancelled.second.set_value();
+    }
+
+    cancelled_connections.clear();
 }
 
-void Manager::performOp(std::shared_ptr<Connection> connection, int action)
+void Manager::performOp(std::shared_ptr<Connection> connection,
+                        int action,
+                        const boost::system::error_code& ec)
 {
     int still_running = 0;
 
-    connection->is_polling = false;
 
-    if (connection->is_canceled)
+    if (ec)
     {
-        BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
-        removeConnection(connection);
+        if (ec != boost::asio::error::operation_aborted)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Error on socket: " << ec.message();
+            connection->complete(std::make_exception_ptr(
+                std::runtime_error("Error on socket: " + ec.message())));
+        }
+
+        checkHandles();
         return;
     }
 
+    auto it = current_connections.find(connection);
+    if (it == std::end(current_connections))
+    {
+        return;
+    }
+
+    it->second = PerformIo;
     auto rc = curl_multi_socket_action(
         handler, connection->socket->native_handle(), action, &still_running);
+
     if (rc != CURLM_OK)
     {
         auto exc = std::make_exception_ptr(std::runtime_error(curl_multi_strerror(rc)));
@@ -261,8 +287,10 @@ void Manager::performOp(std::shared_ptr<Connection> connection, int action)
     }
     else
     {
-        if (action == connection->poll_action)
+
+        if (connection->poll_action)
         {
+            current_connections[connection] = Default;
             poll(connection, connection->poll_action);
         }
     }
@@ -270,97 +298,117 @@ void Manager::performOp(std::shared_ptr<Connection> connection, int action)
 
 void Manager::poll(std::shared_ptr<Connection> connection, int action)
 {
-    connection->is_polling = true;
+    auto it  = current_connections.find(connection);
 
-    if (connection->is_canceled)
+    if (it == std::end(current_connections))
     {
-        BOOST_LOG_TRIVIAL(debug) << "Cancelled operation detected";
-        removeConnection(connection);
+        BOOST_LOG_TRIVIAL(error)
+            << "Cannot poll an untracked connection: " << connection;
         return;
     }
 
-    boost::asio::ip::tcp::socket& tcp_socket = *connection->socket;
+    if (it->second == Default)
+    {
+        BOOST_LOG_TRIVIAL(debug) << "poll: " << connection
+                                 << " action: " << action;
 
-    if (action == CURL_POLL_IN)
-    {
-        tcp_socket.async_read_some(boost::asio::null_buffers(),
-                                   strand.wrap(std::bind(&Manager::performOp,
-                                                         this,
-                                                         connection,
-                                                         action)));
+        current_connections[connection] = Polling;
+        connection->poll(action,
+                         std::bind(&Manager::performOp,
+                                   this,
+                                   connection,
+                                   action,
+                                   std::placeholders::_1));
     }
-    else if (action == CURL_POLL_OUT)
-    {
-        tcp_socket.async_write_some(boost::asio::null_buffers(),
-                                    strand.wrap(std::bind(&Manager::performOp,
-                                                          this,
-                                                          connection,
-                                                          action)));
-    }
-    else if (action == CURL_POLL_INOUT)
-    {
-        tcp_socket.async_read_some(boost::asio::null_buffers(),
-                                   strand.wrap(std::bind(&Manager::performOp,
-                                                         this,
-                                                         connection,
-                                                         action)));
+}
 
-        tcp_socket.async_write_some(boost::asio::null_buffers(),
-                                    strand.wrap(std::bind(&Manager::performOp,
-                                                          this,
-                                                          connection,
-                                                          action)));
-    }
-    else
-    {
-        connection->complete(std::make_exception_ptr(
-            std::runtime_error("Unknow poll operation requested")));
-    }
+void Manager::cancelConnection(std::shared_ptr<Connection> connection)
+{
+    std::promise<void> promise;
+    auto future = promise.get_future();
+
+    io.dispatch([this, connection, &promise]()
+            {
+
+                auto it = current_connections.find(connection);
+
+                if (it == std::end(current_connections))
+                {
+                    promise.set_exception(std::make_exception_ptr(
+                        std::runtime_error("Connection already completed")));
+                    return;
+                }
+
+                auto current_connection_state = it->second;
+
+                if (current_connection_state == Cancelled)
+                {
+                    BOOST_LOG_TRIVIAL(warning)
+                        << "Connection already cancelled: " << connection;
+                    promise.set_value();
+                    return;
+                }
+
+                BOOST_LOG_TRIVIAL(debug)
+                    << "Change connection state from: " << current_connection_state
+                    << " to cancelled(" << Cancelled << "): " << connection;
+
+                it->second = Cancelled;
+                cancelled_connections[connection] = std::move(promise);
+
+                if (current_connection_state == Polling)
+                {
+                    BOOST_LOG_TRIVIAL(debug)
+                        << "Connection is polling, cancel operation";
+                    connection->cancelPoll();
+                }
+
+            });
+
+    future.get();
 }
 
 void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
 {
 
-    strand.post([this, method, conn]()
+    io.post([this, method, conn]()
+            {
+                try
                 {
-                    try
-                    {
-                        conn->configureRequest(method);
-                    }
-                    catch (const std::exception& exc)
-                    {
-                        BOOST_LOG_TRIVIAL(error)
-                            << "Error when configuring the request: "
-                            << exc.what();
-                        conn->complete(std::current_exception());
-                        return;
-                    }
+                    conn->configureRequest(method);
+                }
+                catch (const std::exception& exc)
+                {
+                    BOOST_LOG_TRIVIAL(error)
+                        << "Error when configuring the request: " << exc.what();
+                    conn->complete(std::current_exception());
+                    return;
+                }
 
-                    auto pair = current_connections.insert(conn);
+                auto pair = current_connections.emplace(conn, Default);
 
-                    if (!pair.second)
-                    {
-                        BOOST_LOG_TRIVIAL(error)
-                            << "Connection already present: " << conn;
-                        conn->complete(std::make_exception_ptr(std::runtime_error(
-                            "Cannot schedule an operation for an already "
-                            "managed connection")));
-                        return;
-                    }
+                if (!pair.second)
+                {
+                    BOOST_LOG_TRIVIAL(error)
+                        << "Connection already present: " << conn;
+                    conn->complete(std::make_exception_ptr(std::runtime_error(
+                        "Cannot schedule an operation for an already "
+                        "managed connection")));
+                    return;
+                }
 
-                    auto rc = curl_multi_add_handle(handler, conn->handle);
-                    if (rc != CURLM_OK)
-                    {
-                        std::string message = curl_multi_strerror(rc);
-                        BOOST_LOG_TRIVIAL(error)
-                            << "Error scheduling a new request: " << message;
-                        removeConnection(conn);
-                        conn->complete(std::make_exception_ptr(
-                            std::runtime_error(message)));
-                        return;
-                    }
-
-                });
+                auto rc = curl_multi_add_handle(handler, conn->handle);
+                if (rc != CURLM_OK)
+                {
+                    std::string message = curl_multi_strerror(rc);
+                    BOOST_LOG_TRIVIAL(error)
+                        << "Error scheduling a new request: " << message;
+                    removeConnection(conn);
+                    conn->complete(
+                        std::make_exception_ptr(std::runtime_error(message)));
+                    return;
+                }
+            });
 }
 
 } // namespace detail

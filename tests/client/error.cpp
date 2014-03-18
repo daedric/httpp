@@ -21,7 +21,7 @@ using HTTPP::HTTP::Connection;
 
 void handler(Connection* connection, Request&&)
 {
-    Connection::release(connection);
+    Connection::releaseFromHandler(connection);
 }
 
 BOOST_AUTO_TEST_CASE(wild_disconnection)

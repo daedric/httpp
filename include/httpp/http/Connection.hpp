@@ -46,8 +46,7 @@ public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
 
-    static void release(Connection* connection);
-
+    static void releaseFromHandler(Connection* connection);
     std::string source() const;
 
     Response& response()
@@ -63,6 +62,12 @@ public:
     template <typename Callable>
     void readBody(size_t body_size, Callable&& callable)
     {
+        bool expected = false;
+        if (!is_owned_.compare_exchange_strong(expected, true))
+        {
+            throw std::logic_error("Invalid connection state");
+        }
+
         if (buffer_.size())
         {
             assert(body_size >= buffer_.size());
@@ -73,6 +78,7 @@ public:
 
         if (!body_size)
         {
+            disown();
             callable(boost::asio::error::eof, nullptr, 0);
             return;
         }
@@ -114,6 +120,7 @@ public:
                 }
                 else
                 {
+                    disown();
                     callable(boost::asio::error::eof, nullptr, 0);
                 }
             });
@@ -122,6 +129,8 @@ public:
     void sendResponse();
     void sendContinue(Callback&& cb);
 private:
+    static void release(Connection* connection);
+
     void start();
 
     void disown() noexcept;

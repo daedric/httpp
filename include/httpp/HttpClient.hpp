@@ -41,9 +41,7 @@ public:
     using Future = boost::unique_future<Response>;
     using CompletionHandler = std::function<void (Future&&)>;
 
-    // AsyncHandler is garanteed to be valid until the completion handler is
-    // called.  If an async operation is rescheduled, the old AsyncHandler
-    // CANNOT be reused
+    // AsyncHandler is garanteed to be always safe to call
     class AsyncHandler
     {
         friend class HttpClient;
@@ -54,7 +52,7 @@ public:
             std::weak_ptr<HTTP::client::detail::Connection> connection_;
     };
 
-    HttpClient(size_t nb_thread = 2);
+    HttpClient(size_t nb_thread = 1);
     HttpClient(const HttpClient&) = delete;
     HttpClient& operator=(const HttpClient&) = delete;
     ~HttpClient();
@@ -82,8 +80,8 @@ private:
                    CompletionHandler handler = CompletionHandler());
 
 private:
-    boost::asio::io_service service_;
-    UTILS::ThreadPool pool_;
+    UTILS::ThreadPool pool_io_;
+    UTILS::ThreadPool pool_dispatch_;
     std::unique_ptr<HTTP::client::detail::Manager> manager;
 };
 

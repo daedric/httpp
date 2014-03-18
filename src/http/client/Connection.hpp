@@ -15,10 +15,12 @@
 # include <memory>
 # include <vector>
 # include <atomic>
+# include <mutex>
 
 # include <boost/thread/future.hpp>
 # include <boost/log/trivial.hpp>
 # include <boost/asio.hpp>
+# include <boost/log/trivial.hpp>
 
 # include "httpp/http/Protocol.hpp"
 # include "httpp/http/client/Request.hpp"
@@ -33,6 +35,8 @@ void parseCurlResponseHeader(const std::vector<char>& headers,
 
 namespace detail {
 
+struct Manager;
+
 struct Connection : public std::enable_shared_from_this<Connection>
 {
     using ConnectionPtr = std::shared_ptr<Connection>;
@@ -41,7 +45,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
     using Future = boost::unique_future<Response>;
     using CompletionHandler = std::function<void (Future&&)>;
 
-    Connection(boost::asio::io_service& service);
+    Connection(Manager& manager, boost::asio::io_service& service);
 
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
@@ -75,7 +79,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
     }
 
     void init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& sockets);
-    static ConnectionPtr createConnection(boost::asio::io_service& service);
+    static ConnectionPtr createConnection(Manager& manager, boost::asio::io_service& service);
 
     static size_t writefn(char* buffer, size_t size, size_t nmemb, void* userdata);
     static size_t writeHd(char* buffer, size_t size, size_t nmemb, void* userdata);
@@ -92,12 +96,41 @@ struct Connection : public std::enable_shared_from_this<Connection>
     void complete(std::exception_ptr ex = nullptr);
     void setSocket(curl_socket_t socket);
 
+    template <typename Cb>
+    void poll(int action, Cb cb)
+    {
+        switch (action)
+        {
+        default:
+            BOOST_LOG_TRIVIAL(error)
+                << "Unknow poll operation requested: " << action;
 
+            complete(std::make_exception_ptr(
+                std::runtime_error("Unknow poll operation requested")));
+            break;
+        case CURL_POLL_IN:
+            socket->async_read_some(boost::asio::null_buffers(), cb);
+            break;
+        case CURL_POLL_OUT:
+            socket->async_write_some(boost::asio::null_buffers(), cb);
+            break;
+        case CURL_POLL_INOUT:
+            socket->async_read_some(boost::asio::null_buffers(), cb);
+            socket->async_write_some(boost::asio::null_buffers(), cb);
+            break;
+        }
+    }
 
+    void cancelPoll()
+    {
+        socket->cancel();
+    }
+
+    Manager& handler;
 
     CURL* handle;
-    std::atomic_bool is_polling = { false };
     int poll_action = 0;
+    bool cancelled = false;
     char error_buffer[CURL_ERROR_SIZE] = { 0 };
 
     boost::asio::io_service& service;
@@ -113,9 +146,6 @@ struct Connection : public std::enable_shared_from_this<Connection>
     std::vector<char> header;
     std::vector<char> buffer;
     std::atomic_bool result_notified = { true };
-    std::atomic_bool is_canceled = { false };
-    boost::promise<void> cancel_promise;
-
     struct curl_slist* http_headers = nullptr;
 };
 

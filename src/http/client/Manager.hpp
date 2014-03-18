@@ -16,6 +16,7 @@
 # include <stdexcept>
 # include <map>
 # include <set>
+# include <future>
 
 # include <boost/log/trivial.hpp>
 # include <boost/asio.hpp>
@@ -36,7 +37,7 @@ struct Manager
     using Method = HTTPP::HTTP::Method;
     using ConnectionPtr = std::shared_ptr<Connection>;
 
-    Manager(UTILS::ThreadPool& pool);
+    Manager(UTILS::ThreadPool& io, UTILS::ThreadPool& dispatch);
     Manager(const Manager&) = delete;
     Manager& operator=(const Manager&) = delete;
     ~Manager();
@@ -63,25 +64,37 @@ struct Manager
                        void* socket_private);
 
     void checkHandles();
-    void performOp(std::shared_ptr<Connection> connection, int action);
+    void performOp(std::shared_ptr<Connection> connection,
+                   int action,
+                   const boost::system::error_code& ec);
     void poll(std::shared_ptr<Connection> connection, int action);
 
-    void handleCancelledConnections();
+    void cancelConnection(std::shared_ptr<Connection> connection);
+
     void removeHandle(CURL* easy);
-    void removeConnection(CURL* easy);
     void removeConnection(std::shared_ptr<Connection> conn);
-    void removeConnection(Connection* conn);
 
     void handleRequest(Method method, ConnectionPtr connection);
 
     std::map<curl_socket_t, boost::asio::ip::tcp::socket*> sockets;
 
+    bool running = true;
     CURLM* handler;
-    UTILS::ThreadPool& pool;
-    UTILS::ThreadPool::Strand strand;
+    UTILS::ThreadPool& io;
+    UTILS::ThreadPool& dispatch;
+
     UTILS::ThreadPool::Timer timer;
 
-    std::set<std::shared_ptr<Connection>> current_connections;
+    enum State
+    {
+        Default,
+        Polling,
+        PerformIo,
+        Cancelled,
+    };
+
+    std::map<std::shared_ptr<Connection>, State> current_connections;
+    std::map<std::shared_ptr<Connection>, std::promise<void>> cancelled_connections;
 };
 } // namespace detail
 } // namespace client

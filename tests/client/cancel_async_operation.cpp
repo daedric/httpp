@@ -29,12 +29,12 @@ void handler(Connection* connection, Request&&)
 
 BOOST_AUTO_TEST_CASE(cancel_async_operation)
 {
+    HttpClient client;
+
     HttpServer server;
     server.start();
     server.setSink(&handler);
     server.bind("localhost", "8080");
-
-    HttpClient client;
 
     HttpClient::Request request;
     request
@@ -43,13 +43,16 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
         .joinUrlPath("kiki", true);
 
     auto handler = client.async_get(
-        std::move(request),
-        [](HttpClient::Future&& fut)
-        { BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted); });
+            std::move(request),
+            [](HttpClient::Future&& fut)
+            { BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted); });
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     handler.cancelOperation();
-    Connection::release(gconn);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    Connection::releaseFromHandler(gconn);
+    server.stop();
     BOOST_LOG_TRIVIAL(error) << "operation cancelled";
 }
 

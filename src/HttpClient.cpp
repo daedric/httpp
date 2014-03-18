@@ -28,23 +28,24 @@ void HttpClient::AsyncHandler::cancelOperation()
     auto ptr = connection_.lock();
     if (ptr)
     {
-        auto future = ptr->cancel_promise.get_future();
         ptr->cancel();
-        ptr.reset();
-        future.get();
     }
 }
 
 HttpClient::HttpClient(size_t nb_thread)
-: pool_(nb_thread, service_, "HttpClient ThreadPool")
-, manager(new Manager(pool_))
+: pool_io_(1, "HttpClient IO Thread")
+, pool_dispatch_(nb_thread, "HttpClient Dispatch")
+, manager(new Manager(pool_io_, pool_dispatch_))
 {
-    pool_.start();
+    pool_io_.start();
+    pool_dispatch_.start();
 }
 
 HttpClient::~HttpClient()
 {
-    pool_.stop();
+    manager.reset();
+    pool_io_.stop();
+    pool_dispatch_.stop();
 }
 
 std::pair<HttpClient::Future, HttpClient::AsyncHandler>
@@ -52,21 +53,8 @@ HttpClient::handle_request(HTTP::Method method,
                            Request&& request,
                            CompletionHandler completion_handler)
 {
-    Connection::ConnectionPtr connection;
-
-    if (request.connection_)
-    {
-        connection = std::move(request.connection_);
-        if (connection.use_count() != 1)
-        {
-            connection.reset(); // avoid any problem
-        }
-    }
-
-    if (!connection)
-    {
-        connection = Connection::createConnection(service_);
-    }
+    Connection::ConnectionPtr connection =
+        Connection::createConnection(*manager, manager->io.getService());
 
     connection->init(manager->sockets);
     connection->request = std::move(request);

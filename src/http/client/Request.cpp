@@ -19,26 +19,6 @@ namespace HTTP
 namespace client
 {
 
-Request::Request(){}
-Request::~Request(){}
-
-Request::Request(Request&& req) noexcept
-{
-    operator=(std::move(req));
-}
-
-Request& Request::operator=(Request&& req) noexcept
-{
-    connection_ = std::move(req.connection_);
-    url_ = std::move(req.url_);
-    follow_redirect_ = req.follow_redirect_;
-    query_params_ = std::move(req.query_params_);
-    post_params_ = std::move(req.post_params_);
-    http_headers_ = std::move(req.http_headers_);
-    content_ = std::move(req.content_);
-    return *this;
-}
-
 Request& Request::url(const std::string& u)
 {
     url_ = u;

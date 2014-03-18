@@ -48,6 +48,17 @@ Connection::~Connection()
     }
 }
 
+void Connection::releaseFromHandler(Connection* connection)
+{
+    bool expected = false;
+    if (!connection->is_owned_.compare_exchange_strong(expected, true))
+    {
+        throw std::logic_error("Invalid connection state");
+    }
+
+    release(connection);
+}
+
 void Connection::release(Connection* connection)
 {
     connection->cancel();
@@ -198,6 +209,13 @@ void Connection::sendResponse(Callback&& cb)
 
 void Connection::sendResponse()
 {
+    bool expected = false;
+    if (!is_owned_.compare_exchange_strong(expected, true))
+    {
+        BOOST_LOG_TRIVIAL(error) << "Connection should be disowned";
+        throw std::logic_error("Invalid connection state");
+    }
+
     std::lock_guard<std::mutex> lock(mutex_);
     sendResponse([this] { recycle(); });
 }

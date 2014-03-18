@@ -52,6 +52,13 @@ public:
         service_->post(std::forward<Callable>(callable));
     }
 
+    template <typename Callable>
+    void dispatch(Callable&& callable)
+    {
+        service_->dispatch(std::forward<Callable>(callable));
+    }
+
+
     void start(ThreadInit fct = ThreadInit());
     void stop();
 

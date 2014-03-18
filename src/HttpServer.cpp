@@ -263,6 +263,7 @@ void HttpServer::connection_notify_request(ConnectionPtr connection,
 {
     if (sink_)
     {
+        connection->disown();
         sink_(connection, std::forward<HTTP::Request>(request));
     }
     else

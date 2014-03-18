@@ -14,6 +14,7 @@
 #include <memory>
 #include <iostream>
 #include <vector>
+#include <thread>
 
 #include <boost/thread/future.hpp>
 #include <boost/log/trivial.hpp>
@@ -26,14 +27,17 @@
 #include "httpp/http/client/Response.hpp"
 #include "httpp/utils/Exception.hpp"
 
+#include "Manager.hpp"
+
 namespace HTTPP {
 namespace HTTP {
 namespace client {
 
 namespace detail {
 
-Connection::Connection(boost::asio::io_service& service)
-: handle(curl_easy_init())
+Connection::Connection(Manager& manager, boost::asio::io_service& service)
+: handler(manager)
+, handle(curl_easy_init())
 , service(service)
 {
     if (!handle)
@@ -44,6 +48,7 @@ Connection::Connection(boost::asio::io_service& service)
 
 Connection::~Connection()
 {
+    BOOST_LOG_TRIVIAL(debug) << "Destroy connection: " << this;
     if (http_headers)
     {
         curl_slist_free_all(http_headers);
@@ -51,20 +56,17 @@ Connection::~Connection()
 
     if (handle)
     {
+        BOOST_LOG_TRIVIAL(debug) << "Cleanup easy handle: " << handle;
         curl_easy_cleanup(handle);
+        handle = nullptr;
     }
 
-    if (!is_canceled && !result_notified)
+    if (!cancelled && !result_notified)
     {
         BOOST_LOG_TRIVIAL(error)
             << "Destroy a not completed connection: " << this;
         complete(std::make_exception_ptr(
             std::runtime_error("Destroy a non completed connection")));
-    }
-
-    if (is_canceled)
-    {
-        cancel_promise.set_value();
     }
 }
 
@@ -109,18 +111,15 @@ void Connection::init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& so
     buffer.clear();
 
     promise = boost::promise<client::Response>();
-    cancel_promise = boost::promise<void>();
     completion_handler = CompletionHandler();
     response = Response();
-    is_polling = false;
-    is_canceled = false;
     poll_action = 0;
 }
 
 Connection::ConnectionPtr
-Connection::createConnection(boost::asio::io_service& service)
+Connection::createConnection(Manager& manager, boost::asio::io_service& service)
 {
-    return std::make_shared<Connection>(service);
+    return std::make_shared<Connection>(manager, service);
 }
 
 size_t Connection::writeHd(char* buffer, size_t size, size_t nmemb, void* userdata)
@@ -178,6 +177,8 @@ curl_socket_t Connection::opensocket(void* clientp,
 
 int Connection::closesocket(void* clientp, curl_socket_t curl_socket)
 {
+    BOOST_LOG_TRIVIAL(debug) << "close socket curl: " << curl_socket;
+
     std::map<curl_socket_t, boost::asio::ip::tcp::socket*>* sockets;
     sockets = (decltype(sockets)) clientp;
 
@@ -188,6 +189,7 @@ int Connection::closesocket(void* clientp, curl_socket_t curl_socket)
         return 1;
     }
 
+    BOOST_LOG_TRIVIAL(debug) << "close socket boost: " << it->second;
     delete it->second;
     sockets->erase(it);
     return 0;
@@ -207,7 +209,6 @@ void Connection::setSocket(curl_socket_t curl_socket)
 
 void Connection::configureRequest(HTTPP::HTTP::Method method)
 {
-
     switch (method)
     {
      case HTTPP::HTTP::Method::GET:
@@ -312,27 +313,12 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
 
 void Connection::cancel()
 {
-    BOOST_LOG_TRIVIAL(debug) << "Cancel operation on connection";
-    is_canceled = true;
-
-    if (is_polling)
-    {
-        boost::system::error_code ec;
-        socket->cancel(ec);
-    }
+    cancelled = true;
+    handler.cancelConnection(shared_from_this());
 }
 
 void Connection::buildResponse(CURLcode code)
 {
-    if (is_canceled)
-    {
-        BOOST_LOG_TRIVIAL(debug)
-            << "Operation cancelled detected, skip response building";
-
-        complete(std::make_exception_ptr(HTTPP::UTILS::OperationAborted()));
-        return;
-    }
-
     if (code != CURLE_OK)
     {
         complete(std::make_exception_ptr(std::runtime_error(
@@ -344,7 +330,6 @@ void Connection::buildResponse(CURLcode code)
         response.code = static_cast<HTTPP::HTTP::HttpCode>(
             conn_getinfo<long>(CURLINFO_RESPONSE_CODE));
 
-        request.connection_ = shared_from_this();
         response.request = std::move(request);
 
         long redirection = 0;
