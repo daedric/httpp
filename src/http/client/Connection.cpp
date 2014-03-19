@@ -16,7 +16,6 @@
 #include <vector>
 #include <thread>
 
-#include <boost/thread/future.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
@@ -110,7 +109,7 @@ void Connection::init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& so
     header.clear();
     buffer.clear();
 
-    promise = boost::promise<client::Response>();
+    promise = std::promise<client::Response>();
     completion_handler = CompletionHandler();
     response = Response();
     poll_action = 0;
@@ -384,14 +383,7 @@ void Connection::complete(std::exception_ptr ex)
 
     if (ex)
     {
-        try
-        {
-            std::rethrow_exception(ex);
-        }
-        catch (...)
-        {
-            promise.set_exception(boost::current_exception());
-        }
+        promise.set_exception(ex);
     }
     else
     {

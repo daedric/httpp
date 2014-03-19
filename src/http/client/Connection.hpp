@@ -16,8 +16,8 @@
 # include <vector>
 # include <atomic>
 # include <mutex>
+# include <future>
 
-# include <boost/thread/future.hpp>
 # include <boost/log/trivial.hpp>
 # include <boost/asio.hpp>
 # include <boost/log/trivial.hpp>
@@ -42,7 +42,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
     using ConnectionPtr = std::shared_ptr<Connection>;
 
     // duplicate alias from HttpClient
-    using Future = boost::unique_future<Response>;
+    using Future = std::future<Response>;
     using CompletionHandler = std::function<void (Future&&)>;
 
     Connection(Manager& manager, boost::asio::io_service& service);
@@ -140,12 +140,13 @@ struct Connection : public std::enable_shared_from_this<Connection>
     client::Request request;
     client::Response response;
 
-    boost::promise<client::Response> promise;
+    std::promise<client::Response> promise;
     CompletionHandler completion_handler;
     bool expect_continue = false;
     std::vector<char> header;
     std::vector<char> buffer;
     std::atomic_bool result_notified = { true };
+
     struct curl_slist* http_headers = nullptr;
 };
 
