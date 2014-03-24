@@ -47,7 +47,6 @@ Connection::Connection(Manager& manager, boost::asio::io_service& service)
 
 Connection::~Connection()
 {
-    BOOST_LOG_TRIVIAL(debug) << "Destroy connection: " << this;
     if (http_headers)
     {
         curl_slist_free_all(http_headers);
@@ -55,7 +54,6 @@ Connection::~Connection()
 
     if (handle)
     {
-        BOOST_LOG_TRIVIAL(debug) << "Cleanup easy handle: " << handle;
         curl_easy_cleanup(handle);
         handle = nullptr;
     }
@@ -176,8 +174,6 @@ curl_socket_t Connection::opensocket(void* clientp,
 
 int Connection::closesocket(void* clientp, curl_socket_t curl_socket)
 {
-    BOOST_LOG_TRIVIAL(debug) << "close socket curl: " << curl_socket;
-
     std::map<curl_socket_t, boost::asio::ip::tcp::socket*>* sockets;
     sockets = (decltype(sockets)) clientp;
 
@@ -188,7 +184,6 @@ int Connection::closesocket(void* clientp, curl_socket_t curl_socket)
         return 1;
     }
 
-    BOOST_LOG_TRIVIAL(debug) << "close socket boost: " << it->second;
     delete it->second;
     sockets->erase(it);
     return 0;

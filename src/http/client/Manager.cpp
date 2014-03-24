@@ -62,8 +62,6 @@ Manager::Manager(UTILS::ThreadPool& io, UTILS::ThreadPool& dispatch)
 
 Manager::~Manager()
 {
-    BOOST_LOG_TRIVIAL(debug) << "Manager deleted: " << this;
-
     running = false;
 
     boost::system::error_code ec;
@@ -182,8 +180,6 @@ int Manager::sock_cb(CURL* easy,
 
 void Manager::removeHandle(CURL* easy)
 {
-    BOOST_LOG_TRIVIAL(debug) << "RemoveHandle Manager: " << this
-                             << ": handle: " << easy;
     auto rc = curl_multi_remove_handle(handler, easy);
 
     if (rc != CURLM_OK)
@@ -309,9 +305,6 @@ void Manager::poll(std::shared_ptr<Connection> connection, int action)
 
     if (it->second == Default)
     {
-        BOOST_LOG_TRIVIAL(debug) << "poll: " << connection
-                                 << " action: " << action;
-
         current_connections[connection] = Polling;
         connection->poll(action,
                          std::bind(&Manager::performOp,
@@ -349,17 +342,11 @@ void Manager::cancelConnection(std::shared_ptr<Connection> connection)
                     return;
                 }
 
-                BOOST_LOG_TRIVIAL(debug)
-                    << "Change connection state from: " << current_connection_state
-                    << " to cancelled(" << Cancelled << "): " << connection;
-
                 it->second = Cancelled;
                 cancelled_connections[connection] = std::move(promise);
 
                 if (current_connection_state == Polling)
                 {
-                    BOOST_LOG_TRIVIAL(debug)
-                        << "Connection is polling, cancel operation";
                     connection->cancelPoll();
                 }
 
