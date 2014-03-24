@@ -231,7 +231,10 @@ void Manager::checkHandles()
     for (auto& cancelled : cancelled_connections)
     {
         cancelled.first->poll_action = 0;
-        removeConnection(cancelled.first);
+        if (current_connections.count(cancelled.first))
+        {
+            removeConnection(cancelled.first);
+        }
         cancelled.second.set_value();
     }
 
