@@ -289,7 +289,14 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
 
         if (connection->poll_action)
         {
-            current_connections[connection] = Default;
+
+            auto it = current_connections.find(connection);
+            if (it == std::end(current_connections))
+            {
+                return;
+            }
+
+            it->second = Default;
             poll(connection, connection->poll_action);
         }
     }
