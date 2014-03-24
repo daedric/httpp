@@ -67,23 +67,14 @@ Manager::~Manager()
     boost::system::error_code ec;
     timer.cancel(ec);
 
-    std::promise<void> promise;
-    auto future = promise.get_future();
+    auto conns = current_connections;
+    for (auto& conn : conns)
+    {
+        conn.first->cancel();
+    }
 
-    io.post([this, &promise]
-            {
-                auto conns = current_connections;
-                for (auto& conn : conns)
-                {
-                    conn.first->cancel();
-                }
-
-                checkHandles();
-                conns.clear();
-                promise.set_value();
-            });
-
-    future.get();
+    checkHandles();
+    conns.clear();
 
     if (handler)
     {
