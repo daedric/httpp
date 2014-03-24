@@ -22,9 +22,7 @@ install:
     - sudo apt-get install g++-4.8;
     - sudo update-alternatives --install /usr/bin/gcc-4.8 gcc /usr/bin/gcc 50
     - sudo update-alternatives --install /usr/bin/g++-4.8 g++ /usr/bin/g++ 50
-    - wget http://jaist.dl.sourceforge.net/boost/boost_1_54_0.tar.bz2
-    - tar -xf boost_1_54_0.tar.bz2
-    - ( cd boost_1_54_0  && ./bootstrap.sh --prefix=/usr && sudo ./b2 -j2 release architecture=x86 address-model=64 --with-system --with-thread --with-test --with-log install ) > /dev/null
+    - ./CMakeScripts/install_boost.sh
     - sudo rm -rf boost_1_54_0
 
 before_script:
