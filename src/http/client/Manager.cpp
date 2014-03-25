@@ -343,9 +343,21 @@ void Manager::cancelConnection(std::shared_ptr<Connection> connection)
                     return;
                 }
 
-                it->second = Cancelled;
-                cancelled_connections[connection] = std::move(promise);
+                auto it_cancelled =
+                    cancelled_connections.emplace(connection, std::move(promise));
 
+                if (!it_cancelled.second)
+                {
+                    BOOST_LOG_TRIVIAL(error)
+                        << "Connection is already cancelled but its status is "
+                           "not set to cancel: " << current_connection_state;
+
+                    it_cancelled.first->second.set_value();
+                    it->second = Cancelled;
+                    return;
+                }
+
+                it->second = Cancelled;
                 if (current_connection_state == Polling)
                 {
                     connection->cancelPoll();

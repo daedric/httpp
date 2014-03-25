@@ -132,7 +132,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
 
     CURL* handle;
     int poll_action = 0;
-    bool cancelled = false;
+    std::atomic_bool cancelled = { false };
     char error_buffer[CURL_ERROR_SIZE] = { 0 };
 
     boost::asio::io_service& service;

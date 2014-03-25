@@ -60,10 +60,18 @@ Connection::~Connection()
 
     if (!cancelled && !result_notified)
     {
-        BOOST_LOG_TRIVIAL(error)
-            << "Destroy a not completed connection: " << this;
-        complete(std::make_exception_ptr(
-            std::runtime_error("Destroy a non completed connection")));
+        try
+        {
+            BOOST_LOG_TRIVIAL(error)
+                << "Destroy a not completed connection: " << this;
+            complete(std::make_exception_ptr(
+                std::runtime_error("Destroy a non completed connection")));
+        }
+        catch (const std::exception& ex)
+        {
+            BOOST_LOG_TRIVIAL(error)
+                << "Error happened completing the connection: " << ex.what();
+        }
     }
 }
 
@@ -302,13 +310,21 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
         conn_setopt(CURLOPT_HTTPHEADER, http_headers);
     }
 
+    cancelled = false;
     result_notified = false;
 }
 
 void Connection::cancel()
 {
-    cancelled = true;
-    handler.cancelConnection(shared_from_this());
+    bool expected = false;
+    if (cancelled.compare_exchange_strong(expected, true))
+    {
+        handler.cancelConnection(shared_from_this());
+    }
+    else
+    {
+        BOOST_LOG_TRIVIAL(warning) << "Connection already cancelled";
+    }
 }
 
 void Connection::buildResponse(CURLcode code)
@@ -373,8 +389,6 @@ void Connection::complete(std::exception_ptr ex)
             << "Response already notified, cancel notification";
         return;
     }
-
-    result_notified = true;
 
     if (ex)
     {
