@@ -361,6 +361,8 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
 
     io.post([this, method, conn]()
             {
+                conn->dispatch = std::addressof(dispatch);
+
                 try
                 {
                     conn->configureRequest(method);

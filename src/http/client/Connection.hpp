@@ -22,6 +22,7 @@
 # include <boost/asio.hpp>
 # include <boost/log/trivial.hpp>
 
+# include "httpp/utils/ThreadPool.hpp"
 # include "httpp/http/Protocol.hpp"
 # include "httpp/http/client/Request.hpp"
 # include "httpp/http/client/Response.hpp"
@@ -127,6 +128,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
     }
 
     Manager& handler;
+    UTILS::ThreadPool* dispatch;
 
     CURL* handle;
     int poll_action = 0;

@@ -387,7 +387,9 @@ void Connection::complete(std::exception_ptr ex)
 
     if (completion_handler)
     {
-        completion_handler(promise.get_future());
+        auto ptr = shared_from_this();
+        dispatch->post([ptr]
+                       { ptr->completion_handler(ptr->promise.get_future()); });
     }
 }
 
