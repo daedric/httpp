@@ -58,6 +58,8 @@ Connection::~Connection()
         handle = nullptr;
     }
 
+    dispatch = nullptr;
+
     if (!cancelled && !result_notified)
     {
         try
@@ -401,9 +403,16 @@ void Connection::complete(std::exception_ptr ex)
 
     if (completion_handler)
     {
-        auto ptr = shared_from_this();
-        dispatch->post([ptr]
-                       { ptr->completion_handler(ptr->promise.get_future()); });
+        if (dispatch)
+        {
+            auto ptr = shared_from_this();
+            dispatch->post([ptr]
+                           { ptr->completion_handler(ptr->promise.get_future()); });
+        }
+        else
+        {
+            completion_handler(promise.get_future());
+        }
     }
 }
 
