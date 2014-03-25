@@ -454,18 +454,12 @@ int Manager::closeSocket(curl_socket_t curl_socket)
 
 void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
 {
-
-
-    std::promise<void> promise;
-    auto future = promise.get_future();
-
-    io.dispatch([this, &promise, method, conn]()
+    io.post([this, method, conn]()
             {
 
                 if (!running)
                 {
                     BOOST_LOG_TRIVIAL(error) << "Refuse connection, manager is stopped";
-                    promise.set_value();
                     return;
                 }
 
@@ -480,7 +474,6 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                     BOOST_LOG_TRIVIAL(error)
                         << "Error when configuring the request: " << exc.what();
                     conn->complete(std::current_exception());
-                    promise.set_value();
                     return;
                 }
 
@@ -493,7 +486,6 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                     conn->complete(std::make_exception_ptr(std::runtime_error(
                         "Cannot schedule an operation for an already "
                         "managed connection")));
-                    promise.set_value();
                     return;
                 }
 
@@ -506,14 +498,10 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                     removeConnection(conn);
                     conn->complete(
                         std::make_exception_ptr(std::runtime_error(message)));
-                    promise.set_value();
                     return;
                 }
 
-                promise.set_value();
             });
-
-    future.get();
 }
 
 } // namespace detail
