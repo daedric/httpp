@@ -11,6 +11,10 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
 
@@ -54,6 +58,70 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
     Connection::releaseFromHandler(gconn);
     server.stop();
     BOOST_LOG_TRIVIAL(error) << "operation cancelled";
+}
+
+static std::vector<Connection*> gconns;
+void handler_push(Connection* connection, Request&&)
+{
+    gconns.push_back(connection);
+}
+
+
+BOOST_AUTO_TEST_CASE(delete_pending_connection)
+{
+    HttpServer server;
+    server.start();
+    server.setSink(&handler_push);
+    server.bind("localhost", "8080");
+
+    {
+        HttpClient client;
+
+        HttpClient::Request request;
+        request.url("http://localhost:8080");
+
+        for (int i = 0; i < 100; ++i)
+        {
+            client.async_get(HttpClient::Request{ request },
+                             [](HttpClient::Future&& fut)
+                             {
+                BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
+            });
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    boost::log::core::get()->set_filter
+    (
+        boost::log::trivial::severity > boost::log::trivial::error
+    );
+    std::for_each(
+        std::begin(gconns), std::end(gconns), &Connection::releaseFromHandler);
+    server.stop();
+}
+
+BOOST_AUTO_TEST_CASE(delete_pending_connection_google)
+{
+    boost::log::core::get()->set_filter
+    (
+        boost::log::trivial::severity >= boost::log::trivial::debug
+    );
+
+    HttpClient client;
+
+    HttpClient::Request request;
+    request.url("http://google.com").followRedirect(true);
+
+    for (int i = 0; i < 10; ++i)
+    {
+        client.async_get(HttpClient::Request{ request },
+                         [](HttpClient::Future&& fut)
+                         {
+            BOOST_LOG_TRIVIAL(debug) << "Hello world";
+            BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
+        });
+    }
 }
 
 void handler2(Connection* c, Request&&)

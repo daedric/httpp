@@ -42,6 +42,8 @@ struct Manager
     Manager& operator=(const Manager&) = delete;
     ~Manager();
 
+    void stop();
+
     template <typename T>
     void manager_setopt(CURLMoption opt, T t)
     {
@@ -70,6 +72,11 @@ struct Manager
     void poll(std::shared_ptr<Connection> connection, int action);
 
     void cancelConnection(std::shared_ptr<Connection> connection);
+    std::future<void> cancel_connection(std::shared_ptr<Connection> connection);
+    void cancel_connection_io_thread(std::shared_ptr<Connection> connection,
+                                     std::shared_ptr<std::promise<void>> promise);
+
+    int closeSocket(curl_socket_t curl_socket);
 
     void removeHandle(CURL* easy);
     void removeConnection(std::shared_ptr<Connection> conn);

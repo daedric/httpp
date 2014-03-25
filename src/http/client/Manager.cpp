@@ -62,19 +62,56 @@ Manager::Manager(UTILS::ThreadPool& io, UTILS::ThreadPool& dispatch)
 
 Manager::~Manager()
 {
-    running = false;
-
-    boost::system::error_code ec;
-    timer.cancel(ec);
-
-    auto conns = current_connections;
-    for (auto& conn : conns)
+    std::vector<std::future<void>> futures;
     {
-        conn.first->cancel();
+        std::promise<void> promise;
+        auto future = promise.get_future();
+
+        io.dispatch([this, &promise, &futures]
+                    {
+                        running = false;
+
+                        auto conns = current_connections;
+
+                        for (auto& conn : conns)
+                        {
+                            bool expected = false;
+                            if (conn.first->cancelled.compare_exchange_strong(expected, true))
+                            {
+                                futures.emplace_back(cancel_connection(conn.first));
+                            }
+                        }
+
+                        promise.set_value();
+                    });
+
+        future.get();
     }
 
-    checkHandles();
-    conns.clear();
+    while (!futures.empty())
+    {
+        auto conn_future = std::move(futures.back());
+        conn_future.get();
+        futures.pop_back();
+    }
+
+    {
+        std::promise<void> promise;
+        auto future = promise.get_future();
+        io.dispatch([this, &promise]
+                    {
+                        checkHandles();
+                        promise.set_value();
+                    });
+        future.get();
+    }
+    stop();
+}
+
+void Manager::stop()
+{
+    boost::system::error_code ec;
+    timer.cancel(ec);
 
     if (handler)
     {
@@ -219,17 +256,24 @@ void Manager::checkHandles()
         }
     }
 
-    for (auto& cancelled : cancelled_connections)
+    while (!cancelled_connections.empty())
     {
+        auto cancelled = std::move(*cancelled_connections.begin());
+        cancelled_connections.erase(cancelled_connections.begin());
+
         cancelled.first->poll_action = 0;
+        cancelled.second.set_value();
+
         if (current_connections.count(cancelled.first))
         {
             removeConnection(cancelled.first);
         }
-        cancelled.second.set_value();
+        else
+        {
+            BOOST_LOG_TRIVIAL(warning)
+                << "Connection already deleted: " << cancelled.first;
+        }
     }
-
-    cancelled_connections.clear();
 }
 
 void Manager::performOp(std::shared_ptr<Connection> connection,
@@ -264,6 +308,8 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
 
     if (rc != CURLM_OK)
     {
+        BOOST_LOG_TRIVIAL(error)
+            << "Error happened in perfomOp: " << curl_multi_strerror(rc);
         auto exc = std::make_exception_ptr(std::runtime_error(curl_multi_strerror(rc)));
         connection->complete(exc);
         std::rethrow_exception(exc);
@@ -316,63 +362,115 @@ void Manager::poll(std::shared_ptr<Connection> connection, int action)
     }
 }
 
+
+std::future<void> Manager::cancel_connection(std::shared_ptr<Connection> connection)
+{
+    auto promise = std::make_shared<std::promise<void>>();
+    auto future = promise->get_future();
+
+    io.dispatch(std::bind(&Manager::cancel_connection_io_thread,
+                          this,
+                          std::move(connection),
+                          std::move(promise)));
+    return future;
+}
+
+void Manager::cancel_connection_io_thread(std::shared_ptr<Connection> connection,
+                                          std::shared_ptr<std::promise<void>> promise_ptr)
+{
+
+    std::promise<void> promise = std::move(*promise_ptr);
+    promise_ptr.reset();
+
+    auto it = current_connections.find(connection);
+
+    if (it == std::end(current_connections))
+    {
+        BOOST_LOG_TRIVIAL(warning) << "Cannot cancel a completed connection";
+        promise.set_exception(std::make_exception_ptr(
+            std::runtime_error("Connection already completed")));
+        return;
+    }
+
+    auto current_connection_state = it->second;
+
+    if (current_connection_state == Cancelled)
+    {
+        BOOST_LOG_TRIVIAL(warning)
+            << "Connection already cancelled: " << connection;
+        promise.set_value();
+        return;
+    }
+
+    auto it_cancelled =
+        cancelled_connections.emplace(connection, std::move(promise));
+
+    if (!it_cancelled.second)
+    {
+        BOOST_LOG_TRIVIAL(error)
+            << "Connection is already cancelled but its status is "
+               "not set to cancel: " << current_connection_state;
+
+        it_cancelled.first->second.set_value();
+        it->second = Cancelled;
+        return;
+    }
+
+    it->second = Cancelled;
+    if (current_connection_state == Polling)
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Connection is polling, cancel operation";
+        connection->cancelPoll();
+    }
+}
+
 void Manager::cancelConnection(std::shared_ptr<Connection> connection)
 {
-    std::promise<void> promise;
+    auto future = std::move(cancel_connection(connection));
+    future.get();
+}
+
+int Manager::closeSocket(curl_socket_t curl_socket)
+{
+    std::promise<int> promise;
     auto future = promise.get_future();
 
-    io.dispatch([this, connection, &promise]()
-            {
-
-                auto it = current_connections.find(connection);
-
-                if (it == std::end(current_connections))
+    io.dispatch([this, curl_socket, &promise]
                 {
-                    promise.set_exception(std::make_exception_ptr(
-                        std::runtime_error("Connection already completed")));
-                    return;
-                }
+                    auto it = sockets.find(curl_socket);
+                    if (it == std::end(sockets))
+                    {
+                        BOOST_LOG_TRIVIAL(error)
+                            << "Cannot find a socket to close";
+                        promise.set_value(1);
+                        return;
+                    }
 
-                auto current_connection_state = it->second;
+                    delete it->second;
+                    sockets.erase(it);
+                    promise.set_value(0);
+                });
 
-                if (current_connection_state == Cancelled)
-                {
-                    BOOST_LOG_TRIVIAL(warning)
-                        << "Connection already cancelled: " << connection;
-                    promise.set_value();
-                    return;
-                }
-
-                auto it_cancelled =
-                    cancelled_connections.emplace(connection, std::move(promise));
-
-                if (!it_cancelled.second)
-                {
-                    BOOST_LOG_TRIVIAL(error)
-                        << "Connection is already cancelled but its status is "
-                           "not set to cancel: " << current_connection_state;
-
-                    it_cancelled.first->second.set_value();
-                    it->second = Cancelled;
-                    return;
-                }
-
-                it->second = Cancelled;
-                if (current_connection_state == Polling)
-                {
-                    connection->cancelPoll();
-                }
-
-            });
-
-    future.get();
+    return future.get();
 }
 
 void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
 {
 
-    io.post([this, method, conn]()
+
+    std::promise<void> promise;
+    auto future = promise.get_future();
+
+    io.dispatch([this, &promise, method, conn]()
             {
+
+                if (!running)
+                {
+                    BOOST_LOG_TRIVIAL(error) << "Refuse connection, manager is stopped";
+                    promise.set_value();
+                    return;
+                }
+
                 conn->dispatch = std::addressof(dispatch);
 
                 try
@@ -384,6 +482,7 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                     BOOST_LOG_TRIVIAL(error)
                         << "Error when configuring the request: " << exc.what();
                     conn->complete(std::current_exception());
+                    promise.set_value();
                     return;
                 }
 
@@ -396,6 +495,7 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                     conn->complete(std::make_exception_ptr(std::runtime_error(
                         "Cannot schedule an operation for an already "
                         "managed connection")));
+                    promise.set_value();
                     return;
                 }
 
@@ -408,9 +508,14 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                     removeConnection(conn);
                     conn->complete(
                         std::make_exception_ptr(std::runtime_error(message)));
+                    promise.set_value();
                     return;
                 }
+
+                promise.set_value();
             });
+
+    future.get();
 }
 
 } // namespace detail

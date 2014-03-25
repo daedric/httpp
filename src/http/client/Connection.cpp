@@ -184,19 +184,9 @@ curl_socket_t Connection::opensocket(void* clientp,
 
 int Connection::closesocket(void* clientp, curl_socket_t curl_socket)
 {
-    std::map<curl_socket_t, boost::asio::ip::tcp::socket*>* sockets;
-    sockets = (decltype(sockets)) clientp;
-
-    auto it = sockets->find(curl_socket);
-    if (it == std::end(*sockets))
-    {
-        BOOST_LOG_TRIVIAL(error) << "Cannot find a socket to close";
-        return 1;
-    }
-
-    delete it->second;
-    sockets->erase(it);
-    return 0;
+    BOOST_LOG_TRIVIAL(debug) << "close socket curl: " << curl_socket;
+    auto manager = (Manager*)clientp;
+    return manager->closeSocket(curl_socket);
 }
 
 void Connection::setSocket(curl_socket_t curl_socket)
