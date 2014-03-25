@@ -250,9 +250,7 @@ void Manager::checkHandles()
 
             auto shared_ptr = conn->shared_from_this();
             removeConnection(shared_ptr);
-
-            dispatch.post([result, shared_ptr, easy, this]
-                          { shared_ptr->buildResponse(result); });
+            shared_ptr->buildResponse(result);
         }
     }
 
