@@ -149,14 +149,17 @@ BOOST_AUTO_TEST_CASE(late_cancel)
     HttpClient::Request request;
     request.url("http://localhost:8080");
 
+    bool ok = false;
     auto handler = client.async_get(std::move(request),
-                                    [](HttpClient::Future&& fut)
+                                    [&ok](HttpClient::Future&& fut)
                                     {
+        ok = true;
         BOOST_LOG_TRIVIAL(debug) << "Response received";
         fut.get();
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    BOOST_CHECK(ok);
     handler.cancelOperation();
     BOOST_LOG_TRIVIAL(error) << "operation cancelled";
 }
