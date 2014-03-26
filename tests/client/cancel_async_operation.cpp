@@ -125,7 +125,6 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection_google)
         client.async_get(HttpClient::Request{ request },
                          [](HttpClient::Future&& fut)
                          {
-            BOOST_LOG_TRIVIAL(debug) << "Hello world";
             BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
         });
     }
