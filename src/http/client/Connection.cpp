@@ -101,7 +101,7 @@ void Connection::init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& so
     conn_setopt(CURLOPT_OPENSOCKETDATA, this);
     conn_setopt(CURLOPT_OPENSOCKETFUNCTION, &opensocket);
 
-    conn_setopt(CURLOPT_CLOSESOCKETDATA, this->sockets);
+    conn_setopt(CURLOPT_CLOSESOCKETDATA, std::addressof(handler));
     conn_setopt(CURLOPT_CLOSESOCKETFUNCTION, &closesocket);
 
     conn_setopt(CURLOPT_ERRORBUFFER, this->error_buffer);
