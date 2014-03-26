@@ -60,6 +60,7 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
     BOOST_LOG_TRIVIAL(error) << "operation cancelled";
 }
 
+static std::atomic_int nb_gconns = { 0 };
 static std::vector<Connection*> gconns;
 void handler_push(Connection* connection, Request&&)
 {
@@ -74,31 +75,37 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
     server.setSink(&handler_push);
     server.bind("localhost", "8080");
 
+    std::atomic_int nb_cb {0};
+
     {
         HttpClient client;
 
         HttpClient::Request request;
         request.url("http://localhost:8080");
 
-        for (int i = 0; i < 100; ++i)
+        for (int i = 0; i < 1000; ++i)
         {
             client.async_get(HttpClient::Request{ request },
-                             [](HttpClient::Future&& fut)
+                             [&nb_cb](HttpClient::Future&& fut)
                              {
+                ++nb_cb;
                 BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
             });
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        //std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     boost::log::core::get()->set_filter
     (
         boost::log::trivial::severity > boost::log::trivial::error
     );
+    server.stopListeners();
     std::for_each(
         std::begin(gconns), std::end(gconns), &Connection::releaseFromHandler);
     server.stop();
+
+    BOOST_CHECK_EQUAL(nb_cb.load(), 1000);
 }
 
 BOOST_AUTO_TEST_CASE(delete_pending_connection_google)

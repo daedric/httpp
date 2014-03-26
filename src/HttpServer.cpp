@@ -40,14 +40,8 @@ void HttpServer::start(ThreadInit fct)
     pool_.start(fct);
 }
 
-void HttpServer::stop()
+void HttpServer::stopListeners()
 {
-    if (!running_)
-    {
-        return;
-    }
-
-    running_ = false;
     for (auto acc : acceptors_)
     {
         boost::system::error_code ec;
@@ -61,6 +55,19 @@ void HttpServer::stop()
     {
         std::this_thread::yield();
     }
+
+}
+
+void HttpServer::stop()
+{
+    if (!running_)
+    {
+        return;
+    }
+
+    running_ = false;
+
+    stopListeners();
 
     {
         std::lock_guard<std::mutex> lock(connections_mutex_);

@@ -50,6 +50,8 @@ public:
     void start(ThreadInit fct = ThreadInit());
     void stop();
 
+    void stopListeners();
+
 private:
     void start_accept(AcceptorPtr acceptor);
     void accept_callback(const boost::system::error_code& error,

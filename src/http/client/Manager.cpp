@@ -16,6 +16,7 @@
 #include <mutex>
 #include <functional>
 
+#include "httpp/utils/Exception.hpp"
 #include "Connection.hpp"
 
 static std::once_flag curl_init_flag;
@@ -260,6 +261,8 @@ void Manager::checkHandles()
         cancelled_connections.erase(cancelled_connections.begin());
 
         cancelled.first->poll_action = 0;
+        cancelled.first->complete(
+            std::make_exception_ptr(UTILS::OperationAborted()));
         cancelled.second.set_value();
 
         if (current_connections.count(cancelled.first))
