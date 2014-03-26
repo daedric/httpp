@@ -124,7 +124,10 @@ struct Connection : public std::enable_shared_from_this<Connection>
 
     void cancelPoll()
     {
-        socket->cancel();
+        if (socket)
+        {
+            socket->cancel();
+        }
     }
 
     Manager& handler;

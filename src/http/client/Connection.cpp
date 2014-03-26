@@ -194,6 +194,7 @@ void Connection::setSocket(curl_socket_t curl_socket)
     auto it = sockets->find(curl_socket);
     if (it == std::end(*sockets))
     {
+        socket = nullptr;
         throw std::runtime_error("Cannot find socket: " +
                                  std::to_string(curl_socket));
     }
@@ -381,6 +382,8 @@ void Connection::complete(std::exception_ptr ex)
             << "Response already notified, cancel notification";
         return;
     }
+
+    socket = nullptr;
 
     if (ex)
     {
