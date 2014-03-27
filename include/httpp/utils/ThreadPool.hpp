@@ -23,6 +23,8 @@
 # include <boost/asio/deadline_timer.hpp>
 # include <boost/asio/strand.hpp>
 
+# include "Thread.hpp"
+
 namespace HTTPP
 {
 namespace UTILS

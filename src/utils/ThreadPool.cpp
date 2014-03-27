@@ -96,6 +96,7 @@ void ThreadPool::run(ThreadInit fct)
     BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
                              << "] call run()";
     ++running_threads_;
+    setCurrentThreadName(name_ + " #" + to_string(running_threads_));
     this->service_->reset();
     this->service_->run();
     BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
