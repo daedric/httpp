@@ -52,7 +52,7 @@ public:
             std::weak_ptr<HTTP::client::detail::Connection> connection_;
     };
 
-    HttpClient(size_t nb_thread = 1);
+    HttpClient(size_t nb_thread = 1, const std::string& name = "");
     HttpClient(const HttpClient&) = delete;
     HttpClient& operator=(const HttpClient&) = delete;
     ~HttpClient();

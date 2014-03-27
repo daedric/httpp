@@ -32,9 +32,9 @@ void HttpClient::AsyncHandler::cancelOperation()
     }
 }
 
-HttpClient::HttpClient(size_t nb_thread)
-: pool_io_(1, "HttpClient IO Thread")
-, pool_dispatch_(nb_thread, "HttpClient Dispatch")
+HttpClient::HttpClient(size_t nb_thread, const std::string& name)
+: pool_io_(1, "Curl (" + name + ")")
+, pool_dispatch_(nb_thread, name)
 , manager(new Manager(pool_io_, pool_dispatch_))
 {
     pool_io_.start();

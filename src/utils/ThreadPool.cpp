@@ -52,7 +52,9 @@ ThreadPool::ThreadPool(ThreadPool&& pool)
 , nb_thread_(pool.nb_thread_)
 , work_(std::move(pool.work_))
 , threads_(std::move(pool.threads_))
+, name_(std::move(name_))
 {
+    running_threads_.store(pool.running_threads_.load());
     pool.running_ = false;
 }
 
@@ -63,15 +65,28 @@ void ThreadPool::start(ThreadInit fct)
         return;
     }
 
-    if (!name_.empty())
-    {
-        name_ = "[Pool: " + name_ + "] ";
-    }
-
     work_.reset(new boost::asio::io_service::work(*service_));
     for (size_t i = 0; i < nb_thread_; ++i)
     {
-        threads_.emplace_back(std::bind(&ThreadPool::run, this, fct));
+        threads_.emplace_back(std::bind(&ThreadPool::run, this,
+                    [this, fct, i]
+                    {
+                        if (name_.empty())
+                        {
+                            setCurrentThreadName("Pool thread #" + std::to_string(i));
+                        }
+                        else
+                        {
+                            setCurrentThreadName(name_ + " #" + std::to_string(i));
+                        }
+
+                        if (fct)
+                        {
+                            BOOST_LOG_TRIVIAL(debug) << "call init fct " << name_;
+                            fct();
+                        }
+                    }
+                    ));
     }
 
     while (running_threads_ != nb_thread_)
@@ -84,23 +99,19 @@ void ThreadPool::start(ThreadInit fct)
 
 void ThreadPool::run(ThreadInit fct)
 {
-    BOOST_LOG_TRIVIAL(debug) << name_ << "start thread: #"
-                             << std::this_thread::get_id();
+    BOOST_LOG_TRIVIAL(debug) << "start thread";
+
     if (fct)
     {
-        BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
-                                 << "] call init fct";
         fct();
     }
 
-    BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
-                             << "] call run()";
+    BOOST_LOG_TRIVIAL(debug) << "call run()";
     ++running_threads_;
-    setCurrentThreadName(name_ + " #" + to_string(running_threads_));
+
     this->service_->reset();
     this->service_->run();
-    BOOST_LOG_TRIVIAL(debug) << name_ << "[" << std::this_thread::get_id()
-                             << "] is stopping";
+    BOOST_LOG_TRIVIAL(debug) << "is stopping";
     --running_threads_;
 }
 
