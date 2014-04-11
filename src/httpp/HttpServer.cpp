@@ -11,6 +11,8 @@
 #include "httpp/HttpServer.hpp"
 
 #include <boost/log/trivial.hpp>
+
+#include "httpp/utils/Exception.hpp"
 #include "httpp/http/Utils.hpp"
 
 namespace HTTPP
@@ -205,7 +207,7 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
             BOOST_LOG_TRIVIAL(error)
                 << "Error bad address (ip address in dotted format or ipv6 hex format: "
                 << host << ", error msg: " << error.message();
-            throw error;
+            throw UTILS::convert_boost_ec_to_std_ec(error);
         }
         else
         {
@@ -233,7 +235,7 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
 
         BOOST_LOG_TRIVIAL(error) << "Cannot bind " << host << " on " << port
                                  << " error msg: " << error.message();
-        throw error;
+        throw UTILS::convert_boost_ec_to_std_ec(error);
     }
 
     acceptor->listen(boost::asio::socket_base::max_connections, error);
@@ -241,7 +243,7 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
     {
         BOOST_LOG_TRIVIAL(error) << "Cannot listen " << host << " on " << port
                                  << ", error msg: " << error.message();
-        throw error;
+        throw UTILS::convert_boost_ec_to_std_ec(error);
     }
     return acceptor;
 }

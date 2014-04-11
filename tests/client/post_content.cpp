@@ -15,6 +15,7 @@
 
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
+#include "httpp/utils/Exception.hpp"
 
 using namespace HTTPP;
 
@@ -58,7 +59,7 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     }
     else if (ec)
     {
-        throw ec;
+        throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
     }
     else
     {

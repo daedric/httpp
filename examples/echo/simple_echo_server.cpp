@@ -14,6 +14,7 @@
 
 #include <httpp/HttpServer.hpp>
 #include <httpp/http/Utils.hpp>
+#include <httpp/utils/Exception.hpp>
 
 using HTTPP::HttpServer;
 using HTTPP::HTTP::Request;
@@ -41,7 +42,7 @@ void body_handler(const Request& request, Connection* connection,
     }
     else if (ec)
     {
-        throw ec;
+        throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
     }
     else
     {
