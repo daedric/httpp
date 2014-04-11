@@ -73,7 +73,8 @@ void ThreadPool::start(ThreadInit fct)
                     {
                         if (name_.empty())
                         {
-                            setCurrentThreadName("Pool thread #" + std::to_string(i));
+                            setCurrentThreadName("Pool thread #" +
+                                                 std::to_string(i));
                         }
                         else
                         {
