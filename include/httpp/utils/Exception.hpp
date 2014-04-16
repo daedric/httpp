@@ -15,6 +15,7 @@
 # include <system_error>
 
 # include <boost/system/error_code.hpp>
+# include <httpp/http/client/Request.hpp>
 
 namespace HTTPP
 {
@@ -25,6 +26,22 @@ struct OperationAborted : public std::runtime_error
     OperationAborted() : std::runtime_error("Operation Aborted")
     {
     }
+};
+
+class RequestError : public std::runtime_error
+{
+public:
+    RequestError(const std::string& str, HTTP::client::Request&& request)
+    : std::runtime_error(str), request_(std::move(request))
+    {}
+
+    HTTP::client::Request moveRequest()
+    {
+        return std::move(request_);
+    }
+
+private:
+    HTTP::client::Request request_;
 };
 
 static inline std::system_error

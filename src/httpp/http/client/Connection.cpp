@@ -320,20 +320,32 @@ void Connection::cancel()
     }
 }
 
+using HTTPP::UTILS::RequestError;
+
+struct RequestNestedError : public RequestError, public std::nested_exception
+{
+    RequestNestedError(const std::string& str, HTTP::client::Request&& request)
+    : RequestError(str, std::move(request))
+    {
+    }
+};
+
 void Connection::buildResponse(CURLcode code)
 {
     if (code != CURLE_OK)
     {
-        complete(std::make_exception_ptr(std::runtime_error(
-            curl_easy_strerror(code) + std::string(this->error_buffer))));
+        complete(std::make_exception_ptr(RequestError(
+            curl_easy_strerror(code) + std::string(this->error_buffer),
+            std::move(request))));
         return;
     }
+
+    response.request = std::move(request);
+
     try
     {
         response.code = static_cast<HTTPP::HTTP::HttpCode>(
             conn_getinfo<long>(CURLINFO_RESPONSE_CODE));
-
-        response.request = std::move(request);
 
         long redirection = 0;
         if (request.follow_redirect_)
@@ -367,7 +379,9 @@ void Connection::buildResponse(CURLcode code)
     {
         BOOST_LOG_TRIVIAL(error)
             << "Error when building the response: " << exc.what();
-        complete(std::current_exception());
+        complete(std::make_exception_ptr(RequestNestedError(
+            "Exception happened during buildResponse " + std::string(exc.what()),
+            std::move(response.request))));
         return;
     }
 
