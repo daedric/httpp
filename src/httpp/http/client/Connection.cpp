@@ -94,8 +94,6 @@ void Connection::init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& so
     conn_setopt(CURLOPT_WRITEFUNCTION, &writefn);
     conn_setopt(CURLOPT_WRITEDATA, this);
 
-    conn_setopt(CURLOPT_ERRORBUFFER, this->error_buffer);
-
     conn_setopt(CURLOPT_PRIVATE, this);
 
     conn_setopt(CURLOPT_OPENSOCKETDATA, this);
