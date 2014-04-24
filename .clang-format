@@ -26,7 +26,7 @@ PenaltyBreakFirstLessLess: 100
 PenaltyExcessCharacter: 10
 PenaltyReturnTypeOnItsOwnLine: 99
 DerivePointerBinding: true
-PointerBinding: Left
+PointerBindsToType: true
 SpacesBeforeTrailingComments: 1
 Cpp11BracedListStyle: false
 Standard:        Cpp11
