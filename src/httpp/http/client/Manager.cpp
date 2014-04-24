@@ -79,6 +79,8 @@ Manager::~Manager()
                             bool expected = false;
                             if (conn.first->cancelled.compare_exchange_strong(expected, true))
                             {
+                                BOOST_LOG_TRIVIAL(info)
+                                    << "Cancel one connection still alive";
                                 futures.emplace_back(cancel_connection(conn.first));
                             }
                         }

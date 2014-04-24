@@ -78,6 +78,7 @@ BOOST_AUTO_TEST_CASE(bad_server)
     acceptor.listen(boost::asio::socket_base::max_connections);
 
     boost::asio::ip::tcp::socket socket(service);
+
     acceptor.async_accept(socket, [&](const boost::system::error_code& error)
             {
                 BOOST_LOG_TRIVIAL(debug) << "Connection received";
@@ -126,3 +127,37 @@ BOOST_AUTO_TEST_CASE(bad_server)
     pool.stop();
 }
 
+
+static Connection* conn_manager_deletion = nullptr;
+
+void handler_manager_deletion(Connection* connection, Request&&)
+{
+  conn_manager_deletion = connection;
+}
+
+
+BOOST_AUTO_TEST_CASE(manager_deletion)
+{
+    HttpServer server;
+    server.start();
+    server.setSink(&handler_manager_deletion);
+    server.bind("localhost", "8080");
+
+    bool notif = false;
+    {
+        HttpClient client;
+        HttpClient::Request request;
+        request.url("http://localhost:8080");
+        client.async_get(std::move(request),
+                         [&notif](HttpClient::Future&& future)
+                         {
+            notif = true;
+            BOOST_CHECK_THROW(future.get(), HTTPP::UTILS::OperationAborted);
+        });
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    }
+
+    BOOST_CHECK(notif);
+    Connection::releaseFromHandler(conn_manager_deletion);
+}
