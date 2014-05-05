@@ -66,7 +66,7 @@ Connection::~Connection()
         {
             BOOST_LOG_TRIVIAL(error)
                 << "Destroy a not completed connection: " << this;
-            complete(std::make_exception_ptr(
+            complete(HTTPP::detail::make_exception_ptr(
                 std::runtime_error("Destroy a non completed connection")));
         }
         catch (const std::exception& ex)
@@ -115,7 +115,7 @@ void Connection::init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& so
     header.clear();
     buffer.clear();
 
-    promise = std::promise<client::Response>();
+    promise = Promise<client::Response>();
     completion_handler = CompletionHandler();
     response = Response();
     poll_action = 0;
@@ -332,7 +332,7 @@ void Connection::buildResponse(CURLcode code)
 {
     if (code != CURLE_OK)
     {
-        complete(std::make_exception_ptr(RequestError(
+        complete(HTTPP::detail::make_exception_ptr(RequestError(
             curl_easy_strerror(code) + std::string(this->error_buffer),
             std::move(request))));
         return;
@@ -377,7 +377,7 @@ void Connection::buildResponse(CURLcode code)
     {
         BOOST_LOG_TRIVIAL(error)
             << "Error when building the response: " << exc.what();
-        complete(std::make_exception_ptr(RequestNestedError(
+        complete(HTTPP::detail::make_exception_ptr(RequestNestedError(
             "Exception happened during buildResponse " + std::string(exc.what()),
             std::move(response.request))));
         return;
@@ -385,7 +385,7 @@ void Connection::buildResponse(CURLcode code)
 
 }
 
-void Connection::complete(std::exception_ptr ex)
+void Connection::complete(ExceptionPtr ex)
 {
     bool expected = false;
     if (!result_notified.compare_exchange_strong(expected, true))

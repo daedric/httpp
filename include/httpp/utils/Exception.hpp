@@ -15,20 +15,28 @@
 # include <system_error>
 
 # include <boost/system/error_code.hpp>
+# include <httpp/detail/config.hpp>
 # include <httpp/http/client/Request.hpp>
 
 namespace HTTPP
 {
 namespace UTILS
 {
-struct OperationAborted : public std::runtime_error
+
+# if HTTPP_USE_BOOST_PROMISE
+#  define BASE_EXCEPTION  public std::runtime_error, public virtual boost::exception
+# else
+#  define BASE_EXCEPTION  public std::runtime_error
+# endif
+
+struct OperationAborted : BASE_EXCEPTION
 {
     OperationAborted() : std::runtime_error("Operation Aborted")
     {
     }
 };
 
-class RequestError : public std::runtime_error
+class RequestError : BASE_EXCEPTION
 {
 public:
     RequestError(const std::string& str, HTTP::client::Request&& request)

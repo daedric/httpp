@@ -14,10 +14,10 @@
 # include <string>
 # include <vector>
 # include <memory>
-# include <future>
 
 # include <boost/asio/io_service.hpp>
 
+# include "detail/config.hpp"
 # include "utils/Exception.hpp"
 # include "utils/ThreadPool.hpp"
 # include "http/Protocol.hpp"
@@ -38,7 +38,8 @@ class HttpClient
 public:
     using Request = HTTP::client::Request;
     using Response = HTTP::client::Response;
-    using Future = std::future<Response>;
+
+    using Future = detail::Future<Response>;
     using CompletionHandler = std::function<void (Future&&)>;
 
     // AsyncHandler is garanteed to be always safe to call

@@ -22,6 +22,7 @@
 # include <boost/asio.hpp>
 # include <boost/log/trivial.hpp>
 
+# include "httpp/detail/config.hpp"
 # include "httpp/utils/ThreadPool.hpp"
 # include "httpp/http/Protocol.hpp"
 # include "httpp/http/client/Request.hpp"
@@ -42,9 +43,15 @@ struct Connection : public std::enable_shared_from_this<Connection>
 {
     using ConnectionPtr = std::shared_ptr<Connection>;
 
-    // duplicate alias from HttpClient
-    using Future = std::future<Response>;
-    using CompletionHandler = std::function<void (Future&&)>;
+    template <typename T>
+    using Promise = HTTPP::detail::Promise<T>;
+
+    template <typename T>
+    using Future = HTTPP::detail::Future<T>;
+
+    using ExceptionPtr = HTTPP::detail::ExceptionPtr;
+
+    using CompletionHandler = std::function<void (Future<Response>&&)>;
 
     Connection(Manager& manager, boost::asio::io_service& service);
 
@@ -94,7 +101,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
     void cancel();
 
     void buildResponse(CURLcode code);
-    void complete(std::exception_ptr ex = nullptr);
+    void complete(ExceptionPtr ex = ExceptionPtr());
     void setSocket(curl_socket_t socket);
 
     template <typename Cb>
@@ -106,7 +113,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
             BOOST_LOG_TRIVIAL(error)
                 << "Unknow poll operation requested: " << action;
 
-            complete(std::make_exception_ptr(
+            complete(HTTPP::detail::make_exception_ptr(
                 std::runtime_error("Unknow poll operation requested")));
             break;
         case CURL_POLL_IN:
@@ -145,7 +152,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
     client::Request request;
     client::Response response;
 
-    std::promise<client::Response> promise;
+    Promise<client::Response> promise;
     CompletionHandler completion_handler;
     bool expect_continue = false;
     std::vector<char> header;

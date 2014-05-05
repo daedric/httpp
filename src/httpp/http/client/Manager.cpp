@@ -63,9 +63,9 @@ Manager::Manager(UTILS::ThreadPool& io, UTILS::ThreadPool& dispatch)
 
 Manager::~Manager()
 {
-    std::vector<std::future<void>> futures;
+    std::vector<Future<void>> futures;
     {
-        std::promise<void> promise;
+        Promise<void> promise;
         auto future = promise.get_future();
 
         io.dispatch([this, &promise, &futures]
@@ -99,7 +99,7 @@ Manager::~Manager()
     }
 
     {
-        std::promise<void> promise;
+        Promise<void> promise;
         auto future = promise.get_future();
         io.dispatch([this, &promise]
                     {
@@ -264,7 +264,7 @@ void Manager::checkHandles()
 
         cancelled.first->poll_action = 0;
         cancelled.first->complete(
-            std::make_exception_ptr(UTILS::OperationAborted()));
+            HTTPP::detail::make_exception_ptr(UTILS::OperationAborted()));
         cancelled.second.set_value();
 
         if (current_connections.count(cancelled.first))
@@ -291,7 +291,7 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
         if (ec != boost::asio::error::operation_aborted)
         {
             BOOST_LOG_TRIVIAL(warning) << "Error on socket: " << ec.message();
-            connection->complete(std::make_exception_ptr(
+            connection->complete(HTTPP::detail::make_exception_ptr(
                 std::runtime_error("Error on socket: " + ec.message())));
         }
 
@@ -313,9 +313,10 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
     {
         BOOST_LOG_TRIVIAL(error)
             << "Error happened in perfomOp: " << curl_multi_strerror(rc);
-        auto exc = std::make_exception_ptr(std::runtime_error(curl_multi_strerror(rc)));
+        auto exc = HTTPP::detail::make_exception_ptr(
+            std::runtime_error(curl_multi_strerror(rc)));
         connection->complete(exc);
-        std::rethrow_exception(exc);
+        HTTPP::detail::rethrow_exception(exc);
     }
 
     checkHandles();
@@ -365,10 +366,9 @@ void Manager::poll(std::shared_ptr<Connection> connection, int action)
     }
 }
 
-
-std::future<void> Manager::cancel_connection(std::shared_ptr<Connection> connection)
+Manager::Future<void> Manager::cancel_connection(std::shared_ptr<Connection> connection)
 {
-    auto promise = std::make_shared<std::promise<void>>();
+    auto promise = std::make_shared<Promise<void>>();
     auto future = promise->get_future();
 
     io.dispatch(std::bind(&Manager::cancel_connection_io_thread,
@@ -379,10 +379,10 @@ std::future<void> Manager::cancel_connection(std::shared_ptr<Connection> connect
 }
 
 void Manager::cancel_connection_io_thread(std::shared_ptr<Connection> connection,
-                                          std::shared_ptr<std::promise<void>> promise_ptr)
+                                          std::shared_ptr<Promise<void>> promise_ptr)
 {
 
-    std::promise<void> promise = std::move(*promise_ptr);
+    Promise<void> promise = std::move(*promise_ptr);
     promise_ptr.reset();
 
     auto it = current_connections.find(connection);
@@ -390,7 +390,7 @@ void Manager::cancel_connection_io_thread(std::shared_ptr<Connection> connection
     if (it == std::end(current_connections))
     {
         BOOST_LOG_TRIVIAL(warning) << "Cannot cancel a completed connection";
-        promise.set_exception(std::make_exception_ptr(
+        promise.set_exception(HTTPP::detail::make_exception_ptr(
             std::runtime_error("Connection already completed")));
         return;
     }
@@ -435,7 +435,7 @@ void Manager::cancelConnection(std::shared_ptr<Connection> connection)
 
 int Manager::closeSocket(curl_socket_t curl_socket)
 {
-    std::promise<int> promise;
+    Promise<int> promise;
     auto future = promise.get_future();
 
     io.dispatch([this, curl_socket, &promise]
@@ -478,7 +478,7 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                 {
                     BOOST_LOG_TRIVIAL(error)
                         << "Error when configuring the request: " << exc.what();
-                    conn->complete(std::current_exception());
+                    conn->complete(HTTPP::detail::current_exception());
                     return;
                 }
 
@@ -488,9 +488,10 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                 {
                     BOOST_LOG_TRIVIAL(error)
                         << "Connection already present: " << conn;
-                    conn->complete(std::make_exception_ptr(std::runtime_error(
-                        "Cannot schedule an operation for an already "
-                        "managed connection")));
+                    conn->complete(
+                        HTTPP::detail::make_exception_ptr(std::runtime_error(
+                            "Cannot schedule an operation for an already "
+                            "managed connection")));
                     return;
                 }
 
@@ -501,8 +502,8 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                     BOOST_LOG_TRIVIAL(error)
                         << "Error scheduling a new request: " << message;
                     removeConnection(conn);
-                    conn->complete(
-                        std::make_exception_ptr(std::runtime_error(message)));
+                    conn->complete(HTTPP::detail::make_exception_ptr(
+                        std::runtime_error(message)));
                     return;
                 }
 

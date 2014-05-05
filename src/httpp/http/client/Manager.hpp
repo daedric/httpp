@@ -21,6 +21,7 @@
 # include <boost/log/trivial.hpp>
 # include <boost/asio.hpp>
 
+# include "httpp/detail/config.hpp"
 # include "httpp/http/Protocol.hpp"
 # include "httpp/utils/ThreadPool.hpp"
 
@@ -36,6 +37,13 @@ struct Manager
 {
     using Method = HTTPP::HTTP::Method;
     using ConnectionPtr = std::shared_ptr<Connection>;
+
+    template <typename T>
+    using Promise = HTTPP::detail::Promise<T>;
+
+    template <typename T>
+    using Future = HTTPP::detail::Future<T>;
+
 
     Manager(UTILS::ThreadPool& io, UTILS::ThreadPool& dispatch);
     Manager(const Manager&) = delete;
@@ -72,9 +80,9 @@ struct Manager
     void poll(std::shared_ptr<Connection> connection, int action);
 
     void cancelConnection(std::shared_ptr<Connection> connection);
-    std::future<void> cancel_connection(std::shared_ptr<Connection> connection);
+    Future<void> cancel_connection(std::shared_ptr<Connection> connection);
     void cancel_connection_io_thread(std::shared_ptr<Connection> connection,
-                                     std::shared_ptr<std::promise<void>> promise);
+                                     std::shared_ptr<Promise<void>> promise);
 
     int closeSocket(curl_socket_t curl_socket);
 
@@ -101,7 +109,7 @@ struct Manager
     };
 
     std::map<std::shared_ptr<Connection>, State> current_connections;
-    std::map<std::shared_ptr<Connection>, std::promise<void>> cancelled_connections;
+    std::map<std::shared_ptr<Connection>, Promise<void>> cancelled_connections;
 };
 } // namespace detail
 } // namespace client
