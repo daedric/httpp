@@ -137,5 +137,19 @@ void ThreadPool::stop()
     threads_.clear();
 }
 
+bool ThreadPool::runningInPool() const noexcept
+{
+    auto current_id = std::this_thread::get_id();
+    for (const auto& thread : threads_)
+    {
+        if (thread.get_id() == current_id)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 } // namespace UTILS
 } // namespace HTTPP

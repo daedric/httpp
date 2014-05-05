@@ -60,6 +60,7 @@ public:
         service_->dispatch(std::forward<Callable>(callable));
     }
 
+    bool runningInPool() const noexcept;
 
     void start(ThreadInit fct = ThreadInit());
     void stop();
