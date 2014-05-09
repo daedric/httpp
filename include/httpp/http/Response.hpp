@@ -83,6 +83,11 @@ public:
         return *this;
     }
 
+    const std::string& body() const noexcept
+    {
+        return body_;
+    }
+
     bool isComplete() const
     {
         return code_ != HttpCode::Continue;
