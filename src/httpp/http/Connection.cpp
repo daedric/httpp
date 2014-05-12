@@ -88,11 +88,11 @@ bool Connection::shouldBeDeleted() const noexcept
 
 void Connection::markToBeDeleted() noexcept
 {
-    bool expected = false;
-    if (should_be_deleted_.compare_exchange_strong(expected, true))
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!should_be_deleted_)
     {
+        should_be_deleted_ = true;
         BOOST_LOG_TRIVIAL(debug) << "Connection marked to be deleted: " << this;
-        std::lock_guard<std::mutex> lock(mutex_);
         cancel();
         close();
     }
@@ -133,6 +133,14 @@ void Connection::start()
 
 void Connection::read_request()
 {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (shouldBeDeleted())
+    {
+        lock.unlock();
+        handler_.destroy(this);
+        return;
+    }
+
     if (Parser::isComplete(buffer_.data(), size_))
     {
         UTILS::VectorStreamBuf buf(buffer_, size_);
@@ -144,6 +152,8 @@ void Connection::read_request()
                 << ": " << request;
 
             buf.shrinkVector();
+
+            lock.unlock();
             handler_.connection_notify_request(this, std::move(request));
         }
         else
@@ -157,6 +167,7 @@ void Connection::read_request()
                     std::string("An error occured in the request parsing indicating an error"));
             response_.connectionShouldBeClosed(true);
 
+            lock.unlock();
             sendResponse();
         }
     }
@@ -188,8 +199,10 @@ void Connection::read_request()
 
 void Connection::sendResponse(Callback&& cb)
 {
+    std::unique_lock<std::mutex> lock(mutex_);
     if (shouldBeDeleted())
     {
+        lock.unlock();
         handler_.destroy(this);
         return;
     }
@@ -216,7 +229,6 @@ void Connection::sendResponse()
         throw std::logic_error("Invalid connection state");
     }
 
-    std::lock_guard<std::mutex> lock(mutex_);
     sendResponse([this] { recycle(); });
 }
 
@@ -226,7 +238,6 @@ void Connection::sendContinue(Callback&& cb)
         .setBody("")
         .setCode(HttpCode::Continue);
 
-    std::lock_guard<std::mutex> lock(mutex_);
     sendResponse(std::move(cb));
 }
 

@@ -148,7 +148,7 @@ private:
 private:
     HTTPP::HttpServer& handler_;
     std::atomic_bool is_owned_ = { true };
-    std::atomic_bool should_be_deleted_ = { false };
+    bool should_be_deleted_ = { false };
     UTILS::ThreadPool& pool_;
     std::vector<char> buffer_;
     size_t size_ = 0;
