@@ -63,6 +63,7 @@ void Connection::release(Connection* connection)
 {
     connection->cancel();
     connection->close();
+
     delete connection;
 }
 

@@ -50,8 +50,6 @@ struct Manager
     Manager& operator=(const Manager&) = delete;
     ~Manager();
 
-    void stop();
-
     template <typename T>
     void manager_setopt(CURLMoption opt, T t)
     {

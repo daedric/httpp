@@ -108,11 +108,7 @@ Manager::~Manager()
                     });
         future.get();
     }
-    stop();
-}
 
-void Manager::stop()
-{
     boost::system::error_code ec;
     timer.cancel(ec);
 
@@ -429,7 +425,7 @@ void Manager::cancel_connection_io_thread(std::shared_ptr<Connection> connection
 
 void Manager::cancelConnection(std::shared_ptr<Connection> connection)
 {
-    auto future = std::move(cancel_connection(connection));
+    auto future = cancel_connection(connection);
     future.get();
 }
 
