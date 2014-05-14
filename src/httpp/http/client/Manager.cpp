@@ -183,6 +183,8 @@ int Manager::sock_cb(CURL* easy,
                      void*)
 {
     Manager* manager = (Manager*)multi_private;
+    BOOST_LOG_TRIVIAL(trace) << "Manager(" << manager << ") sock_cb: "
+                             << "socket: " << s << ", what: " << what;
 
     Connection* conn;
     auto rc = curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
@@ -234,6 +236,7 @@ void Manager::removeConnection(std::shared_ptr<Connection> conn)
 
 void Manager::checkHandles()
 {
+    BOOST_LOG_TRIVIAL(trace) << "CheckHandles";
     CURLMsg* msg;
     int msgs_left = 0;
     while ((msg = curl_multi_info_read(handler, &msgs_left)))
@@ -247,6 +250,7 @@ void Manager::checkHandles()
             curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
             conn->poll_action = 0;
 
+            BOOST_LOG_TRIVIAL(trace) << "CheckHandles: Connection done: " << conn;
             auto shared_ptr = conn->shared_from_this();
             removeConnection(shared_ptr);
             shared_ptr->buildResponse(result);
@@ -256,6 +260,9 @@ void Manager::checkHandles()
     while (!cancelled_connections.empty())
     {
         auto cancelled = std::move(*cancelled_connections.begin());
+        BOOST_LOG_TRIVIAL(trace)
+            << "CheckHandles: Connection cancel: " << cancelled.first;
+
         cancelled_connections.erase(cancelled_connections.begin());
 
         cancelled.first->poll_action = 0;
@@ -291,6 +298,9 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
                 std::runtime_error("Error on socket: " + ec.message())));
         }
 
+        BOOST_LOG_TRIVIAL(trace) << "Manager: " << this << ", performOp: "
+                                 << "Error: " << ec.message();
+
         checkHandles();
         return;
     }
@@ -298,13 +308,25 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
     auto it = current_connections.find(connection);
     if (it == std::end(current_connections))
     {
+        BOOST_LOG_TRIVIAL(trace)
+            << "Manager: " << this << ", performOp: "
+            << "Error: can't find connection: " << connection;
         return;
     }
 
+    BOOST_LOG_TRIVIAL(trace) << "Manager: " << this << ", performOp: "
+                             << "Start operation: " << action
+                             << " on connection: " << connection;
     it->second = PerformIo;
-    auto rc = curl_multi_socket_action(
-        handler, connection->socket->native_handle(), action, &still_running);
 
+    auto socket_native = connection->socket->native_handle();
+
+    auto rc =
+        curl_multi_socket_action(handler, socket_native, action, &still_running);
+
+    BOOST_LOG_TRIVIAL(trace) << "Manager: " << this << ", performOp: "
+                             << "Operation: " << action
+                             << " finished on socket: " << connection;
     if (rc != CURLM_OK)
     {
         BOOST_LOG_TRIVIAL(error)
@@ -319,21 +341,53 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
 
     if (still_running <= 0)
     {
+        BOOST_LOG_TRIVIAL(trace)
+            << "No more ooperation is running, cancel the timer";
         timer.cancel();
     }
     else
     {
-
         if (connection->poll_action)
         {
 
-            auto it = current_connections.find(connection);
-            if (it == std::end(current_connections))
             {
-                return;
+                auto it = sockets.find(socket_native);
+                if (it == end(sockets) || it->second != connection->socket)
+                {
+                    auto err_len = ::strlen(connection->error_buffer);
+                    if (err_len)
+                    {
+                        BOOST_LOG_TRIVIAL(error)
+                            << std::string(connection->error_buffer, err_len - 1);
+                    }
+
+                    BOOST_LOG_TRIVIAL(trace)
+                        << "Do not continue the polling on connection: "
+                        << connection << ", native_socket: " << socket_native
+                        << ", socket: " << connection->socket
+                        << ", socket has been closed";
+                    return;
+                }
+            }
+            {
+                auto it = current_connections.find(connection);
+                if (it == end(current_connections))
+                {
+                    BOOST_LOG_TRIVIAL(trace)
+                        << "Do not continue the polling on connection: "
+                        << connection << ", native_socket: " << socket_native
+                        << ", socket: " << connection->socket
+                        << ", connection is not managed anymore";
+                    return;
+                }
             }
 
-            it->second = Default;
+            BOOST_LOG_TRIVIAL(trace)
+                << "Continue the polling on connection: " << connection
+                << ", native_socket: " << socket_native
+                << ", socket: " << connection->socket;
+
+            current_connections[connection] = Default;
             poll(connection, connection->poll_action);
         }
     }
@@ -444,6 +498,12 @@ int Manager::closeSocket(curl_socket_t curl_socket)
                         promise.set_value(1);
                         return;
                     }
+
+                    BOOST_LOG_TRIVIAL(trace)
+                        << "Delete close socket: " << it->second
+                        << ", curl socket: " << curl_socket
+                        << ", socket native_handle: "
+                        << it->second->native_handle();
 
                     delete it->second;
                     sockets.erase(it);

@@ -39,6 +39,9 @@ Connection::Connection(Manager& manager, boost::asio::io_service& service)
 , handle(curl_easy_init())
 , service(service)
 {
+    BOOST_LOG_TRIVIAL(trace)
+        << "Instantiate Connection: " << this;
+
     if (!handle)
     {
         throw std::runtime_error("Cannot initialize curl handle");
@@ -47,6 +50,10 @@ Connection::Connection(Manager& manager, boost::asio::io_service& service)
 
 Connection::~Connection()
 {
+
+    BOOST_LOG_TRIVIAL(trace) << "Destroy Connection: " << this
+                             << ", socket: " << socket;
+
     if (http_headers)
     {
         curl_slist_free_all(http_headers);
@@ -173,7 +180,26 @@ curl_socket_t Connection::opensocket(void* clientp,
         }
 
         auto handle = socket->native_handle();
+
+        BOOST_LOG_TRIVIAL(trace)
+            << "Using: " << conn << " to open a new connection"
+            << "Open socket: " << conn << ", socket: " << socket
+            << ", native socket: " << handle;
+
         (*conn->sockets)[handle] = socket;
+
+        if (conn->poll_action)
+        {
+            // During a call to curl_multi_socket_action, when sending a
+            // chunked request, for some reason curl will decide to close the
+            // current socket and open a new socket. The problem is that the
+            // socket is supposed to be set through the manager when sockcb is
+            // called.  To workaround this problem, if we were polling, if we
+            // are asked to open a new connection we, set the current socket to
+            // the new one.
+            conn->socket = socket;
+        }
+
         return handle;
     }
 
@@ -197,6 +223,9 @@ void Connection::setSocket(curl_socket_t curl_socket)
                                  std::to_string(curl_socket));
     }
 
+    BOOST_LOG_TRIVIAL(trace) << "Connection: " << this
+                             << ": Set curl socket: " << curl_socket
+                             << ", socket: " << it->second;
     socket = it->second;
 }
 

@@ -107,6 +107,10 @@ struct Connection : public std::enable_shared_from_this<Connection>
     template <typename Cb>
     void poll(int action, Cb cb)
     {
+        BOOST_LOG_TRIVIAL(trace)
+            << "Poll socket: " << socket << ", socket native_handle: "
+            << socket->native_handle();
+
         switch (action)
         {
         default:
