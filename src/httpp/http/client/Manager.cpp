@@ -350,36 +350,15 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
         if (connection->poll_action)
         {
 
+            auto it = current_connections.find(connection);
+            if (it == end(current_connections))
             {
-                auto it = sockets.find(socket_native);
-                if (it == end(sockets) || it->second != connection->socket)
-                {
-                    auto err_len = ::strlen(connection->error_buffer);
-                    if (err_len)
-                    {
-                        BOOST_LOG_TRIVIAL(error)
-                            << std::string(connection->error_buffer, err_len - 1);
-                    }
-
-                    BOOST_LOG_TRIVIAL(trace)
-                        << "Do not continue the polling on connection: "
-                        << connection << ", native_socket: " << socket_native
-                        << ", socket: " << connection->socket
-                        << ", socket has been closed";
-                    return;
-                }
-            }
-            {
-                auto it = current_connections.find(connection);
-                if (it == end(current_connections))
-                {
-                    BOOST_LOG_TRIVIAL(trace)
-                        << "Do not continue the polling on connection: "
-                        << connection << ", native_socket: " << socket_native
-                        << ", socket: " << connection->socket
-                        << ", connection is not managed anymore";
-                    return;
-                }
+                BOOST_LOG_TRIVIAL(trace)
+                    << "Do not continue the polling on connection: " << connection
+                    << ", native_socket: " << socket_native
+                    << ", socket: " << connection->socket
+                    << ", connection is not managed anymore";
+                return;
             }
 
             BOOST_LOG_TRIVIAL(trace)
