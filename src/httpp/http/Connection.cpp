@@ -50,8 +50,7 @@ Connection::~Connection()
 
 void Connection::releaseFromHandler(Connection* connection)
 {
-    bool expected = false;
-    if (!connection->is_owned_.compare_exchange_strong(expected, true))
+    if (!connection->own())
     {
         throw std::logic_error("Invalid connection state");
     }
@@ -126,8 +125,11 @@ std::string Connection::source() const
 
 void Connection::start()
 {
-    size_ = 0;
-    buffer_.resize(BUF_SIZE);
+    size_ = buffer_.size();
+    if (!size_)
+    {
+        buffer_.resize(BUF_SIZE);
+    }
     response_ = Response();
     read_request();
 }
@@ -144,6 +146,7 @@ void Connection::read_request()
 
     if (Parser::isComplete(buffer_.data(), size_))
     {
+        BOOST_LOG_TRIVIAL(trace) << "Request: " << std::string(buffer_.data(), size_);
         UTILS::VectorStreamBuf buf(buffer_, size_);
         std::istream is(std::addressof(buf));
         Request request;
@@ -174,9 +177,9 @@ void Connection::read_request()
     }
     else
     {
-        if (size_ >= buffer_.size())
+        if (size_ == buffer_.size())
         {
-            buffer_.resize(buffer_.capacity() + BUF_SIZE);
+            buffer_.resize(buffer_.size() + BUF_SIZE);
         }
 
         char* data = buffer_.data();
@@ -221,10 +224,15 @@ void Connection::sendResponse(Callback&& cb)
     });
 }
 
-void Connection::sendResponse()
+bool Connection::own() noexcept
 {
     bool expected = false;
-    if (!is_owned_.compare_exchange_strong(expected, true))
+    return is_owned_.compare_exchange_strong(expected, true);
+}
+
+void Connection::sendResponse()
+{
+    if (!own())
     {
         BOOST_LOG_TRIVIAL(error) << "Connection should be disowned";
         throw std::logic_error("Invalid connection state");
@@ -235,11 +243,21 @@ void Connection::sendResponse()
 
 void Connection::sendContinue(Callback&& cb)
 {
+    if (!own())
+    {
+        BOOST_LOG_TRIVIAL(error) << "Connection should be disowned";
+        throw std::logic_error("Invalid connection state");
+    }
+
     response_
         .setBody("")
         .setCode(HttpCode::Continue);
 
-    sendResponse(std::move(cb));
+    sendResponse([this, cb]
+                 {
+                     disown();
+                     cb();
+                 });
 }
 
 void Connection::recycle()

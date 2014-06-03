@@ -62,18 +62,25 @@ public:
     template <typename Callable>
     void readBody(size_t body_size, Callable&& callable)
     {
-        bool expected = false;
-        if (!is_owned_.compare_exchange_strong(expected, true))
+        if (!own())
         {
             throw std::logic_error("Invalid connection state");
         }
 
         if (buffer_.size())
         {
-            assert(body_size >= buffer_.size());
-            callable(boost::system::error_code(), buffer_.data(), buffer_.size());
-            body_size -= buffer_.size();
-            buffer_.clear();
+            if (body_size <= buffer_.size())
+            {
+                callable(boost::system::error_code(), buffer_.data(), body_size);
+                buffer_.erase(begin(buffer_), begin(buffer_) + body_size);
+                body_size = 0;
+            }
+            else
+            {
+                callable(boost::system::error_code(), buffer_.data(), buffer_.size());
+                body_size -= buffer_.size();
+                buffer_.clear();
+            }
         }
 
         if (!body_size)
@@ -87,42 +94,24 @@ public:
 
         buffer_.resize(size_to_read);
         std::lock_guard<std::mutex> lock(mutex_);
+
         socket_.async_read_some(
             boost::asio::buffer(buffer_),
             [size_to_read, callable, this](const boost::system::error_code& ec,
                                            size_t size) mutable
             {
-                size_to_read -= size;
+                disown();
 
-                if (size_to_read && ec == boost::asio::error::eof)
+                if (ec)
                 {
                     BOOST_LOG_TRIVIAL(error)
-                        << "EOF detected while reading the body";
+                        << "Error detected while reading the body";
                     callable(boost::asio::error::eof, nullptr, 0);
                     return;
                 }
 
-                if (!size && ec)
-                {
-                    disown();
-                    callable(ec, nullptr, 0);
-                    return;
-                }
-
-                if (size)
-                {
-                    callable(ec, buffer_.data(), size);
-                }
-
-                if (size_to_read)
-                {
-                    readBody(size_to_read, callable);
-                }
-                else
-                {
-                    disown();
-                    callable(boost::asio::error::eof, nullptr, 0);
-                }
+                buffer_.resize(size);
+                readBody(size_to_read, callable);
             });
     }
 
@@ -134,6 +123,7 @@ private:
     void start();
 
     void disown() noexcept;
+    bool own() noexcept;
     bool shouldBeDeleted() const noexcept;
     void markToBeDeleted() noexcept;
 
