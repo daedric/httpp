@@ -172,6 +172,7 @@ void Connection::read_request()
             response_.connectionShouldBeClosed(true);
 
             lock.unlock();
+            disown();
             sendResponse();
         }
     }
