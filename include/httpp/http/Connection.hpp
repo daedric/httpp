@@ -97,8 +97,8 @@ public:
 
         socket_.async_read_some(
             boost::asio::buffer(buffer_),
-            [size_to_read, callable, this](const boost::system::error_code& ec,
-                                           size_t size) mutable
+            [body_size, size_to_read, callable, this](
+                const boost::system::error_code& ec, size_t size) mutable
             {
                 disown();
 
@@ -111,7 +111,7 @@ public:
                 }
 
                 buffer_.resize(size);
-                readBody(size_to_read, callable);
+                readBody(body_size, callable);
             });
     }
 
