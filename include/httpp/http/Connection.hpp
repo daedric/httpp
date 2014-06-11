@@ -90,15 +90,15 @@ public:
             return;
         }
 
-        auto size_to_read = std::min(BUF_SIZE, body_size);
+        auto buf_size = std::min(BUF_SIZE, body_size);
 
-        buffer_.resize(size_to_read);
+        buffer_.resize(buf_size);
         std::lock_guard<std::mutex> lock(mutex_);
 
         socket_.async_read_some(
             boost::asio::buffer(buffer_),
-            [body_size, size_to_read, callable, this](
-                const boost::system::error_code& ec, size_t size) mutable
+            [body_size, callable, this](const boost::system::error_code& ec,
+                                        size_t size)
             {
                 disown();
 
@@ -106,7 +106,7 @@ public:
                 {
                     BOOST_LOG_TRIVIAL(error)
                         << "Error detected while reading the body";
-                    callable(boost::asio::error::eof, nullptr, 0);
+                    callable(ec, nullptr, 0);
                     return;
                 }
 
