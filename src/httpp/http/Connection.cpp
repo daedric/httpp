@@ -146,14 +146,13 @@ void Connection::read_request()
 
     if (Parser::isComplete(buffer_.data(), size_))
     {
-        BOOST_LOG_TRIVIAL(trace) << "Request: " << std::string(buffer_.data(), size_);
         UTILS::VectorStreamBuf buf(buffer_, size_);
         std::istream is(std::addressof(buf));
         Request request;
         if (Parser::parse(is, request))
         {
-            BOOST_LOG_TRIVIAL(debug) << "Received a request from: " << source()
-                << ": " << request;
+            BOOST_LOG_TRIVIAL(trace) << "Received a request from: " << source()
+                                     << ": " << request;
 
             buf.shrinkVector();
 
