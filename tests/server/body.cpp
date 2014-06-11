@@ -19,6 +19,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/preprocessor/stringize.hpp>
 
 #include "httpp/HttpServer.hpp"
 #include "httpp/utils/Exception.hpp"
@@ -29,55 +30,18 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
+#define BODY_SIZE 8092
+
 static const std::string REQUEST =
     "POST / HTTP/1.1\r\n"
     "User-Agent: curl/7.32.0\r\n"
     "Host: localhost:8000\r\n"
     "Accept: */*\r\n"
-    "Content-Length: 274\r\n"
+    "Content-Length: " BOOST_PP_STRINGIZE(BODY_SIZE) "\r\n"
     "Content-Type: application/x-www-form-urlencoded\r\n"
-    "\r\n"
-    "PREFIX ?= /usr/local\n"
-    "\n"
-    "all:\n"
-    "	make -C build all\n"
-    "\n"
-    "clean:\n"
-    "	make -C build clean\n"
-    "\n"
-    "cmake:\n"
-    "	rm -rf build\n"
-    "	mkdir build\n"
-    "	cd build && cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..\n"
-    "\n"
-    "package:\n"
-    "	make -C build package\n"
-    "\n"
-    "test:\n"
-    "	make -C build test\n"
-    "\n"
-    "re : cmake all";
+    "\r\n";
 
-static const std::string EXPECTED_BODY = R"*(PREFIX ?= /usr/local
-
-all:
-	make -C build all
-
-clean:
-	make -C build clean
-
-cmake:
-	rm -rf build
-	mkdir build
-	cd build && cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..
-
-package:
-	make -C build package
-
-test:
-	make -C build test
-
-re : cmake all)*";
+std::string BODY;
 
 static Connection* gconnection = nullptr;
 void body_handler(const boost::system::error_code& ec, const char* buffer, size_t n)
@@ -89,7 +53,7 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     if (ec == boost::asio::error::eof)
     {
         std::cout << "Check" << std::endl;
-        BOOST_CHECK_EQUAL(body_read, EXPECTED_BODY);
+        BOOST_CHECK_EQUAL(body_read, BODY);
         (gconnection->response() = Response(HTTP::HttpCode::Ok)).connectionShouldBeClosed(true);
         gconnection->sendResponse();
     }
@@ -119,6 +83,11 @@ BOOST_AUTO_TEST_CASE(listener)
         boost::log::trivial::severity >= boost::log::trivial::warning
     );
 
+    for (int i = 0; i < BODY_SIZE; ++i)
+    {
+        BODY += char(i % 127);
+    }
+
     HttpServer server;
     server.start();
     server.setSink(&handler);
@@ -130,6 +99,8 @@ BOOST_AUTO_TEST_CASE(listener)
     tcp::resolver resolver(io_service);
     boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
     boost::asio::write(s, boost::asio::buffer(REQUEST));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    boost::asio::write(s, boost::asio::buffer(BODY));
 
     boost::asio::streambuf b;
     boost::asio::read_until(s, b, "\r\n");
