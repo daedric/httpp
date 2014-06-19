@@ -1,3 +1,13 @@
+/*
+ * Part of HTTPP.
+ *
+ * Distributed under the 3-clause BSD licence (See LICENCE.TXT file at the
+ * project root).
+ *
+ * Copyright (c) 2014 Thomas Sanchez.  All rights reserved.
+ *
+ */
+
 #include "httpp/utils/Thread.hpp"
 
 #include <thread>
