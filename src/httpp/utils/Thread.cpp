@@ -10,8 +10,16 @@
 
 #include "httpp/utils/Thread.hpp"
 
+#if HAVE_SYS_PRCTL_H
+# include <sys/prctl.h>
+# include <cerrno>
+# include <cstring>
+#endif
+
 #include <thread>
 #include <sstream>
+
+#include <boost/log/trivial.hpp>
 
 #if !HAS_THREAD_LOCAL_SPECIFIER
 # include <boost/thread/tss.hpp>
@@ -35,6 +43,16 @@ void setCurrentThreadName(const std::string& name)
     current_name = name;
 #else
     current_name.reset(new std::string(name));
+#endif
+
+#if HAVE_SYS_PRCTL_H
+    auto short_thread_name = name.substr(0, 15);
+    if (prctl(PR_SET_NAME, short_thread_name.c_str()))
+    {
+        BOOST_LOG_TRIVIAL(warning)
+            << "Cannot set the custom thread name: " << short_thread_name
+            << ", errno: " << errno << ", msg: " << strerror(errno);
+    }
 #endif
 }
 
