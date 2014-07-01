@@ -60,6 +60,7 @@ enum class HttpCode : unsigned int
     NotImplemented = 501,
     BadGateway = 502,
     ServiceUnavailable = 503,
+    GatewayTimeOut = 504,
     HttpVersionNotSupported = 505
 };
 
