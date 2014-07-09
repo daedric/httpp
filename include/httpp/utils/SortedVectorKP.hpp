@@ -47,7 +47,7 @@ public:
         auto it = std::lower_bound(
             begin(), end(), value_type{ key, not_found_ }, &comparator);
 
-        if (it->first == key)
+        if (it != end() && it->first == key)
         {
             return it->second;
         }

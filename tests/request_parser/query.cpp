@@ -134,3 +134,14 @@ BOOST_AUTO_TEST_CASE(test_http_header_query_parser_sorted)
     BOOST_CHECK_EQUAL(params[2], y);
     BOOST_CHECK_EQUAL(params[3], z);
 }
+
+BOOST_AUTO_TEST_CASE(empty_query)
+{
+    // Empty key and values.
+    auto request = parse("/");
+    auto params = request.getSortedQueryParams();
+    BOOST_CHECK_EQUAL(params["a"], "");
+    BOOST_CHECK_EQUAL(params["b"], "");
+    BOOST_CHECK_EQUAL(params["y"], "");
+    BOOST_CHECK_EQUAL(params["z"], "");
+}
