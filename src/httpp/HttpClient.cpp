@@ -29,7 +29,6 @@ void HttpClient::AsyncHandler::cancelOperation()
     if (ptr)
     {
         ptr->cancel();
-        ptr.reset();
     }
 }
 
