@@ -19,6 +19,7 @@ namespace HTTP
 
 char const Response::HTTP_DELIMITER[] = { '\r', '\n'};
 char const Response::HEADER_SEPARATOR[] = { ':', ' '};
+char const Response::END_OF_STREAM_MARKER[] = { '0', '\r', '\n', '\r', '\n'};
 
 Response::Response()
 : Response(HttpCode::Ok)
@@ -43,6 +44,12 @@ Response::Response(HttpCode code, std::string&& body)
 {
 }
 
+Response::Response(HttpCode code, std::function<std::string()> chunkedBodyCallback)
+: code_(code),
+  chunkedBodyCallback_(chunkedBodyCallback)
+{
+}
+
 Response& Response::addHeader(const std::string& k, const std::string& v)
 {
     if (k == "Content-Length")
@@ -61,9 +68,18 @@ Response& Response::addHeader(const std::string& k, const std::string& v)
 
 Response& Response::setBody(const std::string& body)
 {
+    chunkedBodyCallback_ = 0;
     body_ = body;
     return *this;
 }
+
+Response& Response::setBody(std::function<std::string()> chunkedBodyCallback)
+{
+    body_.clear();
+    chunkedBodyCallback_ = chunkedBodyCallback;
+    return *this;
+}
+
 
 } // namespace HTTP
 } // namespace HTTPP
