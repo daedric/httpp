@@ -22,7 +22,6 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::HttpCode;
 
-
 void chunked_handler(Connection* connection, Request&& request)
 {
     auto chunked_stream = []() -> std::string
@@ -36,14 +35,12 @@ void chunked_handler(Connection* connection, Request&& request)
         else
         {
 
-	      // std::string chunk =  "Chunk number " + boost::lexical_cast<std::string>(i) + "\n";
-           std::string chunk("!");
-        
+	       std::string chunk =  "Chunk number " + boost::lexical_cast<std::string>(i) + "\n";                
            std::cout << chunk;
            return chunk;
         }
     };	
-		
+
     std::cout << "got a request" << std::endl;
     connection->response()
 	   .setCode(HttpCode::Ok)

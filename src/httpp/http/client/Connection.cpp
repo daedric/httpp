@@ -82,6 +82,7 @@ Connection::~Connection()
                 << "Error happened completing the connection: " << ex.what();
         }
     }
+    BOOST_LOG_TRIVIAL(trace) << "Connection destroyed: " << this;
 }
 
 void Connection::init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& sockets)

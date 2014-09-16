@@ -87,18 +87,16 @@ public:
                     writeHandler(ec, size);
                 }
                 else
-                {
-                    auto nextChunk = this->chunkedBodyCallback_();
-                    std::cout << "Generated next chunk " + nextChunk;                    
-                    sendChunk(writer);
+                {                    
+                    sendChunk(writer, writeHandler);
                 }
             });
             
         }
     }
 
-    template <typename Writer>
-    void sendChunk(Writer& writer)
+    template <typename Writer, typename WriteHandler>
+    void sendChunk(Writer& writer, WriteHandler writeHandler)
     {
         // try to generate the next chunk
         auto nextChunk = chunkedBodyCallback_();
@@ -117,11 +115,15 @@ public:
 
             std::cout << "writing\n";
             std::cout << header.str();
-            boost::asio::async_write(writer, buffers, [this,&writer](boost::system::error_code const& ec, size_t)
+            boost::asio::async_write(writer, buffers, [this,&writer,writeHandler](boost::system::error_code const& ec, size_t size)
             {
                 if (!ec)
                 {
-                    sendChunk(writer);
+                    sendChunk(writer, writeHandler);
+                }
+                else
+                {
+                    writeHandler(ec, size);
                 }
             });
         }
@@ -129,10 +131,7 @@ public:
         {
             std::cout << "Sending end of stream\n";
         
-            boost::asio::async_write(writer, boost::asio::buffer(END_OF_STREAM_MARKER), [this,&writer](boost::system::error_code const& , size_t)
-            {
-                
-            });
+            boost::asio::async_write(writer, boost::asio::buffer(END_OF_STREAM_MARKER), writeHandler);                            
         }
     }
 
