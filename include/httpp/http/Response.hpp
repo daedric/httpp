@@ -48,6 +48,7 @@ public:
     Response& setBody(const std::string& body);
     Response& setBody(std::function<std::string()> chunkedBodyCallback);
 
+
     template <typename Writer, typename WriteHandler>
     void sendResponse(Writer& writer, WriteHandler&& writeHandler)
     {
@@ -70,7 +71,7 @@ public:
         
         if (!is_chunked_enconding())
         {
-            // append full body and send
+            // append full body and send.
             if (!body_.empty())
             {
                 buffers.push_back(boost::asio::buffer(body_));
@@ -79,7 +80,7 @@ public:
         }
         else
         {            
-            // send headers, then chunks
+            // send headers, then chunks individually
             boost::asio::async_write(writer, buffers, [this, &writer, buffers, writeHandler](boost::system::error_code const& ec, size_t size)
             {
                 if (ec)
@@ -98,39 +99,40 @@ public:
     template <typename Writer, typename WriteHandler>
     void sendChunk(Writer& writer, WriteHandler writeHandler)
     {
-        // try to generate the next chunk
-        auto nextChunk = chunkedBodyCallback_();
-        if (!nextChunk.empty())
-        {
-            std::cout << "Sending Chunk\n";
-            // format the chunk header.
-            std::stringstream header;
-            header << std::hex << nextChunk.size();
-            std::cout << "Size of chunk = " << std::hex << nextChunk.size() << "\n";
-            std::vector<boost::asio::const_buffer> buffers;
-            buffers.push_back(boost::asio::buffer(header.str()));
-            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
-            buffers.push_back(boost::asio::buffer(nextChunk));
-            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
+        // try to generate the next chunk.
+        current_chunk_ = chunkedBodyCallback_();
 
-            std::cout << "writing\n";
-            std::cout << header.str();
+        if (!current_chunk_.empty())
+        {        
+            // format the chunk header and chunk body. NB. Ensure objects used in asio::buffer retain lifetime until the
+            // async_write handler has been invoke.
+            std::vector<boost::asio::const_buffer> buffers;
+
+            std::stringstream header;
+            header << std::hex << current_chunk_.size();                 
+            current_chunk_header_=header.str();
+
+            buffers.push_back(boost::asio::buffer(current_chunk_header_));
+            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
+            buffers.push_back(boost::asio::buffer(current_chunk_));
+            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
+            
             boost::asio::async_write(writer, buffers, [this,&writer,writeHandler](boost::system::error_code const& ec, size_t size)
             {
-                if (!ec)
+                if (ec)
                 {
-                    sendChunk(writer, writeHandler);
+                    // notify the original caller that an error occured during sending
+                    writeHandler(ec, size);                    
                 }
                 else
-                {
-                    writeHandler(ec, size);
+                {                    
+                    sendChunk(writer, writeHandler);
                 }
             });
         }
         else
-        {
-            std::cout << "Sending end of stream\n";
-        
+        {        
+            // Send end of stream marker.
             boost::asio::async_write(writer, boost::asio::buffer(END_OF_STREAM_MARKER), writeHandler);                            
         }
     }
@@ -188,11 +190,12 @@ private:
     HttpCode code_;
     std::string body_;
     std::function<std::string()> chunkedBodyCallback_;
+    std::string current_chunk_header_;
+    std::string current_chunk_;
     int major_ = 1;
     int minor_ = 1;
     std::vector<Header> headers_;
     bool should_be_closed_ = false;
-
     std::string status_string_;
 
 };

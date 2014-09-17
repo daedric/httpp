@@ -9,11 +9,12 @@
  */
 
 #include <boost/test/unit_test.hpp>
-
+#include <memory>
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
 #include "httpp/utils/Exception.hpp"
 #include "httpp/http/Utils.hpp"
+# include <boost/log/trivial.hpp>
 
 using namespace HTTPP;
 
@@ -22,26 +23,46 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-void chunked_data_handler(Connection* connection, Request&& request )
+const int DEFAULT_NUMBER_OF_CHUNKS = 3;
+const int DEFAULT_CHUNK_SIZE = 100;
+
+class TestChunkStreamer
 {
-    auto streaming = []() -> std::string 
-	{	
-		static int i = 0;
-		if (++i == 1)
+public:
+	TestChunkStreamer(int numberOfChunks, size_t sizeOfChunks)
+		: m_numChunksRemaining(numberOfChunks), m_chunkSize(sizeOfChunks)
+	{
+	}
+
+	std::string GenerateNextChunk()
+	{
+		if (m_numChunksRemaining > 0)
 		{
-			std::cerr << "1st\n";
-			return std::string("BLAH!");
+		 	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__  << ":Sending Chunk";
+			m_numChunksRemaining--;
+			return std::string(m_chunkSize, 'X');
 		}
 		else
 		{
-			std::cerr << "last\n";
+			BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":End of Stream";
 			return "";
 		}
-	};
-    
+	}
+
+private:
+	int 	m_numChunksRemaining;
+	size_t 	m_chunkSize;
+};
+
+
+void chunked_data_handler(Connection* connection, Request&& request )
+{	
+	auto s = std::make_shared<TestChunkStreamer>(DEFAULT_NUMBER_OF_CHUNKS, DEFAULT_CHUNK_SIZE);
+    auto body = [s]() { return s->GenerateNextChunk(); };
+
     connection->response()
         .setCode(HTTP::HttpCode::Ok)
-        .setBody(streaming);
+        .setBody(body);
     connection->sendResponse();    
 }
 
@@ -53,15 +74,72 @@ BOOST_AUTO_TEST_CASE(test_transfer_encoding_header_is_set_correctly)
 	server.setSink(&chunked_data_handler);
 	server.bind("localhost", "8080");
 
-	
+	HttpClient::Request request;
+	request.url("http://localhost:8080");
+	HttpClient client;
+
+	auto response = client.get(std::move(request));
+	auto headers = response.getSortedHeaders();
+	BOOST_CHECK_EQUAL(headers["Transfer-Encoding"], "chunked");
+}
+
+
+//
+// Test that the client will receive the expected payload. Since we use CUrl, we receive the
+// re-assembled payload, not the raw payload of individual chunks.
+
+
+
+
+BOOST_AUTO_TEST_CASE(test_client_receives_expected_body)
+{
+	HttpServer server;
+	server.start();
+	server.setSink(&chunked_data_handler);
+	server.bind("localhost", "8080");
+
+	HttpClient::Request request;
+	request.url("http://localhost:8080");
+	HttpClient client;
+
+	auto response = client.get(std::move(request));
+	std::string body(response.body.begin(), response.body.end());
+
+	std::string expectedBody(DEFAULT_CHUNK_SIZE * DEFAULT_NUMBER_OF_CHUNKS, 'X');
+	BOOST_CHECK_EQUAL(expectedBody, body);
+}
+
+
+//
+// Test we can send an empty response with no data. Should return 200 OK, but nothing in the payload.
+
+void empty_chunk_response(Connection * connection, Request && request)
+{	
+	auto empty_response = []()
 	{
-		HttpClient::Request request;
-		request.url("http://localhost:8080");
-		HttpClient client;
-		auto response = client.get(std::move(request));
-		std::cerr << "response returned\n\n";
-		auto headers = response.getSortedHeaders();
-		BOOST_CHECK_EQUAL(headers["Transfer-Encoding"], "chunked");
-	}	
-	std::cerr << "DONE\n";
+		return "";
+	};
+
+	connection->response()
+        .setCode(HTTP::HttpCode::Ok)
+        .setBody(empty_response);
+    connection->sendResponse();
+}
+
+BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
+{
+	HttpServer server;
+	server.start();
+	server.setSink(&empty_chunk_response);
+	server.bind("localhost", "8080");
+
+	HttpClient::Request request;
+	request.url("http://localhost:8080");
+	HttpClient client;
+
+	auto response = client.get(std::move(request));
+	std::string body(response.body.begin(), response.body.end());
+	
+	BOOST_CHECK_EQUAL("", body);
+	BOOST_CHECK_EQUAL(getDefaultMessage(HTTP::HttpCode::Ok), getDefaultMessage(response.code));
 }

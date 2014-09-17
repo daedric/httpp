@@ -24,29 +24,23 @@ using HTTPP::HTTP::HttpCode;
 
 void chunked_handler(Connection* connection, Request&& request)
 {
-    auto chunked_stream = []() -> std::string
-    {
-	    static int i = 0;
-        if (++i == 5)
-        {
-           std::cout << "End of stream\n";
-           return "";
-	    }
-        else
-        {
-
-	       std::string chunk =  "Chunk number " + boost::lexical_cast<std::string>(i) + "\n";                
-           std::cout << chunk;
-           return chunk;
-        }
-    };	
-
-    std::cout << "got a request" << std::endl;
-    connection->response()
-	   .setCode(HttpCode::Ok)
-	   .setBody(chunked_stream);
-    HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
-    connection->sendResponse();
+	auto chunked_stream = []() -> std::string
+	{
+		static int i = 0;
+		if (++i == 5)
+		{         
+			return "";
+		}
+		else
+		{         
+			return "XXXXXXXXXXXXXX";
+		}
+	};	
+	connection->response()
+		.setCode(HttpCode::Ok)
+		.setBody(chunked_stream);
+	HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
+	connection->sendResponse();
 }
 
 int main(int, char**)
@@ -54,6 +48,6 @@ int main(int, char**)
     HttpServer server;
     server.start();
     server.setSink(&chunked_handler);
-    server.bind("doiice", "8080");
+    server.bind("localhost", "8080");
     while (true) std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
