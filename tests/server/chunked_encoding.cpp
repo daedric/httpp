@@ -10,6 +10,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include <memory>
+#include <atomic>
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
 #include "httpp/utils/Exception.hpp"
@@ -55,7 +56,7 @@ private:
 };
 
 
-void chunked_data_handler(Connection* connection, Request&& request )
+void chunked_data_handler(Connection* connection, Request&& )
 {	
 	auto s = std::make_shared<TestChunkStreamer>(DEFAULT_NUMBER_OF_CHUNKS, DEFAULT_CHUNK_SIZE);
     auto body = [s]() { return s->GenerateNextChunk(); };
@@ -87,10 +88,7 @@ BOOST_AUTO_TEST_CASE(test_transfer_encoding_header_is_set_correctly)
 //
 // Test that the client will receive the expected payload. Since we use CUrl, we receive the
 // re-assembled payload, not the raw payload of individual chunks.
-
-
-
-
+//
 BOOST_AUTO_TEST_CASE(test_client_receives_expected_body)
 {
 	HttpServer server;
@@ -112,8 +110,8 @@ BOOST_AUTO_TEST_CASE(test_client_receives_expected_body)
 
 //
 // Test we can send an empty response with no data. Should return 200 OK, but nothing in the payload.
-
-void empty_chunk_response(Connection * connection, Request && request)
+//
+void empty_chunk_response(Connection * connection, Request && )
 {	
 	auto empty_response = []()
 	{
@@ -123,7 +121,7 @@ void empty_chunk_response(Connection * connection, Request && request)
 	connection->response()
         .setCode(HTTP::HttpCode::Ok)
         .setBody(empty_response);
-    connection->sendResponse();
+    connection->sendResponse();    
 }
 
 BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
@@ -138,8 +136,51 @@ BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
 	HttpClient client;
 
 	auto response = client.get(std::move(request));
-	std::string body(response.body.begin(), response.body.end());
-	
+	std::string body(response.body.begin(), response.body.end());	
+	auto headers = response.getSortedHeaders();
+
+	BOOST_CHECK_EQUAL(headers["Transfer-Encoding"], "chunked");
 	BOOST_CHECK_EQUAL("", body);
 	BOOST_CHECK_EQUAL(getDefaultMessage(HTTP::HttpCode::Ok), getDefaultMessage(response.code));
 }
+
+
+
+//
+// Test we can cancel a streaming request. Also check the client api gets the correct exception.
+//
+void infinite_response(Connection * connection, Request &&)
+{
+	connection->response()
+        .setCode(HTTP::HttpCode::Ok)
+        .setBody([](){ return "XXX"; });    
+    connection->sendResponse();
+}
+
+BOOST_AUTO_TEST_CASE(test_cancelling_request_while_streaming_stops_functor)
+{
+	HttpServer server;
+	server.start();
+	server.setSink(&infinite_response);
+	server.bind("localhost", "8080");
+	BOOST_CHECK_EQUAL(server.getNbConnection(), 1);
+
+	{
+		HttpClient::Request request;
+		request.url("http://localhost:8080");
+		HttpClient client;	
+
+ 		auto handler = client.async_get(std::move(request), [](HttpClient::Future&& fut)
+ 		 			{ 
+ 		           		BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted); 
+		          	});
+
+    	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    	BOOST_CHECK_EQUAL(server.getNbConnection(), 2);
+    	handler.cancelOperation();
+	}
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    BOOST_CHECK_EQUAL(server.getNbConnection(), 1);
+}
+

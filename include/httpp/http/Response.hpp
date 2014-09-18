@@ -80,7 +80,7 @@ public:
         }
         else
         {            
-            // send headers, then chunks individually
+            // send headers, then chunks individually.
             boost::asio::async_write(writer, buffers, [this, &writer, buffers, writeHandler](boost::system::error_code const& ec, size_t size)
             {
                 if (ec)
@@ -104,7 +104,7 @@ public:
 
         if (!current_chunk_.empty())
         {        
-            // format the chunk header and chunk body. NB. Ensure objects used in asio::buffer retain lifetime until the
+            // Format the chunk header and chunk body. NB. Ensure objects used in asio::buffer retain lifetime until the
             // async_write handler has been invoke.
             std::vector<boost::asio::const_buffer> buffers;
 
