@@ -46,7 +46,7 @@ Response::Response(HttpCode code, std::string&& body)
 
 Response::Response(HttpCode code, std::function<std::string()> chunkedBodyCallback)
 : code_(code),
-  chunkedBodyCallback_(chunkedBodyCallback)
+  chunkedBodyCallback_(std::move(chunkedBodyCallback))
 {
 }
 
@@ -76,7 +76,7 @@ Response& Response::setBody(const std::string& body)
 Response& Response::setBody(std::function<std::string()> chunkedBodyCallback)
 {
     body_.clear();
-    chunkedBodyCallback_ = chunkedBodyCallback;
+    chunkedBodyCallback_ = std::move(chunkedBodyCallback);
     return *this;
 }
 
