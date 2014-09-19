@@ -213,6 +213,7 @@ BOOST_AUTO_TEST_CASE(test_format_of_raw_response)
 
     auto rawResponse = GetRawResponse();
     auto startOfBody = rawResponse.find("\r\n\r\n");
+    BOOST_CHECK(startOfBody != std::string::npos);
     startOfBody += 4;
 
     // each chunk should start with "64\r\n" and end with "\r\n".

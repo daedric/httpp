@@ -9,15 +9,15 @@
  */
 
 #ifndef _HTTPP_HTPP_RESPONSE_HPP_
-# define _HTTPP_HTPP_RESPONSE_HPP_
+#define _HTTPP_HTPP_RESPONSE_HPP_
 
-# include <functional>
-# include <vector>
-# include <string>
+#include <functional>
+#include <vector>
+#include <string>
 
-# include <boost/asio.hpp>
+#include <boost/asio.hpp>
 
-# include "Protocol.hpp"
+#include "Protocol.hpp"
 
 namespace HTTPP
 {
@@ -31,7 +31,6 @@ class Response
     static char const END_OF_STREAM_MARKER[5];
 
 public:
-
     Response();
     Response(HttpCode code);
     Response(HttpCode code, const std::string& body);
@@ -48,12 +47,11 @@ public:
     Response& setBody(const std::string& body);
     Response& setBody(std::function<std::string()> chunkedBodyCallback);
 
-
     template <typename Writer, typename WriteHandler>
     void sendResponse(Writer& writer, WriteHandler&& writeHandler)
     {
+        // prepare the response headers
         generate_status_string();
-
         finalize_response_headers();
 
         std::vector<boost::asio::const_buffer> buffers;
@@ -68,75 +66,37 @@ public:
         }
         buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
 
-        
-        if (!is_chunked_enconding())
+        if (is_chunked_enconding())
         {
-            // append full body and send.
+            // send headers, then each chunks individually.
+            boost::asio::async_write(
+                writer,
+                buffers,
+                [this, &writer, buffers, writeHandler](
+                    boost::system::error_code const& ec, size_t size)
+                {
+                    // if there was an error sending the headers, notify the
+                    // caller, otherwise start sending the chunks.
+                    if (ec)
+                    {
+                        writeHandler(ec, size);
+                    }
+                    else
+                    {
+                        write_chunk(writer, writeHandler);
+                    }
+                });
+        }
+        else
+        {
+            // response is non-chunked, send everything at once.
             if (!body_.empty())
             {
                 buffers.push_back(boost::asio::buffer(body_));
             }
             boost::asio::async_write(writer, buffers, writeHandler);
         }
-        else
-        {            
-            // send headers, then chunks individually.
-            boost::asio::async_write(writer, buffers, [this, &writer, buffers, writeHandler](boost::system::error_code const& ec, size_t size)
-            {
-                if (ec)
-                {
-                    writeHandler(ec, size);
-                }
-                else
-                {                    
-                    sendChunk(writer, writeHandler);
-                }
-            });
-            
-        }
     }
-
-    template <typename Writer, typename WriteHandler>
-    void sendChunk(Writer& writer, WriteHandler writeHandler)
-    {
-        // try to generate the next chunk.
-        current_chunk_ = chunkedBodyCallback_();
-
-        if (!current_chunk_.empty())
-        {        
-            // Format the chunk header and chunk body. NB. Ensure objects used in asio::buffer retain lifetime until the
-            // async_write handler has been invoked.
-            std::vector<boost::asio::const_buffer> buffers;
-
-            std::stringstream header;
-            header << std::hex << current_chunk_.size();                 
-            current_chunk_header_=header.str();
-
-            buffers.push_back(boost::asio::buffer(current_chunk_header_));
-            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
-            buffers.push_back(boost::asio::buffer(current_chunk_));
-            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
-            
-            boost::asio::async_write(writer, buffers, [this,&writer,writeHandler](boost::system::error_code const& ec, size_t size)
-            {
-                if (ec)
-                {
-                    // notify the original caller that an error occured during sending
-                    writeHandler(ec, size);                    
-                }
-                else
-                {                    
-                    sendChunk(writer, writeHandler);
-                }
-            });
-        }
-        else
-        {        
-            // Send end of stream marker.
-            boost::asio::async_write(writer, boost::asio::buffer(END_OF_STREAM_MARKER), writeHandler);                            
-        }
-    }
-
 
     bool connectionShouldBeClosed() const
     {
@@ -160,6 +120,59 @@ public:
     }
 
 private:
+    template <typename Writer, typename WriteHandler>
+    void write_chunk(Writer& writer, WriteHandler writeHandler)
+    {
+        if (!is_chunked_enconding())
+        {
+            throw std::runtime_error("Call to write_chunk for a response which "
+                                     "is not using chunked encoding");
+        }
+
+        // try to generate the next chunk. This may block.
+        current_chunk_ = chunkedBodyCallback_();
+
+        if (!current_chunk_.empty())
+        {
+            // Format the chunk header and chunk body.
+            std::vector<boost::asio::const_buffer> buffers;
+            std::stringstream header;
+            header << std::hex << current_chunk_.size();
+            current_chunk_header_ = header.str();
+            buffers.push_back(boost::asio::buffer(current_chunk_header_));
+            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
+            buffers.push_back(boost::asio::buffer(current_chunk_));
+            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
+
+            boost::asio::async_write(
+                writer,
+                buffers,
+                [this, &writer, writeHandler](
+                    boost::system::error_code const& ec, size_t size)
+                {
+                    if (ec)
+                    {
+                        // notify the original caller that an error occured
+                        // during sending.
+                        writeHandler(ec, size);
+                    }
+                    else
+                    {
+                        // write the next chunk.
+                        write_chunk(writer, writeHandler);
+                    }
+                });
+        }
+        else
+        {
+            // Send end of stream marker, notify the client handler that the
+            // response is complete, potentially with an error if the
+            // this write fails.
+            boost::asio::async_write(
+                writer, boost::asio::buffer(END_OF_STREAM_MARKER), writeHandler);
+        }
+    }
+
     bool is_chunked_enconding() const
     {
         return chunkedBodyCallback_ != 0;
@@ -182,9 +195,8 @@ private:
         else
         {
             headers_.emplace_back("Content-Length", std::to_string(body_.size()));
-        }        
+        }
     }
-
 
 private:
     HttpCode code_;
@@ -197,7 +209,6 @@ private:
     std::vector<Header> headers_;
     bool should_be_closed_ = false;
     std::string status_string_;
-
 };
 
 } // namespace HTTP
