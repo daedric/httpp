@@ -195,7 +195,7 @@ std::string GetRawResponse()
 
     // read until end-of-stream
     boost::asio::streambuf response;
-    auto bytes = boost::asio::read_until(sock, response, "0\r\n\r\n");
+    auto bytes = boost::asio::read_until(sock, response, "\r\n0\r\n\r\n");
 
     // convert buffer to a string
     auto responseData = response.data();
@@ -212,12 +212,10 @@ BOOST_AUTO_TEST_CASE(test_format_of_raw_response)
     server.bind("localhost", "8080");
 
     auto rawResponse = GetRawResponse();
-
     auto startOfBody = rawResponse.find("\r\n\r\n");
-    //sBOOST_CHECK_NOT_EQUAL(startOfBody, std::string::npos);
     startOfBody += 4;
 
-    // each chunk should start with 64\r\n (100 byte chunks)
+    // each chunk should start with "64\r\n" and end with "\r\n".
     auto chunkIterator = startOfBody;
     for (int i=0; i<3; i++)
     {
