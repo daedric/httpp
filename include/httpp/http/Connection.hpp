@@ -117,6 +117,7 @@ public:
 
     void sendResponse();
     void sendContinue(Callback&& cb);
+    
 private:
     static void release(Connection* connection);
 

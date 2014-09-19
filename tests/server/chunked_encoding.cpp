@@ -29,7 +29,6 @@ using HTTPP::HTTP::Connection;
 const int DEFAULT_NUMBER_OF_CHUNKS = 3;
 const int DEFAULT_CHUNK_SIZE = 100;
 
-
 //
 // Helper that constructs a stream functor for the specified number of chunks,
 // each chunk being 'chunkSize' bytes.
@@ -174,3 +173,63 @@ BOOST_AUTO_TEST_CASE(test_cancelling_request_while_streaming_stops_functor)
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     BOOST_CHECK_EQUAL(server.getNbConnection(), 1);
 }
+
+
+
+//
+// Test the raw response contains the correct header and chunk data.
+//
+
+std::string GetRawResponse()
+{
+    using boost::asio::ip::tcp;
+
+    boost::asio::io_service io_service;
+    tcp::socket sock(io_service);
+    tcp::resolver resolver(io_service);
+
+    // send request
+    const std::string REQUEST("GET / HTTP/1.1\r\n\r\n");
+    boost::asio::connect(sock, resolver.resolve({ "localhost", "8080" }));
+    boost::asio::write(sock, boost::asio::buffer(REQUEST));
+
+    // read until end-of-stream
+    boost::asio::streambuf response;
+    auto bytes = boost::asio::read_until(sock, response, "0\r\n\r\n");
+
+    // convert buffer to a string
+    auto responseData = response.data();
+    std::string str(boost::asio::buffers_begin(responseData), boost::asio::buffers_begin(responseData) + bytes);
+    return str;
+}
+
+
+BOOST_AUTO_TEST_CASE(test_format_of_raw_response)
+{
+    HttpServer server;
+    server.start();
+    server.setSink(&chunked_data_handler);
+    server.bind("localhost", "8080");
+
+    auto rawResponse = GetRawResponse();
+
+    auto startOfBody = rawResponse.find("\r\n\r\n");
+    //sBOOST_CHECK_NOT_EQUAL(startOfBody, std::string::npos);
+    startOfBody += 4;
+
+    // each chunk should start with 64\r\n (100 byte chunks)
+    auto chunkIterator = startOfBody;
+    for (int i=0; i<3; i++)
+    {
+        auto chunkHeader = rawResponse.substr(chunkIterator, 4);
+        BOOST_CHECK_EQUAL(chunkHeader, "64\r\n");
+        chunkIterator += 4;
+        auto chunkBody = rawResponse.substr(chunkIterator, 100);        
+        BOOST_CHECK_EQUAL(chunkBody, std::string(DEFAULT_CHUNK_SIZE, 'X'));   
+        chunkIterator += 100;
+        auto chunkTrailer = rawResponse.substr(chunkIterator, 2);
+        BOOST_CHECK_EQUAL(chunkTrailer, "\r\n");
+        chunkIterator += 2;
+    }
+}
+
