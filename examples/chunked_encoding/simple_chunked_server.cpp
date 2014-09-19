@@ -22,28 +22,26 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::HttpCode;
 
-void chunked_handler(Connection* connection, Request&& )
+void chunked_handler(Connection* connection, Request&&)
 {
-	auto numChunks = 10;
-	auto chunkSize = 1000;
+    auto numChunks = 10;
+    auto chunkSize = 1000;
 
-	auto body = [numChunks,chunkSize]() mutable -> std::string
-	{
-		if (numChunks-- > 0)
-		{
-			return std::string(chunkSize, 'X');
-		}
-		else
-		{
-			return std::string("");
-		}
-	};
+    auto body = [numChunks, chunkSize]() mutable->std::string
+    {
+        if (numChunks-- > 0)
+        {
+            return std::string(chunkSize, 'X');
+        }
+        else
+        {
+            return std::string("");
+        }
+    };
 
-	connection->response()
-		.setCode(HttpCode::Ok)
-		.setBody(body);
+    connection->response().setCode(HttpCode::Ok).setBody(body);
 
-	connection->sendResponse();
+    connection->sendResponse();
 }
 
 int main(int, char**)
@@ -52,5 +50,6 @@ int main(int, char**)
     server.start();
     server.setSink(&chunked_handler);
     server.bind("localhost", "8080");
-    while (true) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    while (true)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
