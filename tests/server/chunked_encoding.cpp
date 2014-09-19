@@ -11,6 +11,8 @@
 #include <boost/test/unit_test.hpp>
 #include <memory>
 #include <atomic>
+#include <string>
+#include <functional>
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
 #include "httpp/utils/Exception.hpp"
@@ -27,45 +29,41 @@ using HTTPP::HTTP::Connection;
 const int DEFAULT_NUMBER_OF_CHUNKS = 3;
 const int DEFAULT_CHUNK_SIZE = 100;
 
-class TestChunkStreamer
-{
-public:
-    TestChunkStreamer(int numberOfChunks, size_t sizeOfChunks)
-    : m_numChunksRemaining(numberOfChunks), m_chunkSize(sizeOfChunks)
-    {
-    }
 
-    std::string GenerateNextChunk()
+//
+// Helper that constructs a stream functor for the specified number of chunks,
+// each chunk being 'chunkSize' bytes.
+//
+std::function<std::string()> make_stream(int numChunks, int chunkSize)
+{
+    auto stream = [numChunks,chunkSize]() mutable -> std::string
     {
-        if (m_numChunksRemaining > 0)
+        if (numChunks > 0)
         {
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":Sending Chunk";
-            m_numChunksRemaining--;
-            return std::string(m_chunkSize, 'X');
+            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":Sending Chunk ";
+            numChunks--;
+            return std::string(chunkSize, 'X');
         }
         else
         {
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":End of Stream";
+            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":End of Stream ";
             return "";
         }
-    }
+    };
+    return stream;
+}
 
-private:
-    int m_numChunksRemaining;
-    size_t m_chunkSize;
-};
 
 void chunked_data_handler(Connection* connection, Request&&)
-{
-    auto s = std::make_shared<TestChunkStreamer>(DEFAULT_NUMBER_OF_CHUNKS,
-                                                 DEFAULT_CHUNK_SIZE);
-    auto body = [s]()
-    { return s->GenerateNextChunk(); };
-
+{    
+    auto body = make_stream(DEFAULT_NUMBER_OF_CHUNKS, DEFAULT_CHUNK_SIZE);
     connection->response().setCode(HTTP::HttpCode::Ok).setBody(body);
     connection->sendResponse();
 }
 
+//
+// Test we correctly set the Transfer-Encoding header when streaming 
+//
 BOOST_AUTO_TEST_CASE(test_transfer_encoding_header_is_set_correctly)
 {
     HttpServer server;
@@ -129,12 +127,11 @@ BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
     request.url("http://localhost:8080");
     HttpClient client;
 
-    auto response = client.get(std::move(request));
-    std::string body(response.body.begin(), response.body.end());
+    auto response = client.get(std::move(request));    
     auto headers = response.getSortedHeaders();
 
     BOOST_CHECK_EQUAL(headers["Transfer-Encoding"], "chunked");
-    BOOST_CHECK_EQUAL("", body);
+    BOOST_CHECK_EQUAL(true, response.body.empty());
     BOOST_CHECK_EQUAL(getDefaultMessage(HTTP::HttpCode::Ok),
                       getDefaultMessage(response.code));
 }
@@ -145,8 +142,9 @@ BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
 //
 void infinite_response(Connection* connection, Request&&)
 {
-    connection->response().setCode(HTTP::HttpCode::Ok).setBody([]()
-                                                               { return "XXX"; });
+    connection->response()
+        .setCode(HTTP::HttpCode::Ok)
+        .setBody([]() { return "XXX"; });
     connection->sendResponse();
 }
 
