@@ -22,24 +22,27 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::HttpCode;
 
-void chunked_handler(Connection* connection, Request&& request)
+void chunked_handler(Connection* connection, Request&& )
 {
-	auto chunked_stream = []() -> std::string
+	auto numChunks = 10;
+	auto chunkSize = 1000;
+
+	auto body = [numChunks,chunkSize]() mutable -> std::string
 	{
-		static int i = 0;
-		if (++i == 5)
-		{         
-			return "";
+		if (numChunks-- > 0)
+		{
+			return std::string(chunkSize, 'X');
 		}
 		else
-		{         
-			return "XXXXXXXXXXXXXX";
+		{
+			return std::string("");
 		}
-	};	
+	};
+
 	connection->response()
 		.setCode(HttpCode::Ok)
-		.setBody(chunked_stream);
-	HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
+		.setBody(body);
+
 	connection->sendResponse();
 }
 

@@ -105,7 +105,7 @@ public:
         if (!current_chunk_.empty())
         {        
             // Format the chunk header and chunk body. NB. Ensure objects used in asio::buffer retain lifetime until the
-            // async_write handler has been invoke.
+            // async_write handler has been invoked.
             std::vector<boost::asio::const_buffer> buffers;
 
             std::stringstream header;
