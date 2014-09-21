@@ -38,7 +38,7 @@ void chunked_handler(Connection* connection, Request&& request)
         }
     };
 
-    connection->response().setCode(HttpCode::Ok).setBody(std::move(body));
+    connection->response().setCode(HttpCode::Ok).setBody(body);
     HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
     connection->sendResponse();
 }

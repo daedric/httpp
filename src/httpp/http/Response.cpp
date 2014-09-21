@@ -54,12 +54,17 @@ Response& Response::addHeader(const std::string& k, const std::string& v)
 {
     if (k == "Content-Length")
     {
-        throw std::invalid_argument("Content-Lenght should not be set");
+        throw std::invalid_argument("Content-Length header should not be set.");
+    }
+
+    if (k == "Transfer-Encoding")
+    {
+        throw std::invalid_argument("Transfer-Encoding header should not be set.");
     }
 
     if (k.empty() || v.empty())
     {
-        throw std::invalid_argument("key nor value can be empty");
+        throw std::invalid_argument("Attempting to addHeader with an empty key or value");
     }
 
     headers_.emplace_back(k, v);
@@ -73,18 +78,18 @@ Response& Response::setBody(const std::string& body)
     return *this;
 }
 
-Response& Response::setBody(std::function<std::string()>&& chunkedBodyCallback)
+Response& Response::setBody(std::function<std::string()> chunkedBodyCallback)
 {
-    body_.clear();
-    chunkedBodyCallback_ = std::move(chunkedBodyCallback);
-    return *this;
-}
-
-Response& Response::setBody(const std::function<std::string()>& chunkedBodyCallback)
-{
-    body_.clear();
-    chunkedBodyCallback_ = chunkedBodyCallback;
-    return *this;
+    if (chunkedBodyCallback != 0)
+    {
+        body_.clear();
+        chunkedBodyCallback_ = std::move(chunkedBodyCallback);
+        return *this;
+    }
+    else
+    {
+        throw std::invalid_argument("Setting chunked response body to an empty callback");
+    }
 }
 
 } // namespace HTTP
