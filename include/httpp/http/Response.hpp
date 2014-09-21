@@ -66,7 +66,16 @@ public:
         }
         buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
 
-        if (is_chunked_enconding())
+        if (!is_chunked_enconding())
+        {
+             // response is non-chunked, send everything at once.
+            if (!body_.empty())
+            {
+                buffers.push_back(boost::asio::buffer(body_));
+            }
+            boost::asio::async_write(writer, buffers, writeHandler);
+        }
+        else
         {
             // send headers, then each chunks individually.
             boost::asio::async_write(
@@ -86,17 +95,8 @@ public:
                     {
                         write_chunk(writer, writeHandler);
                     }
-                });
-        }
-        else
-        {
-            // response is non-chunked, send everything at once.
-            if (!body_.empty())
-            {
-                buffers.push_back(boost::asio::buffer(body_));
-            }
-            boost::asio::async_write(writer, buffers, writeHandler);
-        }
+                });            
+        }        
     }
 
     bool connectionShouldBeClosed() const
