@@ -35,6 +35,7 @@ public:
     Response(HttpCode code);
     Response(HttpCode code, const std::string& body);
     Response(HttpCode code, std::string&& body);
+    Response(HttpCode code, std::function<std::string()> & chunkedBodyCallback);
     Response(HttpCode code, std::function<std::string()>&& chunkedBodyCallback);
 
     Response& setCode(HttpCode code)
@@ -45,7 +46,10 @@ public:
 
     Response& addHeader(const std::string& k, const std::string& v);
     Response& setBody(const std::string& body);
+
+    Response& setBody(const std::function<std::string()>& chunkedBodyCallback);
     Response& setBody(std::function<std::string()>&& chunkedBodyCallback);
+
 
     template <typename Writer, typename WriteHandler>
     void sendResponse(Writer& writer, WriteHandler&& writeHandler)

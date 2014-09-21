@@ -80,6 +80,12 @@ Response& Response::setBody(std::function<std::string()>&& chunkedBodyCallback)
     return *this;
 }
 
+Response& Response::setBody(const std::function<std::string()>& chunkedBodyCallback)
+{
+    body_.clear();
+    chunkedBodyCallback_ = chunkedBodyCallback;
+    return *this;
+}
 
 } // namespace HTTP
 } // namespace HTTPP
