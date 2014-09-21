@@ -123,6 +123,7 @@ public:
     }
 
 private:
+
     template <typename Writer, typename WriteHandler>
     void write_chunk(Writer& writer, WriteHandler writeHandler)
     {
@@ -183,8 +184,7 @@ private:
 
     void generate_status_string()
     {
-        status_string_ = "HTTP/" + std::to_string(major_) + "." +
-                         std::to_string(minor_) + " " +
+        status_string_ = "HTTP/1.1 " +
                          std::to_string(static_cast<unsigned int>(code_)) +
                          " " + getDefaultMessage(code_);
     }
@@ -207,8 +207,6 @@ private:
     std::function<std::string()> chunkedBodyCallback_;
     std::string current_chunk_header_;
     std::string current_chunk_;
-    int major_ = 1;
-    int minor_ = 1;
     std::vector<Header> headers_;
     bool should_be_closed_ = false;
     std::string status_string_;
