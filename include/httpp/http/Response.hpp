@@ -35,8 +35,7 @@ public:
     Response(HttpCode code);
     Response(HttpCode code, const std::string& body);
     Response(HttpCode code, std::string&& body);
-    Response(HttpCode code, const std::function<std::string()> & chunkedBodyCallback);
-    Response(HttpCode code, std::function<std::string()>&& chunkedBodyCallback);
+    Response(HttpCode code, std::function<std::string()> chunkedBodyCallback);
 
     Response& setCode(HttpCode code)
     {
