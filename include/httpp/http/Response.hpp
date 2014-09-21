@@ -90,7 +90,6 @@ public:
                     // caller, otherwise start sending the chunks.
                     if (ec)
                     {
-                        std::terminate();
                         writeHandler(ec, size);
                     }
                     else
