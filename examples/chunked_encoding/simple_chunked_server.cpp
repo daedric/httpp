@@ -15,19 +15,18 @@
 #include <httpp/HttpServer.hpp>
 #include <httpp/http/Utils.hpp>
 #include <httpp/utils/Exception.hpp>
-#include <boost/lexical_cast.hpp>
-
+ 
 using HTTPP::HttpServer;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::HttpCode;
 
-void chunked_handler(Connection* connection, Request&&)
+void chunked_handler(Connection* connection, Request&& request)
 {
     auto numChunks = 10;
-    auto chunkSize = 1000;
+    auto chunkSize = 8192;
 
-    auto body = [numChunks, chunkSize]() mutable->std::string
+    auto body = [numChunks, chunkSize]() mutable -> std::string
     {
         if (numChunks-- > 0)
         {
@@ -39,8 +38,8 @@ void chunked_handler(Connection* connection, Request&&)
         }
     };
 
-    connection->response().setCode(HttpCode::Ok).setBody(body);
-
+    connection->response().setCode(HttpCode::Ok).setBody(std::move(body));
+    HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
     connection->sendResponse();
 }
 
@@ -51,5 +50,7 @@ int main(int, char**)
     server.setSink(&chunked_handler);
     server.bind("localhost", "8080");
     while (true)
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));        
+    }
 }

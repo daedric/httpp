@@ -56,7 +56,7 @@ std::function<std::string()> make_stream(int numChunks, int chunkSize)
 void chunked_data_handler(Connection* connection, Request&&)
 {    
     auto body = make_stream(DEFAULT_NUMBER_OF_CHUNKS, DEFAULT_CHUNK_SIZE);
-    connection->response().setCode(HTTP::HttpCode::Ok).setBody(body);
+    connection->response().setCode(HTTP::HttpCode::Ok).setBody(std::move(body));
     connection->sendResponse();
 }
 
