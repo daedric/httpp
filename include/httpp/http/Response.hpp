@@ -31,11 +31,19 @@ class Response
     static char const END_OF_STREAM_MARKER[5];
 
 public:
+
+    // A ChunkedResponseCallback is responsible for generating individual "chunks"
+    // of a response. Each call to the ChunkedResponseCallback should return a string
+    // representing the content for an individual chunk. An empty string signifying 
+    // the end of the response.
+    using ChunkedResponseCallback = std::function<std::string()>;
+
+
     Response();
     Response(HttpCode code);
     Response(HttpCode code, const std::string& body);
-    Response(HttpCode code, std::string&& body);
-    Response(HttpCode code, std::function<std::string()> chunkedBodyCallback);
+    Response(HttpCode code, std::string&& body);    
+    Response(HttpCode code, ChunkedResponseCallback&& callback);
 
     Response& setCode(HttpCode code)
     {
@@ -45,8 +53,7 @@ public:
 
     Response& addHeader(const std::string& k, const std::string& v);
     Response& setBody(const std::string& body);
-
-    Response& setBody(std::function<std::string()> chunkedBodyCallback);
+    Response& setBody(ChunkedResponseCallback&& callback);
 
     template <typename Writer, typename WriteHandler>
     void sendResponse(Writer& writer, WriteHandler&& writeHandler)
@@ -122,6 +129,8 @@ public:
 
 private:
 
+    // Sends individual chunks for a chunked response, until the end-of-stream is
+    // sent or an error occurs.
     template <typename Writer, typename WriteHandler>
     void write_chunk(Writer& writer, WriteHandler writeHandler)
     {
