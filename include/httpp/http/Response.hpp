@@ -9,15 +9,15 @@
  */
 
 #ifndef _HTTPP_HTPP_RESPONSE_HPP_
-#define _HTTPP_HTPP_RESPONSE_HPP_
+# define _HTTPP_HTPP_RESPONSE_HPP_
 
-#include <functional>
-#include <vector>
-#include <string>
+# include <functional>
+# include <vector>
+# include <string>
 
-#include <boost/asio.hpp>
+# include <boost/asio.hpp>
 
-#include "Protocol.hpp"
+# include "Protocol.hpp"
 
 namespace HTTPP
 {
@@ -89,7 +89,7 @@ public:
             boost::asio::async_write(
                 writer,
                 buffers,
-                [this, &writer, buffers, writeHandler](
+                [this, &writer, writeHandler](
                     boost::system::error_code const& ec, size_t size)
                 {
                     // if there was an error sending the headers, notify the
@@ -186,7 +186,7 @@ private:
 
     bool is_chunked_enconding() const
     {
-        return chunkedBodyCallback_ != 0;
+        return chunkedBodyCallback_ != nullptr;
     }
 
     void generate_status_string()

@@ -80,7 +80,7 @@ Response& Response::setBody(const std::string& body)
 
 Response& Response::setBody(ChunkedResponseCallback && callback)
 {
-    if (callback != 0)
+    if (callback)
     {
         body_.clear();
         chunkedBodyCallback_ = std::move(callback);
