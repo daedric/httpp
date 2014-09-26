@@ -211,15 +211,13 @@ void Connection::sendResponse(Callback&& cb)
         return;
     }
 
-    response_.sendResponse(socket_,
-                           [cb, this](boost::system::error_code const& ec, size_t)
-                           {
+    response_.sendResponse(socket_, [cb, this](boost::system::error_code const& ec, size_t)
+    {
         if (ec)
         {
             handler_.connection_error(this, ec);
             return;
         }
-
         cb();
     });
 }
