@@ -35,6 +35,7 @@ void setShouldConnectionBeClosed(const Request& request, Response& response)
     if (boost::iequals(connection, KEEPALIVE))
     {
         response.connectionShouldBeClosed(false);
+        response.addHeader("Connection", KEEPALIVE);
         return;
     }
 
