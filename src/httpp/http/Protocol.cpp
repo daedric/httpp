@@ -40,6 +40,48 @@ std::string to_string(Method method)
             return "DELETE";
     }
 }
+#define APPLY_ON_HTTP_CODE(FN)       \
+    FN(Continue)                     \
+    FN(SwitchingProtocols)           \
+    FN(Ok)                           \
+    FN(Created)                      \
+    FN(Accepted)                     \
+    FN(NonAuthoritativeInformation)  \
+    FN(NoContent)                    \
+    FN(ResetContent)                 \
+    FN(PartialContent)               \
+    FN(MultipleChoices)              \
+    FN(MovedPermanently)             \
+    FN(Redirect)                     \
+    FN(SeeOther)                     \
+    FN(NotModified)                  \
+    FN(UseProxy)                     \
+    FN(Unused)                       \
+    FN(TemporaryRedirect)            \
+    FN(BadRequest)                   \
+    FN(Unauthorized)                 \
+    FN(PaymentRequired)              \
+    FN(Forbidden)                    \
+    FN(NotFound)                     \
+    FN(MethodNotAllowed)             \
+    FN(NotAcceptable)                \
+    FN(ProxyAuthenticationRequired)  \
+    FN(RequestTimeout)               \
+    FN(Conflict)                     \
+    FN(Gone)                         \
+    FN(LengthRequired)               \
+    FN(PreconditionFailed)           \
+    FN(RequestEntityTooLarge)        \
+    FN(RequestUriTooLong)            \
+    FN(UnsupportedMediaType)         \
+    FN(RequestedRangeNotSatisfiable) \
+    FN(ExpectationFailed)            \
+    FN(InternalServerError)          \
+    FN(NotImplemented)               \
+    FN(BadGateway)                   \
+    FN(ServiceUnavailable)           \
+    FN(GatewayTimeout)               \
+    FN(HttpVersionNotSupported)
 
 std::string getDefaultMessage(HttpCode code)
 {
@@ -49,46 +91,11 @@ std::string getDefaultMessage(HttpCode code)
     default:
         return "Unknown";
 
-    case HttpCode::Continue:
-        return "Continue";
-
-    case HttpCode::Ok:
-        return "Ok";
-    case HttpCode::Created:
-        return "Created";
-    case HttpCode::Accepted:
-        return "Accepted";
-    case HttpCode::NoContent:
-        return "NoContent";
-
-    case HttpCode::MultipleChoice:
-        return "MultipleChoice";
-    case HttpCode::MovedPermentaly:
-        return "MovedPermentaly";
-    case HttpCode::MovedTemporarily:
-        return "MovedTemporarily";
-    case HttpCode::NotModified:
-        return "NotModified";
-
-    case HttpCode::BadRequest:
-        return "BadRequest";
-    case HttpCode::Unauthorized:
-        return "Unauthorized";
-    case HttpCode::Forbidden:
-        return "Forbidden";
-    case HttpCode::NotFound:
-        return "NotFound";
-
-    case HttpCode::InternalServerError:
-        return "InternalServerError";
-    case HttpCode::NotImplemented:
-        return "NotImplemented";
-    case HttpCode::BadGateway:
-        return "BadGateway";
-    case HttpCode::ServiceUnavailable:
-        return "ServiceUnavailable";
-    case HttpCode::HttpVersionNotSupported:
-        return "HttpVersionNotSupported";
+#define FN(code)         \
+    case HttpCode::code: \
+        return #code;
+        APPLY_ON_HTTP_CODE(FN)
+#undef FN
     }
 }
 

@@ -34,7 +34,7 @@ void handler(Connection* connection, Request&& request)
     if (port < 8084)
     {
         connection->response()
-            .setCode(HTTP::HttpCode::MovedPermentaly)
+            .setCode(HTTP::HttpCode::MovedPermanently)
             .addHeader("Location", "http://localhost:" + std::to_string(port + 1))
             .setBody("");
         connection->sendResponse();
@@ -80,7 +80,7 @@ void handler2(Connection* connection, Request&& request)
     if (request.uri == "//redirect")
     {
         connection->response()
-            .setCode(HTTP::HttpCode::MovedPermentaly)
+            .setCode(HTTP::HttpCode::MovedPermanently)
             .addHeader("Location", "/ok")
             .setBody("");
         connection->sendResponse();
