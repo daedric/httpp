@@ -11,6 +11,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 #CMAKE_POLICY(SET CMP0005 NEW)
 
+if(${CMAKE_MAJOR_VERSION} EQUAL 3)
+    CMAKE_POLICY(SET CMP0042 NEW)
+endif()
+
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     MESSAGE(STATUS "Setting cmake build type to 'Release' as none was specified.")
