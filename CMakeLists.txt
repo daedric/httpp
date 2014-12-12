@@ -11,6 +11,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 #CMAKE_POLICY(SET CMP0005 NEW)
 
+if(${CMAKE_MAJOR_VERSION} EQUAL 3)
+    CMAKE_POLICY(SET CMP0042 NEW)
+endif()
+
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     MESSAGE(STATUS "Setting cmake build type to 'Release' as none was specified.")
@@ -47,7 +51,7 @@ OPTION(BUILD_SHARED_LIBS "Should the shared lib be built")
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
 SET(HTTPP_VERSION_MINOR "5")
-SET(HTTPP_VERSION_PATCH "1")
+SET(HTTPP_VERSION_PATCH "2")
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${HTTPP_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${HTTPP_VERSION_MINOR})
