@@ -19,7 +19,7 @@ before_install:
 
 install:
     - if [ "${CXX}" == "clang++" ]; then sudo apt-get -qq install clang-3.3; fi
-    - sudo apt-get install g++-4.8 rpm;
+    - sudo apt-get install g++-4.8 rpm libssl-dev;
     - sudo update-alternatives --install /usr/bin/gcc-4.8 gcc /usr/bin/gcc 50
     - sudo update-alternatives --install /usr/bin/g++-4.8 g++ /usr/bin/g++ 50
     - ./CMakeScripts/install_boost.sh

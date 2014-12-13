@@ -97,6 +97,20 @@ void HttpServer::bind(const std::string& address, const std::string& port)
     start_accept(acc);
 }
 
+void HttpServer::bind(const std::string& address,
+                      SSLContext ctx,
+                      const std::string& port)
+{
+
+    auto acc = HttpServer::bind(service_, address, port);
+    acc->setSSLContext(std::move(ctx));
+    BOOST_LOG_TRIVIAL(debug) << "SSL bind address: " << address
+                             << " on port: " << port;
+    acceptors_.push_back(acc);
+    ++running_acceptors_;
+    start_accept(acc);
+}
+
 void HttpServer::mark(ConnectionPtr connection)
 {
     ++connection_count_;
@@ -136,7 +150,9 @@ void HttpServer::start_accept(AcceptorPtr acceptor)
 {
     if (running_)
     {
-        auto connection = new HTTP::Connection(*this, service_, pool_);
+
+        auto connection =
+            new HTTP::Connection(*this, service_, pool_, acceptor->ssl_ctx.get());
         mark(connection);
 
         acceptor->async_accept(connection->socket_,
