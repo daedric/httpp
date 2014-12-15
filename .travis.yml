@@ -35,5 +35,5 @@ script:
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} -DBUILD_TESTS=${BUILD_TESTS} -DBUILD_EXAMPLES=${BUILD_EXAMPLES} ..
     - make VERBOSE=1
-    - make test
+    - make test || cat Testing/Temporary/LastTest.log
     - make package

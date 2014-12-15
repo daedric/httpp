@@ -52,6 +52,7 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     if (ec == boost::asio::error::eof)
     {
         BOOST_CHECK_EQUAL(body_read, EXPECTED_BODY);
+        body_read.clear();
         (gconnection->response() = Response(HTTP::HttpCode::Ok))
             .setBody(EXPECTED_BODY)
             .connectionShouldBeClosed(true);
