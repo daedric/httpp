@@ -283,6 +283,12 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
         conn_setopt(CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
     }
 
+    if (request.allow_insecure_)
+    {
+        conn_setopt(CURLOPT_SSL_VERIFYHOST, 0L);
+        conn_setopt(CURLOPT_SSL_VERIFYPEER, 0L);
+    }
+
     if (!request.post_params_.empty() && !request.content_.empty())
     {
         throw std::runtime_error(

@@ -34,7 +34,7 @@ public:
 
     // A ChunkedResponseCallback is responsible for generating individual "chunks"
     // of a response. Each call to the ChunkedResponseCallback should return a string
-    // representing the content for an individual chunk. An empty string signifying 
+    // representing the content for an individual chunk. An empty string signifying
     // the end of the response.
     using ChunkedResponseCallback = std::function<std::string()>;
 
@@ -42,7 +42,7 @@ public:
     Response();
     Response(HttpCode code);
     Response(HttpCode code, const std::string& body);
-    Response(HttpCode code, std::string&& body);    
+    Response(HttpCode code, std::string&& body);
     Response(HttpCode code, ChunkedResponseCallback&& callback);
 
     Response& setCode(HttpCode code)
@@ -102,8 +102,8 @@ public:
                     {
                         write_chunk(writer, writeHandler);
                     }
-                });            
-        }        
+                });
+        }
     }
 
     bool connectionShouldBeClosed() const
@@ -162,7 +162,7 @@ private:
                     boost::system::error_code const& ec, size_t size)
                 {
                     if (ec)
-                    {                        
+                    {
                         // notify the original caller that an error occured
                         // during sending.
                         writeHandler(ec, size);

@@ -16,6 +16,7 @@
 # include <string>
 # include <functional>
 # include <boost/asio.hpp>
+# include <boost/asio/ssl.hpp>
 # include <boost/log/trivial.hpp>
 
 # include "Response.hpp"
@@ -34,13 +35,17 @@ class Connection
 {
     friend class ::HTTPP::HttpServer;
 
+    using DefaultSocket = boost::asio::ip::tcp::socket;
+    using SSLSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>;
+
 public:
     static const size_t BUF_SIZE;
     using Callback = std::function<void ()>;
 
     Connection(HTTPP::HttpServer& handler,
                boost::asio::io_service& service,
-               UTILS::ThreadPool& pool);
+               UTILS::ThreadPool& pool,
+               boost::asio::ssl::context* ctx = nullptr);
     ~Connection();
 
     Connection(const Connection&) = delete;
@@ -117,7 +122,7 @@ public:
 
     void sendResponse();
     void sendContinue(Callback&& cb);
-    
+
 private:
     static void release(Connection* connection);
 
@@ -134,6 +139,9 @@ private:
     void read_request();
     void recycle();
 
+    template <typename Buffer, typename Handler>
+    void async_read_some(Buffer&& buffer, Handler&& handler);
+
     void sendResponse(Callback&& cb);
 
 private:
@@ -145,7 +153,11 @@ private:
     size_t size_ = 0;
 
     std::mutex mutex_;
-    boost::asio::ip::tcp::socket socket_;
+
+    DefaultSocket socket_;
+    bool need_handshake_ = true;
+    std::unique_ptr<SSLSocket> ssl_socket_;
+
     Response response_;
 };
 

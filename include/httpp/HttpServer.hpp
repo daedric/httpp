@@ -16,6 +16,7 @@
 # include <memory>
 # include <mutex>
 # include <boost/asio.hpp>
+# include <boost/asio/ssl.hpp>
 
 # include "http/Connection.hpp"
 # include "http/Request.hpp"
@@ -26,7 +27,20 @@ namespace HTTPP
 
 class HttpServer
 {
-    using Acceptor = boost::asio::ip::tcp::acceptor;
+public:
+    struct SSLContext
+    {
+        std::string cert_file;
+        std::string key_file;
+        std::string dh_file;
+
+        std::string cert_buffer;
+        std::string key_buffer;
+        std::string dh_buffer;
+    };
+
+private:
+    struct Acceptor;
     using AcceptorPtr = std::shared_ptr<Acceptor>;
 
 public:
@@ -39,6 +53,10 @@ public:
     ~HttpServer();
 
     void bind(const std::string& address, const std::string& port = "8000");
+    void bind(const std::string& address,
+              SSLContext ctx,
+              const std::string& port = "443");
+
     void setSink(SinkCb cb)
     {
         sink_ = cb;

@@ -47,6 +47,9 @@ public:
     // unsafe, catenate current url + path
     Request& addToUrl(const std::string& path);
 
+    // Allow insecure certificate
+    Request& allowInsecure();
+
     Request& joinUrlPath(const std::string& dir, bool trailing_sep = false);
     Request& addUrlVariable(const std::string& var, const std::string& val);
     Request& followRedirect(bool b = true);
@@ -61,6 +64,7 @@ public:
 private:
     std::string url_;
     bool follow_redirect_ = false;
+    bool allow_insecure_ = false;
 
     std::vector<KV> query_params_;
     std::vector<KV> post_params_;

@@ -26,13 +26,21 @@ namespace HTTP
 {
 const size_t Connection::BUF_SIZE = 8196;
 
+
 Connection::Connection(HTTPP::HttpServer& handler,
                        boost::asio::io_service& service,
-                       UTILS::ThreadPool& pool)
+                       UTILS::ThreadPool& pool,
+                       boost::asio::ssl::context* ctx
+                       )
 : handler_(handler)
 , pool_(pool)
 , socket_(service)
-{}
+{
+    if (ctx)
+    {
+        ssl_socket_.reset(new SSLSocket(socket_, *ctx));
+    }
+}
 
 Connection::~Connection()
 {
@@ -45,6 +53,21 @@ Connection::~Connection()
         BOOST_LOG_TRIVIAL(error) << "A connection is destroyed manually, this "
                                     "should always be done by the HttpServer";
         handler_.destroy(this, false);
+    }
+}
+
+template <typename Buffer, typename Handler>
+void Connection::async_read_some(Buffer&& buffer, Handler&& handler)
+{
+    if (ssl_socket_)
+    {
+        return ssl_socket_->async_read_some(std::forward<Buffer>(buffer),
+                                            std::forward<Handler>(handler));
+    }
+    else
+    {
+        return socket_.async_read_some(std::forward<Buffer>(buffer),
+                                       std::forward<Handler>(handler));
     }
 }
 
@@ -101,7 +124,15 @@ void Connection::markToBeDeleted() noexcept
 void Connection::close() noexcept
 {
     boost::system::error_code ec;
-    socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    if (ssl_socket_)
+    {
+        ssl_socket_->shutdown(ec);
+    }
+    else
+    {
+        socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    }
+
     socket_.close(ec);
 }
 
@@ -131,7 +162,25 @@ void Connection::start()
         buffer_.resize(BUF_SIZE);
     }
     response_ = Response();
-    read_request();
+
+    if (ssl_socket_ && need_handshake_)
+    {
+        need_handshake_ = false;
+        ssl_socket_->async_handshake(boost::asio::ssl::stream_base::server,
+                                     [this](boost::system::error_code const& ec)
+                                     {
+            if (ec)
+            {
+                handler_.connection_error(this, ec);
+                return;
+            }
+            read_request();
+        });
+    }
+    else
+    {
+        read_request();
+    }
 }
 
 void Connection::read_request()
@@ -185,19 +234,18 @@ void Connection::read_request()
         char* data = buffer_.data();
         data += size_;
 
-        socket_.async_read_some(
-            boost::asio::buffer(data, buffer_.capacity() - size_),
-            [&](boost::system::error_code const& ec, size_t size)
+        async_read_some(boost::asio::buffer(data, buffer_.capacity() - size_),
+                        [&](boost::system::error_code const& ec, size_t size)
+                        {
+            if (ec)
             {
-                if (ec)
-                {
-                    handler_.connection_error(this, ec);
-                    return ;
-                }
+                handler_.connection_error(this, ec);
+                return;
+            }
 
-                this->size_ += size;
-                read_request();
-            });
+            this->size_ += size;
+            read_request();
+        });
     }
 }
 
@@ -211,7 +259,7 @@ void Connection::sendResponse(Callback&& cb)
         return;
     }
 
-    response_.sendResponse(socket_, [cb, this](boost::system::error_code const& ec, size_t)
+    auto handler = [cb, this](boost::system::error_code const& ec, size_t)
     {
         if (ec)
         {
@@ -219,7 +267,16 @@ void Connection::sendResponse(Callback&& cb)
             return;
         }
         cb();
-    });
+    };
+
+    if (ssl_socket_)
+    {
+        response_.sendResponse(*ssl_socket_, std::move(handler));
+    }
+    else
+    {
+        response_.sendResponse(socket_, std::move(handler));
+    }
 }
 
 bool Connection::own() noexcept
