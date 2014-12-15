@@ -88,6 +88,6 @@ int main(int, char**)
     HttpServer server;
     server.start();
     server.setSink(&handler);
-    server.bind("localhost", {"server.crt", "server.key", ""}, "8080");
+    server.bind("localhost", {"server.crt", "server.key", "", "", "", ""}, "8080");
     while (true) std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }

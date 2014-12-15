@@ -33,45 +33,14 @@ public:
         std::string cert_file;
         std::string key_file;
         std::string dh_file;
+
+        std::string cert_buffer;
+        std::string key_buffer;
+        std::string dh_buffer;
     };
 
 private:
-    struct Acceptor : boost::asio::ip::tcp::acceptor
-    {
-        Acceptor(boost::asio::io_service& service)
-        : boost::asio::ip::tcp::acceptor(service)
-        {
-        }
-
-        void setSSLContext(SSLContext ctx)
-        {
-            ssl_ctx.reset(new boost::asio::ssl::context(
-                boost::asio::ssl::context::sslv23));
-            if (ctx.cert_file.empty() || ctx.key_file.empty())
-            {
-                throw std::invalid_argument("Cert and Key file are required");
-            }
-
-            auto flags = boost::asio::ssl::context::default_workarounds |
-                         boost::asio::ssl::context::no_sslv2 |
-                         boost::asio::ssl::context::single_dh_use;
-
-            ssl_ctx->set_options(flags);
-            ssl_ctx->use_certificate_file(ctx.cert_file,
-                                          boost::asio::ssl::context::pem);
-            ssl_ctx->use_private_key_file(ctx.key_file,
-                                          boost::asio::ssl::context::pem);
-
-            if (!ctx.dh_file.empty())
-            {
-
-                ssl_ctx->use_tmp_dh_file(ctx.dh_file);
-            }
-        }
-
-        std::unique_ptr<boost::asio::ssl::context> ssl_ctx;
-    };
-
+    struct Acceptor;
     using AcceptorPtr = std::shared_ptr<Acceptor>;
 
 public:

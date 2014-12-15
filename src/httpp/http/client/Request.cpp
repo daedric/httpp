@@ -91,10 +91,17 @@ Request& Request::addHeader(const std::string& k, const std::string& v)
     return *this;
 }
 
+Request& Request::allowInsecure()
+{
+    allow_insecure_ = true;
+    return *this;
+}
+
 void Request::clear()
 {
     url_.clear();
     follow_redirect_ = false;
+    allow_insecure_ = false;
     query_params_.clear();
     post_params_.clear();
     http_headers_.clear();

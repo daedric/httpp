@@ -17,6 +17,64 @@
 
 namespace HTTPP
 {
+struct HttpServer::Acceptor : boost::asio::ip::tcp::acceptor
+{
+    Acceptor(boost::asio::io_service& service)
+    : boost::asio::ip::tcp::acceptor(service)
+    {
+    }
+
+    void setSSLContext(SSLContext ctx)
+    {
+        ssl_ctx.reset(
+            new boost::asio::ssl::context(boost::asio::ssl::context::sslv23));
+        if (!((ctx.cert_file.empty() ^ ctx.cert_buffer.empty()) &&
+              (ctx.key_file.empty() ^ ctx.key_buffer.empty())))
+        {
+            throw std::invalid_argument(
+                "Cert and Key file/buffer are required");
+        }
+
+        auto flags = boost::asio::ssl::context::default_workarounds |
+                     boost::asio::ssl::context::no_sslv2 |
+                     boost::asio::ssl::context::single_dh_use;
+
+        ssl_ctx->set_options(flags);
+
+        if (!ctx.cert_file.empty())
+        {
+            ssl_ctx->use_certificate_file(ctx.cert_file,
+                                          boost::asio::ssl::context::pem);
+        }
+        else
+        {
+            ssl_ctx->use_certificate(boost::asio::buffer(ctx.cert_buffer),
+                                     boost::asio::ssl::context::pem);
+        }
+
+        if (!ctx.key_file.empty())
+        {
+            ssl_ctx->use_private_key_file(ctx.key_file,
+                                          boost::asio::ssl::context::pem);
+        }
+        else
+        {
+            ssl_ctx->use_private_key(boost::asio::buffer(ctx.key_buffer),
+                                     boost::asio::ssl::context::pem);
+        }
+
+        if (!ctx.dh_file.empty())
+        {
+            ssl_ctx->use_tmp_dh_file(ctx.dh_file);
+        }
+        else if (!ctx.dh_buffer.empty())
+        {
+            ssl_ctx->use_tmp_dh(boost::asio::buffer(ctx.dh_buffer));
+        }
+    }
+
+    std::unique_ptr<boost::asio::ssl::context> ssl_ctx;
+};
 
 HttpServer::HttpServer(size_t threads)
 : service_(threads)
