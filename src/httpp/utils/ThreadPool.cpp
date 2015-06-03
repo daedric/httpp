@@ -52,7 +52,7 @@ ThreadPool::ThreadPool(ThreadPool&& pool)
 , nb_thread_(pool.nb_thread_)
 , work_(std::move(pool.work_))
 , threads_(std::move(pool.threads_))
-, name_(std::move(name_))
+, name_(std::move(pool.name_))
 {
     running_threads_.store(pool.running_threads_.load());
     pool.running_ = false;
