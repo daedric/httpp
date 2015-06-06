@@ -29,7 +29,14 @@ void parseCurlResponseHeader(const std::vector<char>& headers, Response& respons
     auto it = std::begin(headers);
     auto end = std::end(headers);
 
+    if (it == end)
+    {
+        // In case of a file://xxxx we don't have any header.
+        return ;
+    }
+
     it = std::find(it, end, '\r') + 2;
+
     while (true)
     {
         std::string key;

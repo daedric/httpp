@@ -1,0 +1,17 @@
+/*
+ * File: tests/client/config.h.in
+ * Part of HTTPP
+ *
+ * Distributed under the 3-clause BSD licence (See LICENCE.TXT file at the
+ * project root).
+ *
+ * Copyright (c) 2015 Thomas Sanchez.  All rights reserved.
+ *
+ */
+
+#ifndef __HTTPP_CONFIG_H_IN__
+# define __HTTPP_CONFIG_H_IN__
+
+static const std::string PROJECT_ROOT = "@PROJECT_SOURCE_DIR@";
+
+#endif // __HTTPP_CONFIG_H_IN__
