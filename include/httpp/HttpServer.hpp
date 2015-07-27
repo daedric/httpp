@@ -50,6 +50,7 @@ public:
 
 public:
     HttpServer(size_t threads = 1);
+    HttpServer(UTILS::ThreadPool& pool);
     ~HttpServer();
 
     void bind(const std::string& address, const std::string& port = "8000");
@@ -95,8 +96,7 @@ private: // called by Connection
 
 private:
     bool running_ = false;
-    boost::asio::io_service service_;
-    UTILS::ThreadPool pool_;
+    std::shared_ptr<UTILS::ThreadPool> pool_;
     std::atomic_int running_acceptors_ = { 0 };
     std::atomic_int connection_count_ = { 0 };
     std::vector<AcceptorPtr> acceptors_;

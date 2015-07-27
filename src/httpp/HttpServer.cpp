@@ -79,10 +79,19 @@ struct HttpServer::Acceptor : boost::asio::ip::tcp::acceptor
 };
 
 HttpServer::HttpServer(size_t threads)
-: service_(threads)
-, pool_(threads, service_)
+: pool_(std::make_shared<UTILS::ThreadPool>(threads))
 {
 }
+
+static void empty_deleter(UTILS::ThreadPool*)
+{
+}
+
+HttpServer::HttpServer(UTILS::ThreadPool& pool)
+: pool_(std::addressof(pool), &empty_deleter)
+{
+}
+
 
 HttpServer::~HttpServer()
 {
@@ -99,7 +108,7 @@ void HttpServer::start(ThreadInit fct)
         return;
     }
     running_ = true;
-    pool_.start(fct);
+    pool_->start(fct);
 }
 
 void HttpServer::stopListeners()
@@ -144,12 +153,12 @@ void HttpServer::stop()
         std::this_thread::yield();
     }
 
-    pool_.stop();
+    pool_->stop();
 }
 
 void HttpServer::bind(const std::string& address, const std::string& port)
 {
-    auto acc = HttpServer::bind(service_, address, port);
+    auto acc = HttpServer::bind(pool_->getService(), address, port);
     BOOST_LOG_TRIVIAL(debug) << "Bind address: " << address
                              << " on port: " << port;
     acceptors_.push_back(acc);
@@ -162,7 +171,7 @@ void HttpServer::bind(const std::string& address,
                       const std::string& port)
 {
 
-    auto acc = HttpServer::bind(service_, address, port);
+    auto acc = HttpServer::bind(pool_->getService(), address, port);
     acc->setSSLContext(std::move(ctx));
     BOOST_LOG_TRIVIAL(debug) << "SSL bind address: " << address
                              << " on port: " << port;
@@ -211,8 +220,8 @@ void HttpServer::start_accept(AcceptorPtr acceptor)
     if (running_)
     {
 
-        auto connection =
-            new HTTP::Connection(*this, service_, pool_, acceptor->ssl_ctx.get());
+        auto connection = new HTTP::Connection(*this, pool_->getService(),
+                                               *pool_, acceptor->ssl_ctx.get());
         mark(connection);
 
         acceptor->async_accept(connection->socket_,
