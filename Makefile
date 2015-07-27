@@ -1,10 +1,10 @@
 PREFIX ?= /usr/local
 
 all:
-	make -C build all
+	$(MAKE) -C build all
 
 clean:
-	make -C build clean
+	$(MAKE) -C build clean
 
 cmake:
 	rm -rf build
@@ -12,9 +12,9 @@ cmake:
 	cd build && cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..
 
 package:
-	make -C build package
+	$(MAKE) -C build package
 
 test:
-	make -C build test
+	$(MAKE) -C build test
 
 re : cmake all
