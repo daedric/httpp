@@ -13,11 +13,13 @@
 #include <atomic>
 #include <string>
 #include <functional>
+
+#include <commonpp/core/LoggingInterface.hpp>
+
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
 #include "httpp/utils/Exception.hpp"
 #include "httpp/http/Utils.hpp"
-#include <boost/log/trivial.hpp>
 
 using namespace HTTPP;
 
@@ -39,13 +41,13 @@ std::function<std::string()> make_stream(int numChunks, int chunkSize)
     {
         if (numChunks > 0)
         {
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":Sending Chunk ";
+            GLOG(debug) << __FUNCTION__ << ":Sending Chunk ";
             numChunks--;
             return std::string(chunkSize, 'X');
         }
         else
         {
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":End of Stream ";
+            GLOG(debug) << __FUNCTION__ << ":End of Stream ";
             return "";
         }
     };

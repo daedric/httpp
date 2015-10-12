@@ -16,10 +16,10 @@
 # include <memory>
 
 # include <boost/asio/io_service.hpp>
+# include <commonpp/thread/ThreadPool.hpp>
 
 # include "detail/config.hpp"
 # include "utils/Exception.hpp"
-# include "utils/ThreadPool.hpp"
 # include "http/Protocol.hpp"
 # include "http/client/Request.hpp"
 # include "http/client/Response.hpp"
@@ -36,6 +36,8 @@ class HttpClient
 {
 
 public:
+    using ThreadPool = commonpp::thread::ThreadPool;
+
     using Request = HTTP::client::Request;
     using Response = HTTP::client::Response;
 
@@ -81,8 +83,8 @@ private:
                    CompletionHandler handler = CompletionHandler());
 
 private:
-    UTILS::ThreadPool pool_io_;
-    UTILS::ThreadPool pool_dispatch_;
+    ThreadPool pool_io_;
+    ThreadPool pool_dispatch_;
     std::unique_ptr<HTTP::client::detail::Manager> manager;
 };
 

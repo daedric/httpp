@@ -18,12 +18,13 @@
 # include <set>
 # include <future>
 
-# include <boost/log/trivial.hpp>
 # include <boost/asio.hpp>
+
+# include <commonpp/thread/ThreadPool.hpp>
+# include <commonpp/core/LoggingInterface.hpp>
 
 # include "httpp/detail/config.hpp"
 # include "httpp/http/Protocol.hpp"
-# include "httpp/utils/ThreadPool.hpp"
 
 namespace HTTPP {
 namespace HTTP {
@@ -33,8 +34,11 @@ namespace detail {
 
 struct Connection;
 
+FWD_DECLARE_LOGGER(manager_logger, commonpp::core::Logger);
+
 struct Manager
 {
+    using ThreadPool = commonpp::thread::ThreadPool;
     using Method = HTTPP::HTTP::Method;
     using ConnectionPtr = std::shared_ptr<Connection>;
 
@@ -44,8 +48,7 @@ struct Manager
     template <typename T>
     using Future = HTTPP::detail::Future<T>;
 
-
-    Manager(UTILS::ThreadPool& io, UTILS::ThreadPool& dispatch);
+    Manager(ThreadPool& io, ThreadPool& dispatch);
     Manager(const Manager&) = delete;
     Manager& operator=(const Manager&) = delete;
     ~Manager();
@@ -56,8 +59,8 @@ struct Manager
         auto rc = curl_multi_setopt(handler, opt, t);
         if (rc != CURLM_OK)
         {
-            BOOST_LOG_TRIVIAL(error)
-                << "Error setting curl option: " << curl_multi_strerror(rc);
+            LOG(manager_logger, error) << "Error setting curl option: "
+                                       << curl_multi_strerror(rc);
             throw std::runtime_error("Cannot set option on curl");
         }
     }
@@ -93,10 +96,11 @@ struct Manager
 
     bool running = true;
     CURLM* handler;
-    UTILS::ThreadPool& io;
-    UTILS::ThreadPool& dispatch;
+    ThreadPool& io;
+    ThreadPool& dispatch;
 
-    UTILS::ThreadPool::Timer timer;
+    using Timer = boost::asio::deadline_timer;
+    Timer timer;
 
     enum State
     {

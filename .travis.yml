@@ -5,6 +5,8 @@ compiler:
     - clang
     - gcc
 
+sudo: required
+
 env:
     # static build does not work with gcc on travis for some reason
     - BUILD_EXAMPLES="ON" BUILD_TESTS="ON" BUILD_SHARED_LIBS="ON" CMAKE_BUILD_TYPE="Release"
@@ -13,13 +15,16 @@ env:
       #- BUILD_EXAMPLES="ON" BUILD_TESTS="ON" BUILD_SHARED_LIBS="OFF" CMAKE_BUILD_TYPE="Debug"
 
 before_install:
+    - git submodule update --init --recursive
+    - sudo add-apt-repository ppa:george-edison55/precise-backports --yes # up to date cmake.
     - sudo add-apt-repository ppa:ubuntu-toolchain-r/test --yes # libstdc++-4.8
-    - if [ "${CXX}" == "clang++" ]; then sudo add-apt-repository --yes ppa:h-rayflood/llvm; fi
+    - if [ "${CXX}" == "clang++" ]; then sudo add-apt-repository --yes ppa:h-rayflood/llvm-upper; fi
     - sudo apt-get update
 
 install:
-    - if [ "${CXX}" == "clang++" ]; then sudo apt-get -qq install clang-3.3; fi
-    - sudo apt-get install g++-4.8 rpm libssl-dev;
+    - if [ "${CXX}" == "clang++" ]; then sudo apt-get install clang-3.6; fi
+    - sudo apt-get install -y cmake cmake-data
+    - sudo apt-get install -y g++-4.8 libssl-dev libtbb-dev
     - sudo update-alternatives --install /usr/bin/gcc-4.8 gcc /usr/bin/gcc 50
     - sudo update-alternatives --install /usr/bin/g++-4.8 g++ /usr/bin/g++ 50
     - ./CMakeScripts/install_boost.sh
@@ -28,7 +33,7 @@ install:
 before_script:
     # update compilers
     - if [ "${CXX}" == "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-    - if [ "${CXX}" == "clang++" ]; then export CXX="clang++-3.3" CC="clang-3.3"; fi
+    - if [ "${CXX}" == "clang++" ]; then export CXX="clang++-3.6" CC="clang-3.6"; fi
 
 script:
     - mkdir build

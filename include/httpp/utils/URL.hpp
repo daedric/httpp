@@ -12,7 +12,6 @@
 # define _HTTPP_UTILS_URL_HPP_
 
 # include <string>
-# include <boost/log/trivial.hpp>
 
 namespace HTTPP
 {

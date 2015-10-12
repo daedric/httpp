@@ -24,9 +24,6 @@ SET(SOURCES
     http/client/Manager.cpp
     http/client/Request.cpp
 
-    utils/ThreadPool.cpp
-    utils/Thread.cpp
-
     ${VERSION_TO_GENERATE}
 )
 

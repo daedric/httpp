@@ -11,9 +11,7 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
+#include <commonpp/core/LoggingInterface.hpp>
 
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
@@ -57,7 +55,7 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
 
     Connection::releaseFromHandler(gconn);
     server.stop();
-    BOOST_LOG_TRIVIAL(error) << "operation cancelled";
+    GLOG(error) << "operation cancelled";
 }
 
 static std::atomic_int nb_gconns = { 0 };
@@ -96,10 +94,6 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
         //std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    boost::log::core::get()->set_filter
-    (
-        boost::log::trivial::severity > boost::log::trivial::error
-    );
     server.stopListeners();
     std::for_each(
         std::begin(gconns), std::end(gconns), &Connection::releaseFromHandler);
@@ -110,11 +104,6 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
 
 BOOST_AUTO_TEST_CASE(delete_pending_connection_google)
 {
-    boost::log::core::get()->set_filter
-    (
-        boost::log::trivial::severity >= boost::log::trivial::debug
-    );
-
     HttpClient client;
 
     HttpClient::Request request;
@@ -153,13 +142,13 @@ BOOST_AUTO_TEST_CASE(late_cancel)
                                     [&ok](HttpClient::Future&& fut)
                                     {
         ok = true;
-        BOOST_LOG_TRIVIAL(debug) << "Response received";
+        GLOG(debug) << "Response received";
         fut.get();
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     BOOST_CHECK(ok);
     handler.cancelOperation();
-    BOOST_LOG_TRIVIAL(error) << "operation cancelled";
+    GLOG(error) << "operation cancelled";
 }
 

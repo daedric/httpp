@@ -46,8 +46,8 @@ OPTION(BUILD_SHARED_LIBS "Should the shared lib be built")
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
-SET(HTTPP_VERSION_MINOR "6")
-SET(HTTPP_VERSION_PATCH "2")
+SET(HTTPP_VERSION_MINOR "7")
+SET(HTTPP_VERSION_PATCH "0")
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${HTTPP_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${HTTPP_VERSION_MINOR})
@@ -98,28 +98,36 @@ IF (WIN32 AND CMAKE_SYSTEM_VERSION)
     ADD_DEFINITIONS(-D_WIN32_WINNT=${VERSION})
 endif()
 
+# commonpp
+
+FIND_PACKAGE(commonpp
+    PATHS
+        /usr/lib/CMake/
+        /usr/local/lib/CMake/
+        $ENV{COMMONPP_CMAKE_DIR}
+    PATH_SUFFIXES
+        commonpp
+    QUIET
+)
+
+IF (NOT ${commonpp_FOUND})
+    MESSAGE(STATUS "Use bundled commonpp")
+    ADD_SUBDIRECTORY(third_party/commonpp ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp)
+    INCLUDE_DIRECTORIES(third_party/commonpp/include ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp/include)
+    SET(commonpp_LIBRARIES commonpp)
+    SET(EXPORT_commonpp TRUE)
+ELSE ()
+    INCLUDE_DIRECTORIES(${commonpp_INCLUDE_DIRS})
+ENDIF()
+
 # Actual Stuff ################################################################
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${HTTPP_SOURCE_DIR}/CMakeScripts)
-
-INCLUDE (ThreadLocal)
-CHECK_HAS_THREAD_LOCAL_SPECIFIER()
-IF (${HAS_THREAD_LOCAL_SPECIFIER})
-    ADD_DEFINITIONS("-DHAS_THREAD_LOCAL_SPECIFIER=1")
-ELSE()
-    ADD_DEFINITIONS("-DHAS_THREAD_LOCAL_SPECIFIER=0")
-ENDIF()
-
-INCLUDE (CheckIncludeFiles)
-
-CHECK_INCLUDE_FILES(sys/prctl.h HAVE_SYS_PRCTL_H)
-IF (${HAVE_SYS_PRCTL_H})
-    ADD_DEFINITIONS("-DHAVE_SYS_PRCTL_H=${HAVE_SYS_PRCTL_H}")
-ELSE()
-    ADD_DEFINITIONS("-DHAVE_SYS_PRCTL_H=0")
-ENDIF()
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${HTTPP_SOURCE_DIR}/CMakeScripts ${HTTPP_SOURCE_DIR}/third_party/commonpp/cmake)
 
 #Thread
 FIND_PACKAGE(Threads REQUIRED)
+
+# TBB, commonpp dependency
+FIND_PACKAGE(TBB REQUIRED)
 
 #TCMALLOC
 FIND_PACKAGE(TCMALLOC)
@@ -138,16 +146,26 @@ SET(Boost_USE_MULTITHREADED  ON)
 
 MESSAGE(STATUS "Boost static library use     : ${Boost_USE_STATIC_LIBS}")
 
-FIND_PACKAGE(Boost 1.54.0 COMPONENTS log log_setup unit_test_framework thread system REQUIRED)
+FIND_PACKAGE(Boost 1.54.0
+    COMPONENTS
+        log
+        log_setup
+        filesystem
+        unit_test_framework
+        thread
+        system
+    REQUIRED
+)
+
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
 LINK_DIRECTORIES(${Boost_LIBRARY_DIR})
 
 FIND_PACKAGE(CURL REQUIRED)
 INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIRS})
 
-
-
 SET(DEFAULT_LIBRARIES
+    ${commonpp_LIBRARIES}
+    ${TBB_LIBRARIES}
     ${Boost_LIBRARIES}
     ${CURL_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
@@ -180,8 +198,13 @@ ENDIF()
 
 # CMake export targets
 
-EXPORT(TARGETS httpp
-       FILE "${PROJECT_BINARY_DIR}/httpp_target.cmake")
+IF (${EXPORT_commonpp})
+    EXPORT(TARGETS httpp ${commonpp_LIBRARIES}
+           FILE "${PROJECT_BINARY_DIR}/httpp_target.cmake")
+ELSE()
+    EXPORT(TARGETS httpp
+           FILE "${PROJECT_BINARY_DIR}/httpp_target.cmake")
+ENDIF()
 
 EXPORT(PACKAGE HTTPP)
 
@@ -237,7 +260,7 @@ SET(BIN_INSTALL_DIR, ${CMAKE_INSTALL_PREFIX})
 SET(INCLUDE_INSTALL_DIR, ${CMAKE_INSTALL_PREFIX})
 
 IF (UNIX)
-    SET(CPACK_GENERATOR "DEB;TGZ;RPM")
+    SET(CPACK_GENERATOR "DEB;TGZ")
 ENDIF (UNIX)
 
 INCLUDE(CPack)

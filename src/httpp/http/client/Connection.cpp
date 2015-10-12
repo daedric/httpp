@@ -16,7 +16,6 @@
 #include <vector>
 #include <thread>
 
-#include <boost/log/trivial.hpp>
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/exception_ptr.hpp>
@@ -34,13 +33,14 @@ namespace client {
 
 namespace detail {
 
+DECLARE_LOGGER(client_connection_logger, "httpp::client::Connection");
+
 Connection::Connection(Manager& manager, boost::asio::io_service& service)
 : handler(manager)
 , handle(curl_easy_init())
 , service(service)
 {
-    BOOST_LOG_TRIVIAL(trace)
-        << "Instantiate Connection: " << this;
+    LOG(client_connection_logger, trace) << "Instantiate Connection: " << this;
 
     if (!handle)
     {
@@ -51,8 +51,8 @@ Connection::Connection(Manager& manager, boost::asio::io_service& service)
 Connection::~Connection()
 {
 
-    BOOST_LOG_TRIVIAL(trace) << "Destroy Connection: " << this
-                             << ", socket: " << socket;
+    LOG(client_connection_logger, trace) << "Destroy Connection: " << this
+                                         << ", socket: " << socket;
 
     if (http_headers)
     {
@@ -71,18 +71,18 @@ Connection::~Connection()
     {
         try
         {
-            BOOST_LOG_TRIVIAL(error)
+            LOG(client_connection_logger, error)
                 << "Destroy a not completed connection: " << this;
             complete(HTTPP::detail::make_exception_ptr(
                 std::runtime_error("Destroy a non completed connection")));
         }
         catch (const std::exception& ex)
         {
-            BOOST_LOG_TRIVIAL(error)
+            LOG(client_connection_logger, error)
                 << "Error happened completing the connection: " << ex.what();
         }
     }
-    BOOST_LOG_TRIVIAL(trace) << "Connection destroyed: " << this;
+    LOG(client_connection_logger, trace) << "Connection destroyed: " << this;
 }
 
 void Connection::init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& sockets)
@@ -175,14 +175,14 @@ curl_socket_t Connection::opensocket(void* clientp,
 
         if (ec)
         {
-            BOOST_LOG_TRIVIAL(error)
-                << "Cannot open a socket: " << ec.message();
+            LOG(client_connection_logger, error) << "Cannot open a socket: "
+                                                 << ec.message();
             return CURL_SOCKET_BAD;
         }
 
         auto handle = socket->native_handle();
 
-        BOOST_LOG_TRIVIAL(trace)
+        LOG(client_connection_logger, trace)
             << "Using: " << conn << " to open a new connection"
             << "Open socket: " << conn << ", socket: " << socket
             << ", native socket: " << handle;
@@ -209,7 +209,7 @@ curl_socket_t Connection::opensocket(void* clientp,
 
 int Connection::closesocket(void* clientp, curl_socket_t curl_socket)
 {
-    BOOST_LOG_TRIVIAL(debug) << "close socket curl: " << curl_socket;
+    LOG(client_connection_logger, debug) << "close socket curl: " << curl_socket;
     auto manager = (Manager*)clientp;
     return manager->closeSocket(curl_socket);
 }
@@ -224,9 +224,9 @@ void Connection::setSocket(curl_socket_t curl_socket)
                                  std::to_string(curl_socket));
     }
 
-    BOOST_LOG_TRIVIAL(trace) << "Connection: " << this
-                             << ": Set curl socket: " << curl_socket
-                             << ", socket: " << it->second;
+    LOG(client_connection_logger, trace) << "Connection: " << this
+                                         << ": Set curl socket: " << curl_socket
+                                         << ", socket: " << it->second;
     socket = it->second;
 }
 
@@ -350,7 +350,8 @@ void Connection::cancel()
     }
     else
     {
-        BOOST_LOG_TRIVIAL(warning) << "Connection already cancelled";
+        LOG(client_connection_logger, warning)
+            << "Connection already cancelled";
     }
 }
 
@@ -411,7 +412,7 @@ void Connection::buildResponse(CURLcode code)
     }
     catch (const std::exception& exc)
     {
-        BOOST_LOG_TRIVIAL(error)
+        LOG(client_connection_logger, error)
             << "Error when building the response: " << exc.what();
         complete(HTTPP::detail::make_exception_ptr(RequestNestedError(
             "Exception happened during buildResponse " + std::string(exc.what()),
@@ -426,7 +427,7 @@ void Connection::complete(ExceptionPtr ex)
     bool expected = false;
     if (!result_notified.compare_exchange_strong(expected, true))
     {
-        BOOST_LOG_TRIVIAL(error)
+        LOG(client_connection_logger, error)
             << "Response already notified, cancel notification";
         return;
     }

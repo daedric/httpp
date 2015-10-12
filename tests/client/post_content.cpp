@@ -8,9 +8,6 @@
  *
  */
 
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpServer.hpp"

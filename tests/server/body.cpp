@@ -15,9 +15,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/preprocessor/stringize.hpp>
 
@@ -78,11 +75,6 @@ void handler(Connection* connection, Request&& request)
 
 BOOST_AUTO_TEST_CASE(listener)
 {
-    boost::log::core::get()->set_filter
-    (
-        boost::log::trivial::severity >= boost::log::trivial::warning
-    );
-
     for (int i = 0; i < BODY_SIZE; ++i)
     {
         BODY += char(i % 127);

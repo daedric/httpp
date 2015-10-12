@@ -10,12 +10,15 @@
 
 #include "httpp/utils/URL.hpp"
 
+#include <commonpp/core/LoggingInterface.hpp>
 #include <curl/curl.h>
 
 namespace HTTPP
 {
 namespace UTILS
 {
+
+CREATE_LOGGER(logger_, "httpp");
 
 bool url_decode(std::string& fragment, bool replace_plus)
 {
@@ -27,18 +30,15 @@ bool url_decode(std::string& fragment, bool replace_plus)
 
         if (replace_plus)
         {
-            std::replace_if(std::begin(fragment),
-                            std::end(fragment),
-                            [](const char val)
-                            { return val == '+'; },
-                            ' ');
+            std::replace_if(std::begin(fragment), std::end(fragment),
+                            [](const char val) { return val == '+'; }, ' ');
         }
 
         return true;
     }
     else
     {
-        BOOST_LOG_TRIVIAL(error) << "cannot url_decode: " << fragment;
+        LOG(logger_, error) << "cannot url_decode: " << fragment;
         return false;
     }
 }
@@ -65,7 +65,7 @@ bool url_encode(std::string& fragment)
     }
     else
     {
-        BOOST_LOG_TRIVIAL(error) << "cannot url_encode: " << fragment;
+        LOG(logger_, error) << "cannot url_encode: " << fragment;
         return false;
     }
 }

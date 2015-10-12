@@ -17,7 +17,8 @@
 # include <functional>
 # include <boost/asio.hpp>
 # include <boost/asio/ssl.hpp>
-# include <boost/log/trivial.hpp>
+# include <commonpp/thread/ThreadPool.hpp>
+# include <commonpp/core/LoggingInterface.hpp>
 
 # include "Response.hpp"
 
@@ -25,8 +26,6 @@ namespace HTTPP
 {
 
 class HttpServer;
-
-namespace UTILS { class ThreadPool; }
 
 namespace HTTP
 {
@@ -37,6 +36,7 @@ class Connection
 
     using DefaultSocket = boost::asio::ip::tcp::socket;
     using SSLSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>;
+    using ThreadPool = commonpp::thread::ThreadPool;
 
 public:
     static const size_t BUF_SIZE;
@@ -44,7 +44,7 @@ public:
 
     Connection(HTTPP::HttpServer& handler,
                boost::asio::io_service& service,
-               UTILS::ThreadPool& pool,
+               ThreadPool& pool,
                boost::asio::ssl::context* ctx = nullptr);
     ~Connection();
 
@@ -109,7 +109,7 @@ public:
 
                 if (ec)
                 {
-                    BOOST_LOG_TRIVIAL(error)
+                    LOG(logger_, error)
                         << "Error detected while reading the body";
                     callable(ec, nullptr, 0);
                     return;
@@ -145,10 +145,12 @@ private:
     void sendResponse(Callback&& cb);
 
 private:
+    LOGGER(logger_, "httpp::HttpServer::Connection");
+
     HTTPP::HttpServer& handler_;
     std::atomic_bool is_owned_ = { true };
     bool should_be_deleted_ = { false };
-    UTILS::ThreadPool& pool_;
+    ThreadPool& pool_;
     std::vector<char> buffer_;
     size_t size_ = 0;
 

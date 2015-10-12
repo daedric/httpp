@@ -10,13 +10,14 @@
 
 #include "httpp/HttpServer.hpp"
 
-#include <boost/log/trivial.hpp>
-
 #include "httpp/utils/Exception.hpp"
 #include "httpp/http/Utils.hpp"
 
 namespace HTTPP
 {
+
+CREATE_LOGGER(server_logger, "httpp::HttpServer");
+
 struct HttpServer::Acceptor : boost::asio::ip::tcp::acceptor
 {
     Acceptor(boost::asio::io_service& service)
@@ -79,15 +80,15 @@ struct HttpServer::Acceptor : boost::asio::ip::tcp::acceptor
 };
 
 HttpServer::HttpServer(size_t threads)
-: pool_(std::make_shared<UTILS::ThreadPool>(threads))
+: pool_(std::make_shared<ThreadPool>(threads))
 {
 }
 
-static void empty_deleter(UTILS::ThreadPool*)
+static void empty_deleter(commonpp::thread::ThreadPool*)
 {
 }
 
-HttpServer::HttpServer(UTILS::ThreadPool& pool)
+HttpServer::HttpServer(ThreadPool& pool)
 : pool_(std::addressof(pool), &empty_deleter)
 {
 }
@@ -159,8 +160,8 @@ void HttpServer::stop()
 void HttpServer::bind(const std::string& address, const std::string& port)
 {
     auto acc = HttpServer::bind(pool_->getService(), address, port);
-    BOOST_LOG_TRIVIAL(debug) << "Bind address: " << address
-                             << " on port: " << port;
+    LOG(server_logger, debug) << "Bind address: " << address
+                              << " on port: " << port;
     acceptors_.push_back(acc);
     ++running_acceptors_;
     start_accept(acc);
@@ -173,8 +174,8 @@ void HttpServer::bind(const std::string& address,
 
     auto acc = HttpServer::bind(pool_->getService(), address, port);
     acc->setSSLContext(std::move(ctx));
-    BOOST_LOG_TRIVIAL(debug) << "SSL bind address: " << address
-                             << " on port: " << port;
+    LOG(server_logger, debug) << "SSL bind address: " << address
+                              << " on port: " << port;
     acceptors_.push_back(acc);
     ++running_acceptors_;
     start_accept(acc);
@@ -244,12 +245,12 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
 
         if (error == boost::asio::error::operation_aborted)
         {
-            BOOST_LOG_TRIVIAL(info) << "Cancel listener";
+            LOG(server_logger, info) << "Cancel listener";
         }
         else
         {
-            BOOST_LOG_TRIVIAL(error)
-                << "Error during accept: " << error.message();
+            LOG(server_logger, error) << "Error during accept: "
+                                      << error.message();
         }
 
         --running_acceptors_;
@@ -259,8 +260,8 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
     {
         if (running_)
         {
-            BOOST_LOG_TRIVIAL(debug)
-                << "New connection accepted from: " << connection->source();
+            LOG(server_logger, debug) << "New connection accepted from: "
+                                      << connection->source();
             connection->start();
         }
         else
@@ -289,8 +290,9 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
 
         if (it == end)
         {
-            BOOST_LOG_TRIVIAL(error)
-                << "Error bad address (ip address in dotted format or ipv6 hex format: "
+            LOG(server_logger, error)
+                << "Error bad address (ip address in dotted "
+                   "format or ipv6 hex format: "
                 << host << ", error msg: " << error.message();
             throw UTILS::convert_boost_ec_to_std_ec(error);
         }
@@ -309,25 +311,25 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
     if (error)
     {
 
-        BOOST_LOG_TRIVIAL(warning) << "Cannot set REUSEADDR on " << host
-                                   << " on " << port
-                                   << ", error msg: " << error.message();
+        LOG(server_logger, warning) << "Cannot set REUSEADDR on " << host
+                                    << " on " << port
+                                    << ", error msg: " << error.message();
     }
 
     acceptor->bind(endpoint, error);
     if (error)
     {
 
-        BOOST_LOG_TRIVIAL(error) << "Cannot bind " << host << " on " << port
-                                 << " error msg: " << error.message();
+        LOG(server_logger, error) << "Cannot bind " << host << " on " << port
+                                  << " error msg: " << error.message();
         throw UTILS::convert_boost_ec_to_std_ec(error);
     }
 
     acceptor->listen(boost::asio::socket_base::max_connections, error);
     if (error)
     {
-        BOOST_LOG_TRIVIAL(error) << "Cannot listen " << host << " on " << port
-                                 << ", error msg: " << error.message();
+        LOG(server_logger, error) << "Cannot listen " << host << " on " << port
+                                  << ", error msg: " << error.message();
         throw UTILS::convert_boost_ec_to_std_ec(error);
     }
     return acceptor;
@@ -340,8 +342,8 @@ void HttpServer::connection_error(ConnectionPtr connection,
         ec != boost::asio::error::connection_reset &&
         ec != boost::asio::error::operation_aborted)
     {
-        BOOST_LOG_TRIVIAL(warning)
-            << "Got an error from a Connection: " << ec.message();
+        LOG(server_logger, warning) << "Got an error from a Connection: "
+                                    << ec.message();
     }
 
     destroy(connection);

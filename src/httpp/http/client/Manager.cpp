@@ -22,7 +22,7 @@
 static std::once_flag curl_init_flag;
 static void init_curl()
 {
-    BOOST_LOG_TRIVIAL(info) << "initialize libcurl";
+    GLOG(info) << "initialize libcurl";
     if (curl_global_init(CURL_GLOBAL_ALL) != 0)
     {
         throw std::runtime_error("Cannot initialize curl");
@@ -30,7 +30,7 @@ static void init_curl()
 
     ::atexit(&::curl_global_cleanup);
 
-    BOOST_LOG_TRIVIAL(info) << "curl initialized";
+    GLOG(info) << "curl initialized";
 }
 
 namespace HTTPP
@@ -42,7 +42,9 @@ namespace client
 namespace detail
 {
 
-Manager::Manager(UTILS::ThreadPool& io, UTILS::ThreadPool& dispatch)
+DECLARE_LOGGER(manager_logger, "httpp::client::Manager");
+
+Manager::Manager(ThreadPool& io, ThreadPool& dispatch)
 : handler(nullptr)
 , io(io)
 , dispatch(dispatch)
@@ -79,7 +81,7 @@ Manager::~Manager()
                             bool expected = false;
                             if (conn.first->cancelled.compare_exchange_strong(expected, true))
                             {
-                                BOOST_LOG_TRIVIAL(info)
+                                LOG(manager_logger, info)
                                     << "Cancel one connection still alive";
                                 futures.emplace_back(cancel_connection(conn.first));
                             }
@@ -120,7 +122,7 @@ Manager::~Manager()
 
     if (!sockets.empty() || !current_connections.empty())
     {
-        BOOST_LOG_TRIVIAL(error)
+        LOG(manager_logger, error)
             << "There are still curl socket opened: " << sockets.size() << ", "
             << current_connections.size();
     }
@@ -136,8 +138,8 @@ void Manager::timer_cb(const boost::system::error_code& error)
 
         if (rc != CURLM_OK)
         {
-            BOOST_LOG_TRIVIAL(error)
-                << "Error curl multi: " << curl_multi_strerror(rc);
+            LOG(manager_logger, error) << "Error curl multi: "
+                                       << curl_multi_strerror(rc);
             throw std::runtime_error("timer_cb error");
         }
 
@@ -183,8 +185,8 @@ int Manager::sock_cb(CURL* easy,
                      void*)
 {
     Manager* manager = (Manager*)multi_private;
-    BOOST_LOG_TRIVIAL(trace) << "Manager(" << manager << ") sock_cb: "
-                             << "socket: " << s << ", what: " << what;
+    LOG(manager_logger, trace) << "Manager(" << manager << ") sock_cb: "
+                               << "socket: " << s << ", what: " << what;
 
     Connection* conn;
     auto rc = curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
@@ -213,8 +215,8 @@ void Manager::removeHandle(CURL* easy)
 
     if (rc != CURLM_OK)
     {
-        BOOST_LOG_TRIVIAL(error)
-            << "Cannot unregister easy handle: " << curl_multi_strerror(rc);
+        LOG(manager_logger, error) << "Cannot unregister easy handle: "
+                                   << curl_multi_strerror(rc);
     }
 }
 
@@ -224,8 +226,8 @@ void Manager::removeConnection(std::shared_ptr<Connection> conn)
     auto it = current_connections.find(conn);
     if (it == std::end(current_connections))
     {
-        BOOST_LOG_TRIVIAL(error) << "Cannot find connection: " << conn
-                                 << " to delete";
+        LOG(manager_logger, error) << "Cannot find connection: " << conn
+                                   << " to delete";
         throw std::runtime_error("Cannot find connection to delete");
         return;
     }
@@ -236,7 +238,7 @@ void Manager::removeConnection(std::shared_ptr<Connection> conn)
 
 void Manager::checkHandles()
 {
-    BOOST_LOG_TRIVIAL(trace) << "CheckHandles";
+    LOG(manager_logger, trace) << "CheckHandles";
     CURLMsg* msg;
     int msgs_left = 0;
     while ((msg = curl_multi_info_read(handler, &msgs_left)))
@@ -250,7 +252,8 @@ void Manager::checkHandles()
             curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
             conn->poll_action = 0;
 
-            BOOST_LOG_TRIVIAL(trace) << "CheckHandles: Connection done: " << conn;
+            LOG(manager_logger, trace) << "CheckHandles: Connection done: "
+                                       << conn;
             auto shared_ptr = conn->shared_from_this();
             removeConnection(shared_ptr);
             shared_ptr->buildResponse(result);
@@ -260,8 +263,8 @@ void Manager::checkHandles()
     while (!cancelled_connections.empty())
     {
         auto cancelled = std::move(*cancelled_connections.begin());
-        BOOST_LOG_TRIVIAL(trace)
-            << "CheckHandles: Connection cancel: " << cancelled.first;
+        LOG(manager_logger, trace) << "CheckHandles: Connection cancel: "
+                                   << cancelled.first;
 
         cancelled_connections.erase(cancelled_connections.begin());
 
@@ -276,8 +279,8 @@ void Manager::checkHandles()
         }
         else
         {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Connection already deleted: " << cancelled.first;
+            LOG(manager_logger, warning) << "Connection already deleted: "
+                                         << cancelled.first;
         }
     }
 }
@@ -293,13 +296,13 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
     {
         if (ec != boost::asio::error::operation_aborted)
         {
-            BOOST_LOG_TRIVIAL(warning) << "Error on socket: " << ec.message();
+            LOG(manager_logger, warning) << "Error on socket: " << ec.message();
             connection->complete(HTTPP::detail::make_exception_ptr(
                 std::runtime_error("Error on socket: " + ec.message())));
         }
 
-        BOOST_LOG_TRIVIAL(trace) << "Manager: " << this << ", performOp: "
-                                 << "Error: " << ec.message();
+        LOG(manager_logger, trace) << "Manager: " << this << ", performOp: "
+                                   << "Error: " << ec.message();
 
         checkHandles();
         return;
@@ -308,15 +311,15 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
     auto it = current_connections.find(connection);
     if (it == std::end(current_connections))
     {
-        BOOST_LOG_TRIVIAL(trace)
+        LOG(manager_logger, trace)
             << "Manager: " << this << ", performOp: "
             << "Error: can't find connection: " << connection;
         return;
     }
 
-    BOOST_LOG_TRIVIAL(trace) << "Manager: " << this << ", performOp: "
-                             << "Start operation: " << action
-                             << " on connection: " << connection;
+    LOG(manager_logger, trace) << "Manager: " << this << ", performOp: "
+                               << "Start operation: " << action
+                               << " on connection: " << connection;
     it->second = PerformIo;
 
     auto socket_native = connection->socket->native_handle();
@@ -324,13 +327,13 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
     auto rc =
         curl_multi_socket_action(handler, socket_native, action, &still_running);
 
-    BOOST_LOG_TRIVIAL(trace) << "Manager: " << this << ", performOp: "
-                             << "Operation: " << action
-                             << " finished on socket: " << connection;
+    LOG(manager_logger, trace) << "Manager: " << this << ", performOp: "
+                               << "Operation: " << action
+                               << " finished on socket: " << connection;
     if (rc != CURLM_OK)
     {
-        BOOST_LOG_TRIVIAL(error)
-            << "Error happened in perfomOp: " << curl_multi_strerror(rc);
+        LOG(manager_logger, error) << "Error happened in perfomOp: "
+                                   << curl_multi_strerror(rc);
         auto exc = HTTPP::detail::make_exception_ptr(
             std::runtime_error(curl_multi_strerror(rc)));
         connection->complete(exc);
@@ -341,7 +344,7 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
 
     if (still_running <= 0)
     {
-        BOOST_LOG_TRIVIAL(trace)
+        LOG(manager_logger, trace)
             << "No more ooperation is running, cancel the timer";
         timer.cancel();
     }
@@ -353,7 +356,7 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
             auto it = current_connections.find(connection);
             if (it == end(current_connections))
             {
-                BOOST_LOG_TRIVIAL(trace)
+                LOG(manager_logger, trace)
                     << "Do not continue the polling on connection: " << connection
                     << ", native_socket: " << socket_native
                     << ", socket: " << connection->socket
@@ -361,7 +364,7 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
                 return;
             }
 
-            BOOST_LOG_TRIVIAL(trace)
+            LOG(manager_logger, trace)
                 << "Continue the polling on connection: " << connection
                 << ", native_socket: " << socket_native
                 << ", socket: " << connection->socket;
@@ -378,8 +381,8 @@ void Manager::poll(std::shared_ptr<Connection> connection, int action)
 
     if (it == std::end(current_connections))
     {
-        BOOST_LOG_TRIVIAL(error)
-            << "Cannot poll an untracked connection: " << connection;
+        LOG(manager_logger, error) << "Cannot poll an untracked connection: "
+                                   << connection;
         return;
     }
 
@@ -418,7 +421,7 @@ void Manager::cancel_connection_io_thread(std::shared_ptr<Connection> connection
 
     if (it == std::end(current_connections))
     {
-        BOOST_LOG_TRIVIAL(warning) << "Cannot cancel a completed connection";
+        LOG(manager_logger, warning) << "Cannot cancel a completed connection";
         promise.set_exception(HTTPP::detail::make_exception_ptr(
             std::runtime_error("Connection already completed")));
         return;
@@ -428,8 +431,8 @@ void Manager::cancel_connection_io_thread(std::shared_ptr<Connection> connection
 
     if (current_connection_state == Cancelled)
     {
-        BOOST_LOG_TRIVIAL(warning)
-            << "Connection already cancelled: " << connection;
+        LOG(manager_logger, warning) << "Connection already cancelled: "
+                                     << connection;
         promise.set_value();
         return;
     }
@@ -439,9 +442,10 @@ void Manager::cancel_connection_io_thread(std::shared_ptr<Connection> connection
 
     if (!it_cancelled.second)
     {
-        BOOST_LOG_TRIVIAL(error)
+        LOG(manager_logger, error)
             << "Connection is already cancelled but its status is "
-               "not set to cancel: " << current_connection_state;
+               "not set to cancel: "
+            << current_connection_state;
 
         it_cancelled.first->second.set_value();
         it->second = Cancelled;
@@ -451,7 +455,7 @@ void Manager::cancel_connection_io_thread(std::shared_ptr<Connection> connection
     it->second = Cancelled;
     if (current_connection_state == Polling)
     {
-        BOOST_LOG_TRIVIAL(debug) << "Connection is polling, cancel operation";
+        LOG(manager_logger, debug) << "Connection is polling, cancel operation";
         connection->cancelPoll();
     }
 }
@@ -472,13 +476,13 @@ int Manager::closeSocket(curl_socket_t curl_socket)
                     auto it = sockets.find(curl_socket);
                     if (it == std::end(sockets))
                     {
-                        BOOST_LOG_TRIVIAL(error)
+                        LOG(manager_logger, error)
                             << "Cannot find a socket to close";
                         promise.set_value(1);
                         return;
                     }
 
-                    BOOST_LOG_TRIVIAL(trace)
+                    LOG(manager_logger, trace)
                         << "Delete close socket: " << it->second
                         << ", curl socket: " << curl_socket
                         << ", socket native_handle: "
@@ -499,7 +503,8 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
 
                 if (!running)
                 {
-                    BOOST_LOG_TRIVIAL(error) << "Refuse connection, manager is stopped";
+                    LOG(manager_logger, error)
+                        << "Refuse connection, manager is stopped";
                     return;
                 }
 
@@ -511,7 +516,7 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                 }
                 catch (const std::exception& exc)
                 {
-                    BOOST_LOG_TRIVIAL(error)
+                    LOG(manager_logger, error)
                         << "Error when configuring the request: " << exc.what();
                     conn->complete(HTTPP::detail::current_exception());
                     return;
@@ -521,8 +526,8 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
 
                 if (!pair.second)
                 {
-                    BOOST_LOG_TRIVIAL(error)
-                        << "Connection already present: " << conn;
+                    LOG(manager_logger, error) << "Connection already present: "
+                                               << conn;
                     conn->complete(
                         HTTPP::detail::make_exception_ptr(std::runtime_error(
                             "Cannot schedule an operation for an already "
@@ -534,7 +539,7 @@ void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
                 if (rc != CURLM_OK)
                 {
                     std::string message = curl_multi_strerror(rc);
-                    BOOST_LOG_TRIVIAL(error)
+                    LOG(manager_logger, error)
                         << "Error scheduling a new request: " << message;
                     removeConnection(conn);
                     conn->complete(HTTPP::detail::make_exception_ptr(

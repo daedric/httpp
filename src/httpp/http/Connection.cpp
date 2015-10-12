@@ -12,12 +12,9 @@
 
 #include <sstream>
 
-#include <boost/log/trivial.hpp>
-
 #include "httpp/HttpServer.hpp"
 #include "httpp/http/Parser.hpp"
 #include "httpp/http/Request.hpp"
-#include "httpp/utils/ThreadPool.hpp"
 #include "httpp/utils/VectorStreamBuf.hpp"
 
 namespace HTTPP
@@ -29,7 +26,7 @@ const size_t Connection::BUF_SIZE = 8196;
 
 Connection::Connection(HTTPP::HttpServer& handler,
                        boost::asio::io_service& service,
-                       UTILS::ThreadPool& pool,
+                       ThreadPool& pool,
                        boost::asio::ssl::context* ctx
                        )
 : handler_(handler)
@@ -44,14 +41,14 @@ Connection::Connection(HTTPP::HttpServer& handler,
 
 Connection::~Connection()
 {
-    BOOST_LOG_TRIVIAL(debug) << "Disconnect client";
+    LOG(logger_, debug) << "Disconnect client";
     cancel();
     close();
 
     if (is_owned_)
     {
-        BOOST_LOG_TRIVIAL(error) << "A connection is destroyed manually, this "
-                                    "should always be done by the HttpServer";
+        LOG(logger_, error) << "A connection is destroyed manually, this "
+                               "should always be done by the HttpServer";
         handler_.destroy(this, false);
     }
 }
@@ -100,7 +97,7 @@ void Connection::disown() noexcept
     bool expected = true;
     if (!is_owned_.compare_exchange_strong(expected, false))
     {
-        BOOST_LOG_TRIVIAL(warning) << "Disown a connection already disowned";
+        LOG(logger_, warning) << "Disown a connection already disowned";
     }
 }
 
@@ -115,7 +112,7 @@ void Connection::markToBeDeleted() noexcept
     if (!should_be_deleted_)
     {
         should_be_deleted_ = true;
-        BOOST_LOG_TRIVIAL(debug) << "Connection marked to be deleted: " << this;
+        LOG(logger_, debug) << "Connection marked to be deleted: " << this;
         cancel();
         close();
     }
@@ -200,8 +197,8 @@ void Connection::read_request()
         Request request;
         if (Parser::parse(is, request))
         {
-            BOOST_LOG_TRIVIAL(trace) << "Received a request from: " << source()
-                                     << ": " << request;
+            LOG(logger_, trace) << "Received a request from: " << source()
+                                << ": " << request;
 
             buf.shrinkVector();
 
@@ -210,9 +207,9 @@ void Connection::read_request()
         }
         else
         {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Invalid request received from: " << source();
-            BOOST_LOG_TRIVIAL(error) << std::string(buffer_.data(), size_);
+            LOG(logger_, warning)
+                << "Invalid request received from: " << source() << "\n"
+                << std::string(buffer_.data(), size_);
 
             response_ = Response(
                     HttpCode::BadRequest,
@@ -289,7 +286,7 @@ void Connection::sendResponse()
 {
     if (!own())
     {
-        BOOST_LOG_TRIVIAL(error) << "Connection should be disowned";
+        LOG(logger_, error) << "Connection should be disowned";
         throw std::logic_error("Invalid connection state");
     }
 
@@ -300,7 +297,7 @@ void Connection::sendContinue(Callback&& cb)
 {
     if (!own())
     {
-        BOOST_LOG_TRIVIAL(error) << "Connection should be disowned";
+        LOG(logger_, error) << "Connection should be disowned";
         throw std::logic_error("Invalid connection state");
     }
 

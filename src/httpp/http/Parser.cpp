@@ -16,7 +16,7 @@
 #include <iterator>
 #include <functional>
 
-#include <boost/log/trivial.hpp>
+#include <commonpp/core/LoggingInterface.hpp>
 
 #include "httpp/http/Request.hpp"
 #include "httpp/utils/URL.hpp"
@@ -25,6 +25,8 @@ namespace HTTPP
 {
 namespace HTTP
 {
+
+CREATE_LOGGER(parser_logger, "httpp::HttpServer::Parser");
 
 using Iterator = std::istream_iterator<char>;
 static const Iterator EOS = Iterator();
@@ -48,7 +50,7 @@ static bool expect(Iterator& it, const std::string& expected)
     {
         if (*eit != *it)
         {
-            BOOST_LOG_TRIVIAL(error)
+            LOG(parser_logger, error)
                 << "Error happened parsing request: expected: " << expected
                 << " got: " << *it << " (" << std::hex << (int)*it << ")";
             return false;
@@ -209,7 +211,8 @@ static bool parse_http_version(Iterator& it, Request& request)
         }
         catch (std::exception const& ex)
         {
-            BOOST_LOG_TRIVIAL(error) << "Cannot parse Major/Minor: " << ex.what();
+            LOG(parser_logger, error) << "Cannot parse Major/Minor: "
+                                      << ex.what();
             return false;
         }
     }

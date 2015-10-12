@@ -15,9 +15,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpServer.hpp"
@@ -41,11 +38,6 @@ void handler(Connection* connection, Request&&)
 
 BOOST_AUTO_TEST_CASE(simple)
 {
-    boost::log::core::get()->set_filter
-    (
-        boost::log::trivial::severity >= boost::log::trivial::debug
-    );
-
     HttpServer server;
     server.start();
     server.setSink(&handler);

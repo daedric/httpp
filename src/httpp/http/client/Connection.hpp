@@ -18,12 +18,12 @@
 # include <mutex>
 # include <future>
 
-# include <boost/log/trivial.hpp>
 # include <boost/asio.hpp>
-# include <boost/log/trivial.hpp>
+
+# include <commonpp/thread/ThreadPool.hpp>
+# include <commonpp/core/LoggingInterface.hpp>
 
 # include "httpp/detail/config.hpp"
-# include "httpp/utils/ThreadPool.hpp"
 # include "httpp/http/Protocol.hpp"
 # include "httpp/http/client/Request.hpp"
 # include "httpp/http/client/Response.hpp"
@@ -39,9 +39,12 @@ namespace detail {
 
 struct Manager;
 
+FWD_DECLARE_LOGGER(client_connection_logger, commonpp::core::Logger);
+
 struct Connection : public std::enable_shared_from_this<Connection>
 {
     using ConnectionPtr = std::shared_ptr<Connection>;
+    using ThreadPool = commonpp::thread::ThreadPool;
 
     template <typename T>
     using Promise = HTTPP::detail::Promise<T>;
@@ -65,7 +68,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
         auto rc = curl_easy_setopt(handle, opt, t);
         if (rc != CURLE_OK)
         {
-            BOOST_LOG_TRIVIAL(error)
+            LOG(client_connection_logger, error)
                 << "Error setting curl option: " << curl_easy_strerror(rc);
             throw std::runtime_error("Cannot set option on curl");
         }
@@ -78,8 +81,8 @@ struct Connection : public std::enable_shared_from_this<Connection>
         auto rc = curl_easy_getinfo(handle, info, std::addressof(data));
         if (rc != CURLE_OK)
         {
-            BOOST_LOG_TRIVIAL(error)
-                << "Can't get info: " << curl_easy_strerror(rc);
+            LOG(client_connection_logger, error) << "Can't get info: "
+                                                 << curl_easy_strerror(rc);
             throw std::runtime_error(curl_easy_strerror(rc));
         }
 
@@ -107,14 +110,14 @@ struct Connection : public std::enable_shared_from_this<Connection>
     template <typename Cb>
     void poll(int action, Cb cb)
     {
-        BOOST_LOG_TRIVIAL(trace)
-            << "Poll socket: " << socket << ", socket native_handle: "
-            << socket->native_handle();
+        LOG(client_connection_logger, trace)
+            << "Poll socket: " << socket
+            << ", socket native_handle: " << socket->native_handle();
 
         switch (action)
         {
         default:
-            BOOST_LOG_TRIVIAL(error)
+            LOG(client_connection_logger, error)
                 << "Unknow poll operation requested: " << action;
 
             complete(HTTPP::detail::make_exception_ptr(
@@ -142,7 +145,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
     }
 
     Manager& handler;
-    UTILS::ThreadPool* dispatch;
+    ThreadPool* dispatch;
 
     CURL* handle;
     int poll_action = 0;
