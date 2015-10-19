@@ -25,17 +25,19 @@ static char const HEADER_BODY_SEP[] = { '\r', '\n', '\r', '\n' };
 
 enum class Method
 {
-    HEAD,
-    GET,
-    POST,
-    PUT,
-    DELETE_, // '_' for msvc workaround
-    OPTIONS,
-    TRACE,
+    HEAD    ,
+    GET     ,
+    POST    ,
+    PUT     ,
+    DELETE_ , // '_' for msvc workaround
+    OPTIONS ,
+    TRACE   ,
     CONNECT
 };
 
 std::string to_string(Method method);
+Method method_from(const std::string& str);
+Method method_from(const char* str);
 
 enum class HttpCode : unsigned int
 {

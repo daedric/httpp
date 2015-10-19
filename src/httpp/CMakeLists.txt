@@ -13,6 +13,7 @@ SET(SOURCES
 
     http/Connection.cpp
     http/Parser.cpp
+    http/parser_ragel.cpp
     http/Protocol.cpp
     http/Request.cpp
     http/Response.cpp

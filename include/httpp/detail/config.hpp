@@ -24,6 +24,13 @@
 #  define HTTPP_PROMISE_NAMESPACE std
 # endif
 
+# define RAGEL_BACKEND 0
+# define STREAM_BACKEND 1
+
+# ifndef PARSER_BACKEND
+#  define PARSER_BACKEND RAGEL_BACKEND
+# endif
+
 namespace HTTPP
 {
 

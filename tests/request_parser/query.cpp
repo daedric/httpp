@@ -8,6 +8,7 @@
  *
  */
 
+#include "httpp/detail/config.hpp"
 #include "httpp/http/Parser.hpp"
 
 #include <sstream>
@@ -25,7 +26,7 @@ ostream& operator<<(ostream& os, const Request::QueryParam& h)
 }
 }
 
-
+#if PARSER_BACKEND == STREAM_BACKEND
 Request parse(const std::string& req)
 {
     const std::string query = "GET " + req + " HTTP/1.1\r\n\r\n";
@@ -36,6 +37,19 @@ Request parse(const std::string& req)
     BOOST_CHECK(b);
     return request;
 }
+#elif PARSER_BACKEND == RAGEL_BACKEND
+Request parse(const std::string& req)
+{
+    const std::string query = "GET " + req + " HTTP/1.1\r\n\r\n";
+
+    Request request;
+    size_t consumed;
+    bool b = Parser::parse(query.data(), query.data() + query.size(), consumed,
+                           request);
+    BOOST_CHECK(b);
+    return request;
+}
+#endif
 
 BOOST_AUTO_TEST_CASE(test_http_header_query_parser_no_query)
 {
