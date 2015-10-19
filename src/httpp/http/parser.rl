@@ -15,68 +15,70 @@
 
 %%{
 action start_path {
-    path_begin = fpc;
+    token_begin = fpc;
 }
 
 action end_path {
-    path_end = fpc;
-    request.uri.assign(path_begin, path_end);
-    path_begin = path_end = nullptr;
+    token_end = fpc;
+    request.uri.assign(token_begin, token_end);
+    token_begin = token_end = nullptr;
 }
 
 action start_key {
-    k_begin = fpc;
+    token_begin = fpc;
 }
 
 action end_key {
-    k_end = fpc;
-    request.headers.emplace_back(std::make_pair<std::string>({k_begin, k_end}, ""));
-    k_begin = k_end = nullptr;
+    token_end = fpc;
+    request.headers.emplace_back(std::make_pair<std::string>({token_begin, token_end}, ""));
+    token_begin = token_end = nullptr;
 }
 
 action start_value {
-    v_begin = fpc;
+    token_begin = fpc;
 }
 
 action end_value {
-    v_end = fpc;
-    request.headers.back().second = {v_begin, v_end};
-    v_begin = v_end = nullptr;
+    token_end = fpc;
+    request.headers.back().second = {token_begin, token_end};
+    token_begin = token_end = nullptr;
 }
 
 action start_qkey {
-    k_begin = fpc;
+    token_begin = fpc;
 }
 
 action end_qkey {
-    k_end = fpc;
-    request.query_params.emplace_back(std::make_pair<std::string>({UTILS::url_decode(k_begin, k_end)}, ""));
-    k_begin = k_end = nullptr;
+    token_end = fpc;
+    request.query_params.emplace_back(std::make_pair<std::string>({UTILS::url_decode(token_begin, token_end)}, ""));
+    token_begin = token_end = nullptr;
 }
 
 action start_qvalue {
-    v_begin = fpc;
+    token_begin = fpc;
 }
 
 action end_qvalue {
-    v_end = fpc;
-    request.query_params.back().second = UTILS::url_decode(v_begin, v_end);
-    v_begin = v_end = nullptr;
+    token_end = fpc;
+    request.query_params.back().second = UTILS::url_decode(token_begin, token_end);
+    token_begin = token_end = nullptr;
 }
 
 action start_method {
-    method_begin = fpc;
+    token_begin = fpc;
 }
 
 action end_method {
     try
     {
-        request.method = method_from(method_begin);
+        request.method = method_from(token_begin);
     }
     catch(...)
     {
         fbreak;
     }
+
+    token_begin = nullptr;
 }
 
 }%%
@@ -90,10 +92,7 @@ bool Parser::parse(const char* start,
     const char *p = start;
     int cs;
 
-    const char *k_begin, *k_end;
-    const char *v_begin, *v_end;
-    const char *path_begin, *path_end;
-    const char *method_begin;
+    const char *token_begin, *token_end;
 
     %%{
         method = ("GET" | "POST" | "HEAD" | "PUT" | "DELETE" | "OPTIONS" | "TRACE" | "CONNECT");
