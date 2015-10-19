@@ -16,7 +16,6 @@ SET(SOURCES
     http/Protocol.cpp
     http/Request.cpp
     http/Response.cpp
-    http/URL.cpp
     http/Utils.cpp
 
     http/client/curl_parser.cpp

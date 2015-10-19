@@ -11,18 +11,14 @@
 #ifndef _HTTPP_UTILS_URL_HPP_
 # define _HTTPP_UTILS_URL_HPP_
 
-# include <string>
+# include <commonpp/net/http/URL.hpp>
 
 namespace HTTPP
 {
 namespace UTILS
 {
-
-bool url_decode(std::string& fragment, bool replace_plus = true);
-std::string decode(const std::string& fragment, bool replace_plus = true);
-
-bool url_encode(std::string& fragment);
-std::string encode(const std::string& fragment);
+using commonpp::net::http::url_decode;
+using commonpp::net::http::url_encode;
 
 } // namespace UTILS
 } // namespace HTTPP

@@ -175,7 +175,8 @@ static bool parse_uri(Iterator& it, Request& request)
             bool res = consumeUntil(it, key, "&= ");
             if (match(it, '=')) {
                 res = res && consumeUntil(it, value, "& ");
-                res = res && UTILS::url_decode(value);
+                key = UTILS::url_decode(key);
+                value = UTILS::url_decode(value);
                 request.query_params.emplace_back(std::move(key), std::move(value));
             }
             else
