@@ -121,7 +121,7 @@ ELSE ()
 ENDIF()
 
 # Actual Stuff ################################################################
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${HTTPP_SOURCE_DIR}/CMakeScripts ${HTTPP_SOURCE_DIR}/third_party/commonpp/cmake)
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${HTTPP_SOURCE_DIR}/CMakeScripts)
 
 #Thread
 FIND_PACKAGE(Threads REQUIRED)
