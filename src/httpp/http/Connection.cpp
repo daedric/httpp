@@ -12,6 +12,7 @@
 
 #include <sstream>
 
+#include "httpp/detail/config.hpp"
 #include "httpp/HttpServer.hpp"
 #include "httpp/http/Parser.hpp"
 #include "httpp/http/Request.hpp"
@@ -192,9 +193,10 @@ void Connection::read_request()
 
     if (Parser::isComplete(buffer_.data(), size_))
     {
+        Request request;
+#if PARSER_BACKEND == STREAM_BACKEND
         UTILS::VectorStreamBuf buf(buffer_, size_);
         std::istream is(std::addressof(buf));
-        Request request;
         if (Parser::parse(is, request))
         {
             LOG(logger_, trace) << "Received a request from: " << source()
@@ -205,6 +207,21 @@ void Connection::read_request()
             lock.unlock();
             handler_.connection_notify_request(this, std::move(request));
         }
+#elif PARSER_BACKEND == RAGEL_BACKEND
+        const char* begin = buffer_.data();
+        const char* end = begin + size_;
+        size_t consumed = 0;
+        if (Parser::parse(begin, end, consumed, request))
+        {
+            LOG(logger_, trace) << "Received a request from: " << source()
+                                << ": " << request;
+
+            buffer_.erase(buffer_.begin(), buffer_.begin() + consumed);
+            buffer_.resize(size_ - consumed);
+            lock.unlock();
+            handler_.connection_notify_request(this, std::move(request));
+        }
+#endif
         else
         {
             LOG(logger_, warning)

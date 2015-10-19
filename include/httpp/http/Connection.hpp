@@ -72,7 +72,7 @@ public:
             throw std::logic_error("Invalid connection state");
         }
 
-        if (buffer_.size())
+        if (not buffer_.empty())
         {
             if (body_size <= buffer_.size())
             {
@@ -84,6 +84,7 @@ public:
             {
                 callable(boost::system::error_code(), buffer_.data(), buffer_.size());
                 body_size -= buffer_.size();
+                //XXX: should we really clear here ?
                 buffer_.clear();
             }
         }
