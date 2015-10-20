@@ -28,6 +28,11 @@ public:
     Parser() = delete;
     static bool isComplete(const char* buffer, size_t n);
     static bool parse(std::istream& is, Request& request);
+
+    static bool parse(const char* start,
+                      const char* end,
+                      size_t& consumed,
+                      Request& request);
 };
 
 } // namespace HTTP

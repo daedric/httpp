@@ -58,4 +58,32 @@ BOOST_AUTO_TEST_CASE(parser_streambuf)
     BOOST_CHECK_EQUAL(request.headers[5], HTTPP::HTTP::Header("Test2", "Test3"));
 }
 
+BOOST_AUTO_TEST_CASE(parser_ragel)
+{
+    const std::string query = "POST /test?1234=4321 HTTP/1.1\r\n"
+        "Test: coucou\r\n"
+        "Salut : Toi\r\n"
+        "Content-Type:\r\n"
+        "Hello:world!\r\n"
+        "Incomplete2:\r\n"
+        "Test2:Test3\r\n"
+        "\r\nqwertyuiop";
 
+    std::vector<char> vect(std::begin(query), std::end(query));
+
+    Request request;
+    size_t consumed;
+    bool b = Parser::parse(query.data(), query.data() + query.size(), consumed, request);
+    BOOST_CHECK(b);
+    vect.erase(vect.begin(), vect.begin() + consumed);
+
+    std::string remaining(vect.data(), vect.size());
+    BOOST_CHECK_EQUAL(remaining, "qwertyuiop");
+
+    BOOST_CHECK_EQUAL(request.headers[0], HTTPP::HTTP::Header("Test", "coucou"));
+    BOOST_CHECK_EQUAL(request.headers[1], HTTPP::HTTP::Header("Salut", "Toi"));
+    BOOST_CHECK_EQUAL(request.headers[2], HTTPP::HTTP::Header("Content-Type", ""));
+    BOOST_CHECK_EQUAL(request.headers[3], HTTPP::HTTP::Header("Hello", "world!"));
+    BOOST_CHECK_EQUAL(request.headers[4], HTTPP::HTTP::Header("Incomplete2", ""));
+    BOOST_CHECK_EQUAL(request.headers[5], HTTPP::HTTP::Header("Test2", "Test3"));
+}
