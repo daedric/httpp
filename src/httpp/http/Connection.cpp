@@ -199,8 +199,8 @@ void Connection::read_request()
         std::istream is(std::addressof(buf));
         if (Parser::parse(is, request))
         {
-            LOG(logger_, trace) << "Received a request from: " << source()
-                                << ": " << request;
+            DLOG(logger_, trace) << "Received a request from: " << source()
+                                 << ": " << request;
 
             buf.shrinkVector();
 
@@ -213,8 +213,8 @@ void Connection::read_request()
         size_t consumed = 0;
         if (Parser::parse(begin, end, consumed, request))
         {
-            LOG(logger_, trace) << "Received a request from: " << source()
-                                << ": " << request;
+            DLOG(logger_, trace) << "Received a request from: " << source()
+                                 << ": " << request;
 
             buffer_.erase(buffer_.begin(), buffer_.begin() + consumed);
             buffer_.resize(size_ - consumed);
