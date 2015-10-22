@@ -72,7 +72,7 @@ void handler(Connection* connection, Request&& request)
     auto content_length = headers["Content-Length"];
     if (!content_length.empty())
     {
-        auto size = std::stoi(headers["Content-Length"]);
+        auto size = std::stoi(to_string(headers["Content-Length"]));
         connection->readBody(size, &body_handler);
     } else {
         connection->response()

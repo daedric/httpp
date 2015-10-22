@@ -45,7 +45,7 @@ void handler(Connection* connection, Request&& request)
 {
     gconnection = connection;
     auto headers = request.getSortedHeaders();
-    auto size = std::stoi(headers["Content-Length"]);
+    auto size = std::stoi(to_string(headers["Content-Length"]));
     connection->readBody(size, &body_handler);
 }
 

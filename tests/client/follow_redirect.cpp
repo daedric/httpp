@@ -29,7 +29,7 @@ void handler(Connection* connection, Request&& request)
     auto headers = request.getSortedHeaders();
 
     auto const& host = headers["Host"];
-    auto port = stoi(host.substr(host.find(':') + 1));
+    auto port = stoi(to_string(host.substr(host.find(':') + 1)));
 
     if (port < 8084)
     {
@@ -50,6 +50,10 @@ void handler(Connection* connection, Request&& request)
 
 BOOST_AUTO_TEST_CASE(follow_redirect)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::warning);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler);
@@ -100,6 +104,10 @@ void handler2(Connection* connection, Request&& request)
 
 BOOST_AUTO_TEST_CASE(follow_redirect2)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::warning);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler2);

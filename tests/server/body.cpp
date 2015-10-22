@@ -69,7 +69,7 @@ void handler(Connection* connection, Request&& request)
     gconnection = connection;
     std::cout << "got a request" << std::endl;
     auto headers = request.getSortedHeaders();
-    auto size = std::stoi(headers["Content-Length"]);
+    auto size = std::stoi(to_string(headers["Content-Length"]));
     connection->readBody(size, &body_handler);
 }
 
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(listener)
 {
     for (int i = 0; i < BODY_SIZE; ++i)
     {
-        BODY += char(i % 127);
+        BODY += char('a');
     }
 
     HttpServer server;

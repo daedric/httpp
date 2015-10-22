@@ -8,6 +8,9 @@
  *
  */
 
+#include <commonpp/core/string/stringify.hpp>
+#include <commonpp/core/string/std_tostring.hpp>
+
 #include "httpp/http/Request.hpp"
 #include <ostream>
 
@@ -18,7 +21,7 @@ namespace HTTP
 std::ostream& operator<<(std::ostream& os, const Request& request)
 {
     os << to_string(request.method) << " ";
-    std::string uri = request.uri;
+    std::string uri = to_string(request.uri);
     if (!request.query_params.empty())
     {
         uri += '?';

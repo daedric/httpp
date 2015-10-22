@@ -15,6 +15,8 @@
 # include <tuple>
 # include <boost/system/error_code.hpp>
 
+# include <httpp/detail/config.hpp>
+
 namespace HTTPP
 {
 namespace HTTP
@@ -27,12 +29,16 @@ class Parser
 public:
     Parser() = delete;
     static bool isComplete(const char* buffer, size_t n);
-    static bool parse(std::istream& is, Request& request);
 
+# if PARSER_BACKEND == RAGEL_BACKEND
     static bool parse(const char* start,
                       const char* end,
                       size_t& consumed,
                       Request& request);
+#else
+    static bool parse(std::istream& is, Request& request);
+#endif
+
 };
 
 } // namespace HTTP

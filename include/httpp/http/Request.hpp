@@ -32,7 +32,13 @@ struct Request
 
     const TimePoint received = Clock::now();
     Method method;
+
+# if PARSER_BACKEND == RAGEL_BACKEND
+    boost::string_ref uri;
+# else
     std::string uri;
+#endif
+
     int major;
     int minor;
 
@@ -45,7 +51,7 @@ struct Request
         return UTILS::create_sorted_vector(query_params);
     }
 
-    std::vector<Header> headers;
+    std::vector<HeaderRef> headers;
 
     auto getSortedHeaders() const -> decltype(UTILS::create_sorted_vector(headers))
     {

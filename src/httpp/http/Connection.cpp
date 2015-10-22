@@ -154,26 +154,37 @@ std::string Connection::source() const
 
 void Connection::start()
 {
-    size_ = buffer_.size();
-    if (!size_)
+    // Maybe we have the beginning of the next request in the
+    // body_buffer_
+    if (not body_buffer_.empty())
     {
-        buffer_.resize(BUF_SIZE);
+        request_buffer_.swap(body_buffer_);
+        size_ = request_buffer_.size();
     }
+    else
+    {
+        size_ = 0;
+    }
+
+    request_buffer_.resize(BUF_SIZE, 0);
+
+    body_buffer_.clear();
+    body_buffer_.reserve(BUF_SIZE);
+
     response_ = Response();
 
     if (ssl_socket_ && need_handshake_)
     {
         need_handshake_ = false;
         ssl_socket_->async_handshake(boost::asio::ssl::stream_base::server,
-                                     [this](boost::system::error_code const& ec)
-                                     {
-            if (ec)
-            {
-                handler_.connection_error(this, ec);
-                return;
-            }
-            read_request();
-        });
+                                     [this](boost::system::error_code const& ec) {
+                                         if (ec)
+                                         {
+                                             handler_.connection_error(this, ec);
+                                             return;
+                                         }
+                                         read_request();
+                                     });
     }
     else
     {
@@ -191,11 +202,11 @@ void Connection::read_request()
         return;
     }
 
-    if (Parser::isComplete(buffer_.data(), size_))
+    if (Parser::isComplete(request_buffer_.data(), size_))
     {
         Request request;
 #if PARSER_BACKEND == STREAM_BACKEND
-        UTILS::VectorStreamBuf buf(buffer_, size_);
+        UTILS::VectorStreamBuf buf(request_buffer_, size_);
         std::istream is(std::addressof(buf));
         if (Parser::parse(is, request))
         {
@@ -203,12 +214,13 @@ void Connection::read_request()
                                  << ": " << request;
 
             buf.shrinkVector();
+            body_buffer_.swap(request_buffer_);
 
             lock.unlock();
             handler_.connection_notify_request(this, std::move(request));
         }
 #elif PARSER_BACKEND == RAGEL_BACKEND
-        const char* begin = buffer_.data();
+        const char* begin = request_buffer_.data();
         const char* end = begin + size_;
         size_t consumed = 0;
         if (Parser::parse(begin, end, consumed, request))
@@ -216,8 +228,14 @@ void Connection::read_request()
             DLOG(logger_, trace) << "Received a request from: " << source()
                                  << ": " << request;
 
-            buffer_.erase(buffer_.begin(), buffer_.begin() + consumed);
-            buffer_.resize(size_ - consumed);
+            if (consumed != size_)
+            {
+                body_buffer_.insert(body_buffer_.begin(),
+                                    request_buffer_.begin() + consumed,
+                                    request_buffer_.begin() + size_);
+                request_buffer_.resize(consumed);
+            }
+
             lock.unlock();
             handler_.connection_notify_request(this, std::move(request));
         }
@@ -226,7 +244,7 @@ void Connection::read_request()
         {
             LOG(logger_, warning)
                 << "Invalid request received from: " << source() << "\n"
-                << std::string(buffer_.data(), size_);
+                << std::string(request_buffer_.data(), size_);
 
             response_ = Response(
                     HttpCode::BadRequest,
@@ -240,26 +258,26 @@ void Connection::read_request()
     }
     else
     {
-        if (size_ == buffer_.size())
+        if (size_ == request_buffer_.size())
         {
-            buffer_.resize(buffer_.size() + BUF_SIZE);
+            request_buffer_.resize(request_buffer_.size() + BUF_SIZE);
         }
 
-        char* data = buffer_.data();
+        char* data = request_buffer_.data();
         data += size_;
 
-        async_read_some(boost::asio::buffer(data, buffer_.capacity() - size_),
-                        [&](boost::system::error_code const& ec, size_t size)
-                        {
-            if (ec)
-            {
-                handler_.connection_error(this, ec);
-                return;
-            }
+        async_read_some(
+            boost::asio::buffer(data, request_buffer_.capacity() - size_),
+            [&](boost::system::error_code const& ec, size_t size) {
+                if (ec)
+                {
+                    handler_.connection_error(this, ec);
+                    return;
+                }
 
-            this->size_ += size;
-            read_request();
-        });
+                this->size_ += size;
+                read_request();
+            });
     }
 }
 

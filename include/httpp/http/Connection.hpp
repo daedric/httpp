@@ -72,20 +72,22 @@ public:
             throw std::logic_error("Invalid connection state");
         }
 
-        if (not buffer_.empty())
+        if (not body_buffer_.empty())
         {
-            if (body_size <= buffer_.size())
+            if (body_size <= body_buffer_.size())
             {
-                callable(boost::system::error_code(), buffer_.data(), body_size);
-                buffer_.erase(begin(buffer_), begin(buffer_) + body_size);
+                callable(boost::system::error_code(), body_buffer_.data(),
+                         body_size);
+                body_buffer_.erase(begin(body_buffer_),
+                                   begin(body_buffer_) + body_size);
                 body_size = 0;
             }
             else
             {
-                callable(boost::system::error_code(), buffer_.data(), buffer_.size());
-                body_size -= buffer_.size();
-                //XXX: should we really clear here ?
-                buffer_.clear();
+                callable(boost::system::error_code(), body_buffer_.data(),
+                         body_buffer_.size());
+                body_size -= body_buffer_.size();
+                body_buffer_.clear();
             }
         }
 
@@ -98,14 +100,13 @@ public:
 
         auto buf_size = std::min(BUF_SIZE, body_size);
 
-        buffer_.resize(buf_size);
+        body_buffer_.resize(buf_size);
         std::lock_guard<std::mutex> lock(mutex_);
 
         socket_.async_read_some(
-            boost::asio::buffer(buffer_),
+            boost::asio::buffer(body_buffer_),
             [body_size, callable, this](const boost::system::error_code& ec,
-                                        size_t size)
-            {
+                                        size_t size) {
                 disown();
 
                 if (ec)
@@ -116,7 +117,7 @@ public:
                     return;
                 }
 
-                buffer_.resize(size);
+                body_buffer_.resize(size);
                 readBody(body_size, callable);
             });
     }
@@ -152,7 +153,8 @@ private:
     std::atomic_bool is_owned_ = { true };
     bool should_be_deleted_ = { false };
     ThreadPool& pool_;
-    std::vector<char> buffer_;
+    std::vector<char> request_buffer_;
+    std::vector<char> body_buffer_;
     size_t size_ = 0;
 
     std::mutex mutex_;

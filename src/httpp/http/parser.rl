@@ -1,4 +1,13 @@
-#include <iostream>
+/*
+ * Part of HTTPP.
+ *
+ * Distributed under the 2-clause BSD licence (See LICENCE.TXT file at the
+ * project root).
+ *
+ * Copyright (c) 2015 Thomas Sanchez.  All rights reserved.
+ *
+ */
+
 #include <vector>
 #include <string>
 
@@ -7,6 +16,11 @@
 #include "httpp/http/Parser.hpp"
 #include "httpp/http/Request.hpp"
 #include "httpp/utils/URL.hpp"
+
+# if PARSER_BACKEND == RAGEL_BACKEND
+
+#define TOKEN_LEN size_t(token_end - token_begin)
+#define TOKEN_REF boost::string_ref(token_begin, TOKEN_LEN)
 
 %%{
     machine http;
@@ -20,7 +34,7 @@ action start_path {
 
 action end_path {
     token_end = fpc;
-    request.uri.assign(token_begin, token_end);
+    request.uri = TOKEN_REF;
     token_begin = token_end = nullptr;
 }
 
@@ -30,7 +44,7 @@ action start_key {
 
 action end_key {
     token_end = fpc;
-    request.headers.emplace_back(std::make_pair<std::string>({token_begin, token_end}, ""));
+    request.headers.emplace_back(std::make_pair<boost::string_ref>(TOKEN_REF, ""));
     token_begin = token_end = nullptr;
 }
 
@@ -40,7 +54,7 @@ action start_value {
 
 action end_value {
     token_end = fpc;
-    request.headers.back().second = {token_begin, token_end};
+    request.headers.back().second = TOKEN_REF;
     token_begin = token_end = nullptr;
 }
 
@@ -135,4 +149,4 @@ bool Parser::parse(const char* start,
 }
 
 } }
-
+#endif

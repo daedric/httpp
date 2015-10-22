@@ -12,6 +12,10 @@
 # define HTTPP_HTTP_PROTOCOL_HPP_
 
 # include <string>
+# include <boost/utility/string_ref.hpp>
+# include <commonpp/core/string/std_tostring.hpp>
+
+# include <httpp/detail/config.hpp>
 
 namespace HTTPP
 {
@@ -19,7 +23,13 @@ namespace HTTP
 {
 
 using KV = std::pair<std::string, std::string>;
+using KVRef = std::pair<boost::string_ref, boost::string_ref>;
 using Header = KV;
+# if PARSER_BACKEND == RAGEL_BACKEND
+using HeaderRef = KVRef;
+# else
+using HeaderRef = KV;
+# endif
 
 static char const HEADER_BODY_SEP[] = { '\r', '\n', '\r', '\n' };
 

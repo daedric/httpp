@@ -46,7 +46,7 @@ void handler(Connection* connection, Request&& request)
 {
     gconnection = connection;
     auto headers = request.getSortedHeaders();
-    auto size = std::stoi(headers["Content-Length"]);
+    auto size = std::stoi(to_string(headers["Content-Length"]));
     if (headers["Expect"] == "100-continue")
     {
         connection->sendContinue([connection, size]
