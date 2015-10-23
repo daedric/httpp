@@ -43,6 +43,7 @@ ENDFOREACH()
 OPTION(BUILD_TESTS "Should the tests be built")
 OPTION(BUILD_EXAMPLES "Should the examples be built")
 OPTION(BUILD_SHARED_LIBS "Should the shared lib be built")
+OPTION(PROFILE_HTTPP "Should we instrument the code to enable profiling")
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
@@ -83,6 +84,14 @@ IF (${CMAKE_CXX_COMPILER_ID} MATCHES GNU OR ${CMAKE_CXX_COMPILER_ID} MATCHES Cla
   IF (${CMAKE_BUILD_TYPE} MATCHES "DEBUG")
       ADD_DEFINITIONS("-ggdb -g3")
   ENDIF ()
+
+  IF (${PROFILE_HTTPP})
+      MESSAGE(STATUS "HTTPP Profile enabled")
+      SET(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -pg)
+      SET(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -pg)
+      SET(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -pg)
+  ENDIF()
+
 ENDIF()
 
 IF (${BUILD_SHARED_LIBS})
