@@ -122,7 +122,7 @@ Method method_from(const char* str)
     FN(GatewayTimeout)               \
     FN(HttpVersionNotSupported)
 
-std::string getDefaultMessage(HttpCode code)
+const char* getDefaultMessage(HttpCode code)
 {
     switch (code)
     {

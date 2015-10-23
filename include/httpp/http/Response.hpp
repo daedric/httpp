@@ -26,6 +26,8 @@ namespace HTTP
 
 class Response
 {
+    static char const HTTP_START[9];
+    static char const SPACE[1];
     static char const HTTP_DELIMITER[2];
     static char const HEADER_SEPARATOR[2];
     static char const END_OF_STREAM_MARKER[5];
@@ -59,29 +61,60 @@ public:
     template <typename Writer, typename WriteHandler>
     void sendResponse(Writer& writer, WriteHandler&& writeHandler)
     {
-        // prepare the response headers
-        generate_status_string();
-        finalize_response_headers();
-
         std::vector<boost::asio::const_buffer> buffers;
-        buffers.reserve(2 + 4 * headers_.size() + 1);
-        buffers.push_back(boost::asio::buffer(status_string_));
-        buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
+        buffers.reserve(5 + 1 + 4 * (headers_.size() + 1) + 1);
+
+        { // HTTP/1.1
+            buffers.emplace_back(boost::asio::buffer(HTTP_START));
+            snprintf(code_str_, 4, "%i", int(code_));
+            buffers.emplace_back(
+                boost::asio::buffer(code_str_, strlen(code_str_)));
+            buffers.emplace_back(boost::asio::buffer(SPACE));
+
+            auto message = getDefaultMessage(code_);
+            buffers.emplace_back(boost::asio::buffer(message, ::strlen(message)));
+        }
+
+        buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
         for (auto const& header : headers_)
         {
-            buffers.push_back(boost::asio::buffer(header.first));
-            buffers.push_back(boost::asio::buffer(HEADER_SEPARATOR));
-            buffers.push_back(boost::asio::buffer(header.second));
-            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
+            buffers.emplace_back(boost::asio::buffer(header.first));
+            buffers.emplace_back(boost::asio::buffer(HEADER_SEPARATOR));
+            buffers.emplace_back(boost::asio::buffer(header.second));
+            buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
         }
-        buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
+
+        {
+            if (is_chunked_enconding())
+            {
+                static const std::string te = "Transfer-Encoding";
+                static const std::string chunked = "chunked";
+                buffers.emplace_back(boost::asio::buffer(te));
+                buffers.emplace_back(boost::asio::buffer(HEADER_SEPARATOR));
+                buffers.emplace_back(boost::asio::buffer(chunked));
+                buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
+            }
+            else
+            {
+                static const std::string cl = "Content-Length";
+                buffers.emplace_back(boost::asio::buffer(cl));
+                buffers.emplace_back(boost::asio::buffer(HEADER_SEPARATOR));
+
+                snprintf(body_size_, 16, "%lu", body_.size());
+                buffers.emplace_back(
+                    boost::asio::buffer(body_size_, strlen(body_size_)));
+                buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
+            }
+        }
+
+        buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
 
         if (!is_chunked_enconding())
         {
              // response is non-chunked, send everything at once.
             if (!body_.empty())
             {
-                buffers.push_back(boost::asio::buffer(body_));
+                buffers.emplace_back(boost::asio::buffer(body_));
             }
             boost::asio::async_write(writer, buffers, writeHandler);
         }
@@ -153,10 +186,10 @@ private:
             std::stringstream header;
             header << std::hex << current_chunk_.size();
             current_chunk_header_ = header.str();
-            buffers.push_back(boost::asio::buffer(current_chunk_header_));
-            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
-            buffers.push_back(boost::asio::buffer(current_chunk_));
-            buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
+            buffers.emplace_back(boost::asio::buffer(current_chunk_header_));
+            buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
+            buffers.emplace_back(boost::asio::buffer(current_chunk_));
+            buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
 
             boost::asio::async_write(
                 writer,
@@ -192,28 +225,12 @@ private:
         return chunkedBodyCallback_ != nullptr;
     }
 
-    void generate_status_string()
-    {
-        status_string_ = "HTTP/1.1 " +
-                         std::to_string(static_cast<unsigned int>(code_)) +
-                         " " + getDefaultMessage(code_);
-    }
-
-    void finalize_response_headers()
-    {
-        if (is_chunked_enconding())
-        {
-            headers_.emplace_back("Transfer-Encoding", "chunked");
-        }
-        else
-        {
-            headers_.emplace_back("Content-Length", std::to_string(body_.size()));
-        }
-    }
-
 private:
     HttpCode code_;
+    char code_str_[4];
+
     std::vector<char> body_;
+    char body_size_[16];
     std::function<std::string()> chunkedBodyCallback_;
     std::string current_chunk_header_;
     std::string current_chunk_;

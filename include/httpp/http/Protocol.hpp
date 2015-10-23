@@ -103,7 +103,7 @@ enum class HttpCode : unsigned int
     HttpVersionNotSupported = 505
 };
 
-std::string getDefaultMessage(HttpCode code);
+const char* getDefaultMessage(HttpCode code);
 
 } // namespace HTTP
 } // namespace HTTPP

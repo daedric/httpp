@@ -11,15 +11,27 @@
 #include "httpp/http/Response.hpp"
 
 #include <stdexcept>
+#include <cstring>
 
 namespace HTTPP
 {
 namespace HTTP
 {
-
-char const Response::HTTP_DELIMITER[] = { '\r', '\n'};
-char const Response::HEADER_SEPARATOR[] = { ':', ' '};
-char const Response::END_OF_STREAM_MARKER[] = { '0', '\r', '\n', '\r', '\n'};
+char const Response::HTTP_START[] = {
+    'H', 'T', 'T', 'P', '/', '1', '.', '1', ' ',
+};
+char const Response::SPACE[] = {
+    ' ',
+};
+char const Response::HTTP_DELIMITER[] = {
+    '\r', '\n',
+};
+char const Response::HEADER_SEPARATOR[] = {
+    ':', ' ',
+};
+char const Response::END_OF_STREAM_MARKER[] = {
+    '0', '\r', '\n', '\r', '\n',
+};
 
 Response::Response()
 : Response(HttpCode::Ok)
@@ -27,29 +39,30 @@ Response::Response()
 }
 
 Response::Response(HttpCode code)
-: code_(code)
 {
+    setCode(code);
     setBody(getDefaultMessage(code_));
 }
 
 Response::Response(HttpCode code, const boost::string_ref& body)
-: code_(code)
 {
+    setCode(code);
     setBody(body);
 }
 
 Response::Response(HttpCode code, ChunkedResponseCallback&& callback)
-: code_(code),
-  chunkedBodyCallback_(std::move(callback))
+: chunkedBodyCallback_(std::move(callback))
 {
+    setCode(code);
 }
 
 void Response::clear()
 {
-    code_ = HTTP::HttpCode::Ok;
+    setCode(HttpCode::Ok);
+    setBody("");
+
     should_be_closed_ = false;
-    body_.clear();
-    chunkedBodyCallback_ = std::function<std::string()>();
+    chunkedBodyCallback_ = nullptr;
     current_chunk_.clear();
     current_chunk_header_.clear();
     status_string_.clear();
@@ -79,7 +92,7 @@ Response& Response::addHeader(std::string k, std::string v)
 
 Response& Response::setBody(const boost::string_ref& body)
 {
-    chunkedBodyCallback_ = 0;
+    chunkedBodyCallback_ = nullptr;
     body_.clear();
     body_.reserve(body.size());
     std::copy(body.begin(), body.end(), std::back_inserter(body_));
