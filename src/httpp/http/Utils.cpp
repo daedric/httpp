@@ -21,7 +21,7 @@ static const std::string KEEPALIVE = "Keep-Alive";
 
 static inline bool is_iequal(const char* s1, size_t n1, const char* s2, size_t n2)
 {
-    return n1 == n2 && ::strncmp(s1, s2, n1) == 0;
+    return n1 == n2 && ::strncasecmp(s1, s2, n1) == 0;
 }
 
 #define CMP(a, b) is_iequal(a.data(), a.size(), b.data(), b.size())
