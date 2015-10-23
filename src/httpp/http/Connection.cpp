@@ -21,7 +21,7 @@ namespace HTTPP
 {
 namespace HTTP
 {
-const size_t Connection::BUF_SIZE = 8196;
+const size_t Connection::BUF_SIZE = 8192;
 
 
 Connection::Connection(HTTPP::HttpServer& handler,
