@@ -41,8 +41,7 @@ public:
 
     Response();
     Response(HttpCode code);
-    Response(HttpCode code, const std::string& body);
-    Response(HttpCode code, std::string&& body);
+    Response(HttpCode code, const boost::string_ref& body);
     Response(HttpCode code, ChunkedResponseCallback&& callback);
 
     Response& setCode(HttpCode code)
@@ -53,8 +52,8 @@ public:
 
     void clear();
 
-    Response& addHeader(const std::string& k, const std::string& v);
-    Response& setBody(const std::string& body);
+    Response& addHeader(std::string k, std::string v);
+    Response& setBody(const boost::string_ref& body);
     Response& setBody(ChunkedResponseCallback&& callback);
 
     template <typename Writer, typename WriteHandler>
@@ -119,7 +118,7 @@ public:
         return *this;
     }
 
-    const std::string& body() const noexcept
+    const std::vector<char>& body() const noexcept
     {
         return body_;
     }
@@ -212,7 +211,7 @@ private:
 
 private:
     HttpCode code_;
-    std::string body_;
+    std::vector<char> body_;
     std::function<std::string()> chunkedBodyCallback_;
     std::string current_chunk_header_;
     std::string current_chunk_;

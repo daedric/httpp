@@ -28,20 +28,14 @@ Response::Response()
 
 Response::Response(HttpCode code)
 : code_(code)
-, body_(getDefaultMessage(code_))
 {
+    setBody(getDefaultMessage(code_));
 }
 
-Response::Response(HttpCode code, const std::string& body)
+Response::Response(HttpCode code, const boost::string_ref& body)
 : code_(code)
-, body_(body)
 {
-}
-
-Response::Response(HttpCode code, std::string&& body)
-: code_(code)
-, body_(std::move(body))
-{
+    setBody(body);
 }
 
 Response::Response(HttpCode code, ChunkedResponseCallback&& callback)
@@ -62,7 +56,7 @@ void Response::clear()
     headers_.clear();
 }
 
-Response& Response::addHeader(const std::string& k, const std::string& v)
+Response& Response::addHeader(std::string k, std::string v)
 {
     if (k == "Content-Length")
     {
@@ -79,18 +73,20 @@ Response& Response::addHeader(const std::string& k, const std::string& v)
         throw std::invalid_argument("Attempting to addHeader with an empty key or value");
     }
 
-    headers_.emplace_back(k, v);
+    headers_.emplace_back(std::move(k), std::move(v));
     return *this;
 }
 
-Response& Response::setBody(const std::string& body)
+Response& Response::setBody(const boost::string_ref& body)
 {
     chunkedBodyCallback_ = 0;
-    body_ = body;
+    body_.clear();
+    body_.reserve(body.size());
+    std::copy(body.begin(), body.end(), std::back_inserter(body_));
     return *this;
 }
 
-Response& Response::setBody(ChunkedResponseCallback && callback)
+Response& Response::setBody(ChunkedResponseCallback&& callback)
 {
     if (callback)
     {
