@@ -26,9 +26,15 @@ namespace HTTP
 
 struct Request
 {
-
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
+
+
+    Request()
+    {
+        query_params.reserve(10);
+        headers.reserve(10);
+    }
 
     const TimePoint received = Clock::now();
     Method method;

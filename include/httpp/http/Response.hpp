@@ -64,6 +64,7 @@ public:
         finalize_response_headers();
 
         std::vector<boost::asio::const_buffer> buffers;
+        buffers.reserve(2 + 4 * headers_.size() + 1);
         buffers.push_back(boost::asio::buffer(status_string_));
         buffers.push_back(boost::asio::buffer(HTTP_DELIMITER));
         for (auto const& header : headers_)
@@ -148,6 +149,7 @@ private:
         {
             // Format the chunk header and chunk body.
             std::vector<boost::asio::const_buffer> buffers;
+            buffers.reserve(4);
             std::stringstream header;
             header << std::hex << current_chunk_.size();
             current_chunk_header_ = header.str();
