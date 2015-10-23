@@ -30,7 +30,7 @@ static const std::string REQUEST = "GET / HTTP/1.1\r\n"
                                    "\r\n";
 
 static Connection* gconn = nullptr;
-void handler(Connection* connection, Request&&)
+void handler(Connection* connection)
 {
     std::cout << "Got a request";
     gconn = connection;

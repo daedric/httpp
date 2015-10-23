@@ -50,7 +50,8 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     {
         BOOST_CHECK_EQUAL(body_read, EXPECTED_BODY);
         body_read.clear();
-        (gconnection->response() = Response(HTTP::HttpCode::Ok))
+        gconnection->response()
+            .setCode(HTTP::HttpCode::Ok)
             .setBody(EXPECTED_BODY)
             .connectionShouldBeClosed(true);
         gconnection->sendResponse();
@@ -65,8 +66,9 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     }
 }
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
+    auto& request = connection->request();
     gconnection = connection;
     auto headers = request.getSortedHeaders();
     auto content_length = headers["Content-Length"];
@@ -84,6 +86,10 @@ void handler(Connection* connection, Request&& request)
 
 BOOST_AUTO_TEST_CASE(post_content)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::trace);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler);
@@ -136,6 +142,10 @@ static const std::string key =
 
 BOOST_AUTO_TEST_CASE(https_post_content)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::warning);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler);
@@ -152,5 +162,6 @@ BOOST_AUTO_TEST_CASE(https_post_content)
     auto resp = client.post(std::move(request));
     std::string str(resp.body.data(), resp.body.size());
 
+    BOOST_CHECK(resp.code == HTTP::HttpCode::Ok);
     BOOST_CHECK_EQUAL(EXPECTED_BODY, str);
 }

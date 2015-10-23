@@ -40,7 +40,7 @@ static const std::string REQUEST_BODY_ = "GET / HTTP/1.1\r\n"
 static const std::string REQUEST_BODY =
     REQUEST_BODY_ + REQUEST_BODY_ + REQUEST_BODY_;
 
-void handler(Connection* connection, Request&&)
+void handler(Connection* connection)
 {
     connection->response().setCode(HTTP::HttpCode::Ok).setBody("");
     connection->sendResponse();
@@ -105,14 +105,16 @@ void body_handler(const Request&,
     }
 }
 
-void handler_w_body(Connection* connection, Request&& request)
+void handler_w_body(Connection* connection)
 {
+    auto& request = connection->request();
     auto headers = request.getSortedHeaders();
     auto const& content_length = headers["Content-Length"];
     auto size = std::stoi(to_string(content_length));
-    connection->readBody(
-        size, std::bind(&body_handler, request, connection, std::placeholders::_1,
-                        std::placeholders::_2, std::placeholders::_3));
+    connection->readBody(size, std::bind(&body_handler, std::cref(request),
+                                         connection, std::placeholders::_1,
+                                         std::placeholders::_2,
+                                         std::placeholders::_3));
 }
 
 

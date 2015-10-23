@@ -15,7 +15,6 @@
 #include "httpp/detail/config.hpp"
 #include "httpp/HttpServer.hpp"
 #include "httpp/http/Parser.hpp"
-#include "httpp/http/Request.hpp"
 #include "httpp/utils/VectorStreamBuf.hpp"
 
 namespace HTTPP
@@ -171,6 +170,7 @@ void Connection::start()
     body_buffer_.clear();
     body_buffer_.reserve(BUF_SIZE);
 
+    request_.clear();
     response_.clear();
 
     if (ssl_socket_ && need_handshake_)
@@ -204,29 +204,29 @@ void Connection::read_request()
 
     if (Parser::isComplete(request_buffer_.data(), size_))
     {
-        Request request;
+        request_.setDate();
 #if PARSER_BACKEND == STREAM_BACKEND
         UTILS::VectorStreamBuf buf(request_buffer_, size_);
         std::istream is(std::addressof(buf));
-        if (Parser::parse(is, request))
+        if (Parser::parse(is, request_))
         {
             DLOG(logger_, trace) << "Received a request from: " << source()
-                                 << ": " << request;
+                                 << ": " << request_;
 
             buf.shrinkVector();
             body_buffer_.swap(request_buffer_);
 
             lock.unlock();
-            handler_.connection_notify_request(this, std::move(request));
+            handler_.connection_notify_request(this);
         }
 #elif PARSER_BACKEND == RAGEL_BACKEND
         const char* begin = request_buffer_.data();
         const char* end = begin + size_;
         size_t consumed = 0;
-        if (Parser::parse(begin, end, consumed, request))
+        if (Parser::parse(begin, end, consumed, request_))
         {
             DLOG(logger_, trace) << "Received a request from: " << source()
-                                 << ": " << request;
+                                 << ": " << request_;
 
             if (consumed != size_)
             {
@@ -237,7 +237,7 @@ void Connection::read_request()
             }
 
             lock.unlock();
-            handler_.connection_notify_request(this, std::move(request));
+            handler_.connection_notify_request(this);
         }
 #endif
         else

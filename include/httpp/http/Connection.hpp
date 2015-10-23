@@ -21,6 +21,7 @@
 # include <commonpp/core/LoggingInterface.hpp>
 
 # include "Response.hpp"
+# include "Request.hpp"
 
 namespace HTTPP
 {
@@ -54,14 +55,19 @@ public:
     static void releaseFromHandler(Connection* connection);
     std::string source() const;
 
-    Response& response()
+    Response& response() noexcept
     {
         return response_;
     }
 
-    const Response& response() const
+    const Response& response() const noexcept
     {
         return response_;
+    }
+
+    const Request& request() const noexcept
+    {
+        return request_;
     }
 
     template <typename Callable>
@@ -163,6 +169,7 @@ private:
     bool need_handshake_ = true;
     std::unique_ptr<SSLSocket> ssl_socket_;
 
+    Request request_;
     Response response_;
 };
 

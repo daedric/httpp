@@ -40,6 +40,19 @@ std::ostream& operator<<(std::ostream& os, const Request& request)
     return os;
 }
 
+void Request::setDate()
+{
+    received = Clock::now();
+}
+
+void Request::clear()
+{
+    uri.clear();
+    headers.clear();
+    query_params.clear();
+    major = minor = 0;
+}
+
 } // namespace HTTP
 } // namespace HTTPP
 

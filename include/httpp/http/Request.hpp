@@ -36,7 +36,10 @@ struct Request
         headers.reserve(10);
     }
 
-    const TimePoint received = Clock::now();
+    void setDate();
+    void clear();
+
+    TimePoint received = Clock::now();
     Method method;
 
 # if PARSER_BACKEND == RAGEL_BACKEND

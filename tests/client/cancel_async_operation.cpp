@@ -24,7 +24,7 @@ using HTTPP::HTTP::Connection;
 
 
 static Connection* gconn = nullptr;
-void handler(Connection* connection, Request&&)
+void handler(Connection* connection)
 {
     gconn = connection;
 }
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
 
 static std::atomic_int nb_gconns = { 0 };
 static std::vector<Connection*> gconns;
-void handler_push(Connection* connection, Request&&)
+void handler_push(Connection* connection)
 {
     gconns.push_back(connection);
 }
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection_google)
     }
 }
 
-void handler2(Connection* c, Request&&)
+void handler2(Connection* c)
 {
     c->response().setCode(HTTPP::HTTP::HttpCode::Ok);
     c->sendResponse();

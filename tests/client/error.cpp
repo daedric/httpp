@@ -22,7 +22,7 @@ using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 using HTTPP::UTILS::RequestError;
 
-void handler(Connection* connection, Request&&)
+void handler(Connection* connection)
 {
     Connection::releaseFromHandler(connection);
 }
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(bad_server)
 
 static Connection* conn_manager_deletion = nullptr;
 
-void handler_manager_deletion(Connection* connection, Request&&)
+void handler_manager_deletion(Connection* connection)
 {
   conn_manager_deletion = connection;
 }

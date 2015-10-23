@@ -23,9 +23,9 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
-
+    auto& request = connection->request();
     auto headers = request.getSortedHeaders();
 
     auto const& host = headers["Host"];
@@ -79,8 +79,9 @@ BOOST_AUTO_TEST_CASE(follow_redirect)
     }
 }
 
-void handler2(Connection* connection, Request&& request)
+void handler2(Connection* connection)
 {
+    auto& request = connection->request();
     if (request.uri == "//redirect")
     {
         connection->response()
@@ -128,5 +129,3 @@ BOOST_AUTO_TEST_CASE(follow_redirect2)
         std::cout << h.first << ": " << h.second << std::endl;
     }
 }
-
-

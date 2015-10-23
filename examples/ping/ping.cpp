@@ -21,10 +21,11 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::HttpCode;
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
     connection->response().setCode(HttpCode::Ok);
-    HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
+    HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(),
+                                             connection->response());
     connection->sendResponse(); // connection pointer may become invalid
 }
 

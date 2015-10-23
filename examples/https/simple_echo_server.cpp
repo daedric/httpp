@@ -21,13 +21,15 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::HttpCode;
 
-void body_handler(const Request& request, Connection* connection,
+void body_handler(Connection* connection,
                   const boost::system::error_code& ec,
-                  const char* buffer, size_t n)
+                  const char* buffer,
+                  size_t n)
 {
     std::cout << "Received body part" << std::endl;
     if (ec == boost::asio::error::eof)
     {
+        auto& request = connection->request();
         connection->response()
             .setCode(HttpCode::Ok)
             .setBody("request received entirely");
@@ -50,8 +52,9 @@ void body_handler(const Request& request, Connection* connection,
     }
 }
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
+    auto& request = connection->request();
     std::cout << "got a request" << std::endl;
     auto headers = request.getSortedHeaders();
     auto const& content_length = headers["Content-Length"];
@@ -75,7 +78,6 @@ void handler(Connection* connection, Request&& request)
         auto size = std::stoi(to_string(content_length));
         connection->readBody(size,
                              std::bind(&body_handler,
-                                     request,
                                      connection,
                                      std::placeholders::_1,
                                      std::placeholders::_2,

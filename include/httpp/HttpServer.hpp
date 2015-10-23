@@ -45,8 +45,8 @@ private:
     using AcceptorPtr = std::shared_ptr<Acceptor>;
 
 public:
-    using ConnectionPtr = HTTP::Connection*; //std::shared_ptr<HTTP::Connection>;
-    using SinkCb = std::function<void (ConnectionPtr, HTTP::Request&&)>;
+    using ConnectionPtr = HTTP::Connection*;
+    using SinkCb = std::function<void(ConnectionPtr)>;
     using ThreadPool = commonpp::thread::ThreadPool;
     using ThreadInit = ThreadPool::ThreadInit;
 
@@ -92,8 +92,7 @@ private: // called by Connection
     void connection_error(ConnectionPtr connection,
                           const boost::system::error_code& err);
 
-    void connection_notify_request(ConnectionPtr connection,
-                                   HTTP::Request&& request);
+    void connection_notify_request(ConnectionPtr connection);
     void connection_recycle(ConnectionPtr connection);
 
 private:

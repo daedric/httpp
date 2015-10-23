@@ -51,7 +51,9 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     {
         std::cout << "Check" << std::endl;
         BOOST_CHECK_EQUAL(body_read, BODY);
-        (gconnection->response() = Response(HTTP::HttpCode::Ok)).connectionShouldBeClosed(true);
+        gconnection->response()
+            .setCode(HTTP::HttpCode::Ok)
+            .connectionShouldBeClosed(true);
         gconnection->sendResponse();
     }
     else if (ec)
@@ -64,8 +66,9 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     }
 }
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
+    auto& request = connection->request();
     gconnection = connection;
     std::cout << "got a request" << std::endl;
     auto headers = request.getSortedHeaders();

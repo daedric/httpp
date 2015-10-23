@@ -354,18 +354,18 @@ void HttpServer::connection_recycle(ConnectionPtr connection)
     connection->start();
 }
 
-void HttpServer::connection_notify_request(ConnectionPtr connection,
-                                           HTTP::Request&& request)
+void HttpServer::connection_notify_request(ConnectionPtr connection)
 {
     if (sink_)
     {
         connection->disown();
-        sink_(connection, std::forward<HTTP::Request>(request));
+        sink_(connection);
     }
     else
     {
         connection->response().setCode(HTTP::HttpCode::NoContent).setBody("");
-        HTTP::setShouldConnectionBeClosed(request, connection->response());
+        HTTP::setShouldConnectionBeClosed(connection->request(),
+                                          connection->response());
         connection->sendResponse();
     }
 }
