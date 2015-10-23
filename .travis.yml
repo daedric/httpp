@@ -6,6 +6,7 @@ compiler:
     - gcc
 
 sudo: required
+dist: trusty
 
 env:
     # static build does not work with gcc on travis for some reason
@@ -16,19 +17,10 @@ env:
 
 before_install:
     - git submodule update --init --recursive
-    - sudo add-apt-repository ppa:george-edison55/precise-backports --yes # up to date cmake.
-    - sudo add-apt-repository ppa:ubuntu-toolchain-r/test --yes # libstdc++-4.8
-    - if [ "${CXX}" == "clang++" ]; then sudo add-apt-repository --yes ppa:h-rayflood/llvm-upper; fi
-    - sudo apt-get update
 
 install:
-    - if [ "${CXX}" == "clang++" ]; then sudo apt-get install clang-3.6; fi
-    - sudo apt-get install -y cmake cmake-data
-    - sudo apt-get install -y g++-4.8 libssl-dev libtbb-dev
-    - sudo update-alternatives --install /usr/bin/gcc-4.8 gcc /usr/bin/gcc 50
-    - sudo update-alternatives --install /usr/bin/g++-4.8 g++ /usr/bin/g++ 50
-    - ./CMakeScripts/install_boost.sh
-    - sudo rm -rf boost_1_54_0
+    - sudo apt-get update
+    - sudo apt-get install -y clang-3.6 g++-4.8 libboost-all-dev libssl-dev libtbb-dev cmake
 
 before_script:
     # update compilers
