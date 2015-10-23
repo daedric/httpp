@@ -50,6 +50,18 @@ Response::Response(HttpCode code, ChunkedResponseCallback&& callback)
 {
 }
 
+void Response::clear()
+{
+    code_ = HTTP::HttpCode::Ok;
+    should_be_closed_ = false;
+    body_.clear();
+    chunkedBodyCallback_ = std::function<std::string()>();
+    current_chunk_.clear();
+    current_chunk_header_.clear();
+    status_string_.clear();
+    headers_.clear();
+}
+
 Response& Response::addHeader(const std::string& k, const std::string& v)
 {
     if (k == "Content-Length")

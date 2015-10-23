@@ -51,6 +51,8 @@ public:
         return *this;
     }
 
+    void clear();
+
     Response& addHeader(const std::string& k, const std::string& v);
     Response& setBody(const std::string& body);
     Response& setBody(ChunkedResponseCallback&& callback);

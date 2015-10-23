@@ -171,7 +171,7 @@ void Connection::start()
     body_buffer_.clear();
     body_buffer_.reserve(BUF_SIZE);
 
-    response_ = Response();
+    response_.clear();
 
     if (ssl_socket_ && need_handshake_)
     {
