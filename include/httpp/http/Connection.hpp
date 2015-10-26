@@ -158,13 +158,13 @@ private:
         std::unique_lock<std::mutex> lock(mutex_);
         if (ssl_socket_)
         {
-            return ssl_socket_->async_read_some(std::forward<Buffer>(buffer),
-                                                std::forward<Handler>(handler));
+            ssl_socket_->async_read_some(std::forward<Buffer>(buffer),
+                                         std::forward<Handler>(handler));
         }
         else
         {
-            return socket_.async_read_some(std::forward<Buffer>(buffer),
-                                           std::forward<Handler>(handler));
+            socket_.async_read_some(std::forward<Buffer>(buffer),
+                                    std::forward<Handler>(handler));
         }
     }
 
