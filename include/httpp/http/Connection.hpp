@@ -31,6 +31,11 @@ class HttpServer;
 namespace HTTP
 {
 
+namespace connection_detail
+{
+FWD_DECLARE_LOGGER(conn_logger_, commonpp::core::Logger);
+}
+
 class Connection
 {
     friend class ::HTTPP::HttpServer;
@@ -117,7 +122,7 @@ public:
 
                             if (ec)
                             {
-                                LOG(logger_, error)
+                                LOG(connection_detail::conn_logger_, error)
                                     << "Error detected while reading the body";
                                 callable(ec, nullptr, 0);
                                 return;
@@ -166,8 +171,6 @@ private:
     void sendResponse(Callback&& cb);
 
 private:
-    LOGGER(logger_, "httpp::HttpServer::Connection");
-
     HTTPP::HttpServer& handler_;
     // On construction, the HttpServer is the owner
     std::atomic_bool is_owned_ = { false };

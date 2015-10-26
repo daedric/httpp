@@ -21,6 +21,15 @@ namespace HTTPP
 {
 namespace HTTP
 {
+
+
+namespace connection_detail
+{
+DECLARE_LOGGER(conn_logger_, "httpp::HttpServer::Connection");
+}
+
+using namespace connection_detail;
+
 const size_t Connection::BUF_SIZE = 8192;
 
 
@@ -39,14 +48,14 @@ Connection::Connection(HTTPP::HttpServer& handler,
 
 Connection::~Connection()
 {
-    LOG(logger_, debug) << "Disconnect client";
+    LOG(conn_logger_, debug) << "Disconnect client";
     cancel();
     close();
 
     if (is_owned_)
     {
-        LOG(logger_, error) << "A connection is destroyed manually, this "
-                               "should always be done by the HttpServer";
+        LOG(conn_logger_, error) << "A connection is destroyed manually, this "
+                                    "should always be done by the HttpServer";
         handler_.destroy(this, false);
     }
 }
@@ -80,7 +89,7 @@ void Connection::disown()
     bool expected = true;
     if (!is_owned_.compare_exchange_strong(expected, false))
     {
-        LOG(logger_, warning) << "Disown a connection already disowned";
+        LOG(conn_logger_, warning) << "Disown a connection already disowned";
     }
 }
 
@@ -95,7 +104,7 @@ void Connection::markToBeDeleted()
     if (!should_be_deleted_)
     {
         should_be_deleted_ = true;
-        LOG(logger_, debug) << "Connection marked to be deleted: " << this;
+        LOG(conn_logger_, debug) << "Connection marked to be deleted: " << this;
         cancel();
         close();
     }
@@ -198,8 +207,8 @@ void Connection::read_request()
         std::istream is(std::addressof(buf));
         if (Parser::parse(is, request_))
         {
-            DLOG(logger_, trace) << "Received a request from: " << source()
-                                 << ": " << request_;
+            DLOG(conn_logger_, trace) << "Received a request from: " << source()
+                                      << ": " << request_;
 
             buf.shrinkVector();
             body_buffer_.swap(request_buffer_);
@@ -213,8 +222,8 @@ void Connection::read_request()
         size_t consumed = 0;
         if (Parser::parse(begin, end, consumed, request_))
         {
-            DLOG(logger_, trace) << "Received a request from: " << source()
-                                 << ": " << request_;
+            DLOG(conn_logger_, trace) << "Received a request from: " << source()
+                                      << ": " << request_;
 
             if (consumed != size_)
             {
@@ -230,7 +239,7 @@ void Connection::read_request()
 #endif
         else
         {
-            LOG(logger_, warning)
+            LOG(conn_logger_, warning)
                 << "Invalid request received from: " << source() << "\n"
                 << std::string(request_buffer_.data(), size_);
 
@@ -310,7 +319,7 @@ void Connection::sendResponse()
 {
     if (!own())
     {
-        LOG(logger_, error) << "Connection should be disowned";
+        LOG(conn_logger_, error) << "Connection should be disowned";
         throw std::logic_error("Invalid connection state");
     }
 
@@ -321,7 +330,7 @@ void Connection::sendContinue(Callback&& cb)
 {
     if (!own())
     {
-        LOG(logger_, error) << "Connection should be disowned";
+        LOG(conn_logger_, error) << "Connection should be disowned";
         throw std::logic_error("Invalid connection state");
     }
 
