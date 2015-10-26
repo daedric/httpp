@@ -45,10 +45,12 @@ public:
 
     Connection(HTTPP::HttpServer& handler,
                boost::asio::io_service& service,
-               ThreadPool& pool,
                boost::asio::ssl::context* ctx = nullptr);
+
+private:
     ~Connection();
 
+public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
 
@@ -156,9 +158,9 @@ private:
     LOGGER(logger_, "httpp::HttpServer::Connection");
 
     HTTPP::HttpServer& handler_;
-    std::atomic_bool is_owned_ = { true };
+    // On construction, the HttpServer is the owner
+    std::atomic_bool is_owned_ = { false };
     bool should_be_deleted_ = { false };
-    ThreadPool& pool_;
     std::vector<char> request_buffer_;
     std::vector<char> body_buffer_;
     size_t size_ = 0;

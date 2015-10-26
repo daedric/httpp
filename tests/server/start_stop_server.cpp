@@ -38,6 +38,10 @@ void handler(Connection* connection)
 
 BOOST_AUTO_TEST_CASE(simple)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::trace);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler);
@@ -51,9 +55,7 @@ BOOST_AUTO_TEST_CASE(simple)
     boost::asio::write(s, boost::asio::buffer(REQUEST));
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::async(std::launch::async,
-               []
-               {
+    std::async(std::launch::async, [] {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         gconn->response().setBody("Helloworld");
         gconn->sendResponse();
@@ -62,12 +64,14 @@ BOOST_AUTO_TEST_CASE(simple)
     server.stop();
 }
 
-
-
 static const std::string REQUEST_INCOMPLETE = "GET / HTTP/1.1";
 
 BOOST_AUTO_TEST_CASE(during_read)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::trace);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler);

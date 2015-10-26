@@ -26,11 +26,9 @@ const size_t Connection::BUF_SIZE = 8192;
 
 Connection::Connection(HTTPP::HttpServer& handler,
                        boost::asio::io_service& service,
-                       ThreadPool& pool,
                        boost::asio::ssl::context* ctx
                        )
 : handler_(handler)
-, pool_(pool)
 , socket_(service)
 {
     if (ctx)
@@ -153,6 +151,11 @@ std::string Connection::source() const
 
 void Connection::start()
 {
+    if (!own())
+    {
+        throw std::logic_error("Invalid connection state");
+    }
+
     // Maybe we have the beginning of the next request in the
     // body_buffer_
     if (not body_buffer_.empty())
@@ -180,6 +183,7 @@ void Connection::start()
                                      [this](boost::system::error_code const& ec) {
                                          if (ec)
                                          {
+                                             disown();
                                              handler_.connection_error(this, ec);
                                              return;
                                          }
@@ -198,6 +202,7 @@ void Connection::read_request()
     if (shouldBeDeleted())
     {
         lock.unlock();
+        disown();
         handler_.destroy(this);
         return;
     }
@@ -217,6 +222,7 @@ void Connection::read_request()
             body_buffer_.swap(request_buffer_);
 
             lock.unlock();
+            disown();
             handler_.connection_notify_request(this);
         }
 #elif PARSER_BACKEND == RAGEL_BACKEND
@@ -237,6 +243,7 @@ void Connection::read_request()
             }
 
             lock.unlock();
+            disown();
             handler_.connection_notify_request(this);
         }
 #endif
@@ -268,9 +275,10 @@ void Connection::read_request()
 
         async_read_some(
             boost::asio::buffer(data, request_buffer_.capacity() - size_),
-            [&](boost::system::error_code const& ec, size_t size) {
+            [this](boost::system::error_code const& ec, size_t size) {
                 if (ec)
                 {
+                    disown();
                     handler_.connection_error(this, ec);
                     return;
                 }
@@ -287,12 +295,14 @@ void Connection::sendResponse(Callback&& cb)
     if (shouldBeDeleted())
     {
         lock.unlock();
+        disown();
         handler_.destroy(this);
         return;
     }
 
     auto handler = [cb, this](boost::system::error_code const& ec, size_t)
     {
+        disown();
         if (ec)
         {
             handler_.connection_error(this, ec);
@@ -340,15 +350,12 @@ void Connection::sendContinue(Callback&& cb)
         .setBody("")
         .setCode(HttpCode::Continue);
 
-    sendResponse([this, cb]
-                 {
-                     disown();
-                     cb();
-                 });
+    sendResponse([this, cb] { cb(); });
 }
 
 void Connection::recycle()
 {
+    // Here Connection is not owned.
     if (shouldBeDeleted() || response_.connectionShouldBeClosed())
     {
         handler_.destroy(this);

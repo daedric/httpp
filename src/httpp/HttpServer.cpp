@@ -211,7 +211,6 @@ void HttpServer::destroy(ConnectionPtr connection, bool release)
 
     if (release)
     {
-        connection->disown();
         HTTP::Connection::release(connection);
     }
 }
@@ -222,7 +221,7 @@ void HttpServer::start_accept(AcceptorPtr acceptor)
     {
 
         auto connection = new HTTP::Connection(*this, pool_->getService(),
-                                               *pool_, acceptor->ssl_ctx.get());
+                                               acceptor->ssl_ctx.get());
         mark(connection);
 
         acceptor->async_accept(connection->socket_,
@@ -358,7 +357,6 @@ void HttpServer::connection_notify_request(ConnectionPtr connection)
 {
     if (sink_)
     {
-        connection->disown();
         sink_(connection);
     }
     else
