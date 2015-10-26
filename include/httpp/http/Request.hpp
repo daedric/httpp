@@ -51,9 +51,9 @@ struct Request
     int major;
     int minor;
 
-    using QueryParam = KV;
+    using QueryParamRef = HTTP::QueryParamRef;
 
-    std::vector<QueryParam> query_params;
+    std::vector<QueryParamRef> query_params;
 
     auto getSortedQueryParams() const -> decltype(UTILS::create_sorted_vector(query_params))
     {

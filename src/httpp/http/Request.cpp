@@ -27,7 +27,7 @@ std::ostream& operator<<(std::ostream& os, const Request& request)
         uri += '?';
         for (auto const& q : request.query_params)
         {
-            uri += q.first + "=" + q.second + "&";
+            uri += q.first + "=" + to_string(q.second) + "&";
         }
     }
 

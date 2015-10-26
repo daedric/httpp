@@ -18,6 +18,7 @@
 #include "httpp/http/Parser.hpp"
 #include "httpp/http/Request.hpp"
 #include "httpp/utils/URL.hpp"
+#include "httpp/utils/LazyDecodedValue.hpp"
 
 #if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
 
@@ -25,7 +26,7 @@
 #define TOKEN_REF boost::string_ref(token_begin, TOKEN_LEN)
 
 
-#line 29 "parser_ragel.cpp"
+#line 30 "parser_ragel.cpp"
 static const int http_start = 1;
 static const int http_first_final = 61;
 static const int http_error = 0;
@@ -33,11 +34,11 @@ static const int http_error = 0;
 static const int http_en_main = 1;
 
 
-#line 28 "parser.rl"
+#line 29 "parser.rl"
 
 
 
-#line 98 "parser.rl"
+#line 99 "parser.rl"
 
 
 namespace HTTPP { namespace HTTP {
@@ -52,12 +53,12 @@ bool Parser::parse(const char* start,
     const char *token_begin, *token_end;
 
     
-#line 56 "parser_ragel.cpp"
+#line 57 "parser_ragel.cpp"
 	{
 	cs = http_start;
 	}
 
-#line 61 "parser_ragel.cpp"
+#line 62 "parser_ragel.cpp"
 	{
 	switch ( cs )
 	{
@@ -92,7 +93,7 @@ st0:
 cs = 0;
 	goto _out;
 ctr0:
-#line 81 "parser.rl"
+#line 82 "parser.rl"
 	{
     token_begin = p;
 }
@@ -100,7 +101,7 @@ ctr0:
 st2:
 	p += 1;
 case 2:
-#line 104 "parser_ragel.cpp"
+#line 105 "parser_ragel.cpp"
 	if ( (*p) == 79 ) {
 		goto st3;
 	}
@@ -153,7 +154,7 @@ case 7:
 	goto st0;
 }
 ctr13:
-#line 85 "parser.rl"
+#line 86 "parser.rl"
 	{
     try
     {
@@ -170,7 +171,7 @@ ctr13:
 st8:
 	p += 1;
 case 8:
-#line 174 "parser_ragel.cpp"
+#line 175 "parser_ragel.cpp"
 	if ( (*p) == 32 ) {
 		goto st9;
 	}
@@ -210,7 +211,7 @@ goto st0;
 	goto ctr15;
 }
 ctr15:
-#line 31 "parser.rl"
+#line 32 "parser.rl"
 	{
     token_begin = p;
 }
@@ -218,7 +219,7 @@ ctr15:
 st10:
 	p += 1;
 case 10:
-#line 222 "parser_ragel.cpp"
+#line 223 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 32: {
 goto ctr17;
@@ -246,7 +247,7 @@ goto ctr18;
 	goto st10;
 }
 ctr17:
-#line 35 "parser.rl"
+#line 36 "parser.rl"
 	{
     token_end = p;
     request.uri = TOKEN_REF;
@@ -254,49 +255,49 @@ ctr17:
 }
 	goto st11;
 ctr58:
-#line 61 "parser.rl"
+#line 62 "parser.rl"
 	{
     token_begin = p;
 }
-#line 65 "parser.rl"
+#line 66 "parser.rl"
 	{
     token_end = p;
-    request.query_params.emplace_back(std::make_pair<std::string>({UTILS::url_decode(token_begin, token_end)}, ""));
+    request.query_params.emplace_back(std::make_pair<std::string, boost::string_ref>({UTILS::url_decode(token_begin, token_end)}, ""));
     token_begin = token_end = nullptr;
 }
 	goto st11;
 ctr62:
-#line 65 "parser.rl"
+#line 66 "parser.rl"
 	{
     token_end = p;
-    request.query_params.emplace_back(std::make_pair<std::string>({UTILS::url_decode(token_begin, token_end)}, ""));
+    request.query_params.emplace_back(std::make_pair<std::string, boost::string_ref>({UTILS::url_decode(token_begin, token_end)}, ""));
     token_begin = token_end = nullptr;
 }
 	goto st11;
 ctr66:
-#line 71 "parser.rl"
+#line 72 "parser.rl"
 	{
     token_begin = p;
 }
-#line 75 "parser.rl"
+#line 76 "parser.rl"
 	{
     token_end = p;
-    request.query_params.back().second = UTILS::url_decode(token_begin, token_end);
+    request.query_params.back().second = TOKEN_REF;
     token_begin = token_end = nullptr;
 }
 	goto st11;
 ctr69:
-#line 75 "parser.rl"
+#line 76 "parser.rl"
 	{
     token_end = p;
-    request.query_params.back().second = UTILS::url_decode(token_begin, token_end);
+    request.query_params.back().second = TOKEN_REF;
     token_begin = token_end = nullptr;
 }
 	goto st11;
 st11:
 	p += 1;
 case 11:
-#line 300 "parser_ragel.cpp"
+#line 301 "parser_ragel.cpp"
 	if ( (*p) == 72 ) {
 		goto st12;
 	}
@@ -349,13 +350,13 @@ case 16:
 	goto st0;
 }
 ctr24:
-#line 124 "parser.rl"
+#line 125 "parser.rl"
 	{ request.major = (*p) - '0';}
 	goto st17;
 st17:
 	p += 1;
 case 17:
-#line 359 "parser_ragel.cpp"
+#line 360 "parser_ragel.cpp"
 	if ( (*p) == 46 ) {
 		goto st18;
 	}
@@ -372,13 +373,13 @@ case 18:
 	goto st0;
 }
 ctr26:
-#line 125 "parser.rl"
+#line 126 "parser.rl"
 	{request.minor = (*p) - '0';}
 	goto st19;
 st19:
 	p += 1;
 case 19:
-#line 382 "parser_ragel.cpp"
+#line 383 "parser_ragel.cpp"
 	if ( (*p) == 13 ) {
 		goto st20;
 	}
@@ -429,18 +430,18 @@ case 22:
 	goto st0;
 }
 st61:
-#line 133 "parser.rl"
+#line 134 "parser.rl"
 	{
                     {p++; cs = 61; goto _out;}
                 }
 	p += 1;
 case 61:
-#line 439 "parser_ragel.cpp"
+#line 440 "parser_ragel.cpp"
 {
 	goto st0;
 }
 ctr30:
-#line 41 "parser.rl"
+#line 42 "parser.rl"
 	{
     token_begin = p;
 }
@@ -448,7 +449,7 @@ ctr30:
 st23:
 	p += 1;
 case 23:
-#line 452 "parser_ragel.cpp"
+#line 453 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 32: {
 goto ctr32;
@@ -479,7 +480,7 @@ goto ctr34;
 	goto st0;
 }
 ctr32:
-#line 45 "parser.rl"
+#line 46 "parser.rl"
 	{
     token_end = p;
     request.headers.emplace_back(std::make_pair<boost::string_ref>(TOKEN_REF, ""));
@@ -489,7 +490,7 @@ ctr32:
 st24:
 	p += 1;
 case 24:
-#line 493 "parser_ragel.cpp"
+#line 494 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 32: {
 goto st24;
@@ -505,7 +506,7 @@ goto st25;
 	goto st0;
 }
 ctr34:
-#line 45 "parser.rl"
+#line 46 "parser.rl"
 	{
     token_end = p;
     request.headers.emplace_back(std::make_pair<boost::string_ref>(TOKEN_REF, ""));
@@ -515,7 +516,7 @@ ctr34:
 st25:
 	p += 1;
 case 25:
-#line 519 "parser_ragel.cpp"
+#line 520 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 13: {
 goto ctr39;
@@ -539,7 +540,7 @@ goto ctr38;
 	goto ctr37;
 }
 ctr37:
-#line 51 "parser.rl"
+#line 52 "parser.rl"
 	{
     token_begin = p;
 }
@@ -547,7 +548,7 @@ ctr37:
 st26:
 	p += 1;
 case 26:
-#line 551 "parser_ragel.cpp"
+#line 552 "parser_ragel.cpp"
 	if ( (*p) == 13 ) {
 		goto ctr41;
 	}
@@ -558,7 +559,7 @@ case 26:
 	goto st26;
 }
 ctr41:
-#line 55 "parser.rl"
+#line 56 "parser.rl"
 	{
     token_end = p;
     request.headers.back().second = TOKEN_REF;
@@ -568,7 +569,7 @@ ctr41:
 st27:
 	p += 1;
 case 27:
-#line 572 "parser_ragel.cpp"
+#line 573 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 10: {
 goto st21;
@@ -588,7 +589,7 @@ goto ctr41;
 	goto st26;
 }
 ctr50:
-#line 45 "parser.rl"
+#line 46 "parser.rl"
 	{
     token_end = p;
     request.headers.emplace_back(std::make_pair<boost::string_ref>(TOKEN_REF, ""));
@@ -596,7 +597,7 @@ ctr50:
 }
 	goto st28;
 ctr38:
-#line 51 "parser.rl"
+#line 52 "parser.rl"
 	{
     token_begin = p;
 }
@@ -604,7 +605,7 @@ ctr38:
 st28:
 	p += 1;
 case 28:
-#line 608 "parser_ragel.cpp"
+#line 609 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 13: {
 goto ctr42;
@@ -628,17 +629,17 @@ goto ctr38;
 	goto ctr37;
 }
 ctr39:
-#line 51 "parser.rl"
+#line 52 "parser.rl"
 	{
     token_begin = p;
 }
 	goto st29;
 ctr42:
-#line 51 "parser.rl"
+#line 52 "parser.rl"
 	{
     token_begin = p;
 }
-#line 55 "parser.rl"
+#line 56 "parser.rl"
 	{
     token_end = p;
     request.headers.back().second = TOKEN_REF;
@@ -648,7 +649,7 @@ ctr42:
 st29:
 	p += 1;
 case 29:
-#line 652 "parser_ragel.cpp"
+#line 653 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 9: {
 goto ctr38;
@@ -678,7 +679,7 @@ goto ctr38;
 	goto ctr37;
 }
 ctr43:
-#line 51 "parser.rl"
+#line 52 "parser.rl"
 	{
     token_begin = p;
 }
@@ -686,7 +687,7 @@ ctr43:
 st30:
 	p += 1;
 case 30:
-#line 690 "parser_ragel.cpp"
+#line 691 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 13: {
 goto ctr44;
@@ -741,11 +742,11 @@ goto ctr45;
 	goto ctr37;
 }
 ctr44:
-#line 51 "parser.rl"
+#line 52 "parser.rl"
 	{
     token_begin = p;
 }
-#line 55 "parser.rl"
+#line 56 "parser.rl"
 	{
     token_end = p;
     request.headers.back().second = TOKEN_REF;
@@ -755,7 +756,7 @@ ctr44:
 st31:
 	p += 1;
 case 31:
-#line 759 "parser_ragel.cpp"
+#line 760 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 9: {
 goto ctr38;
@@ -785,19 +786,19 @@ goto ctr38;
 	goto ctr37;
 }
 ctr46:
-#line 51 "parser.rl"
+#line 52 "parser.rl"
 	{
     token_begin = p;
 }
 	goto st62;
 st62:
-#line 133 "parser.rl"
+#line 134 "parser.rl"
 	{
                     {p++; cs = 62; goto _out;}
                 }
 	p += 1;
 case 62:
-#line 801 "parser_ragel.cpp"
+#line 802 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 13: {
 goto ctr44;
@@ -852,11 +853,11 @@ goto ctr45;
 	goto ctr37;
 }
 ctr45:
-#line 51 "parser.rl"
+#line 52 "parser.rl"
 	{
     token_begin = p;
 }
-#line 41 "parser.rl"
+#line 42 "parser.rl"
 	{
     token_begin = p;
 }
@@ -864,7 +865,7 @@ ctr45:
 st32:
 	p += 1;
 case 32:
-#line 868 "parser_ragel.cpp"
+#line 869 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 13: {
 goto ctr48;
@@ -922,7 +923,7 @@ goto ctr50;
 	goto st26;
 }
 ctr47:
-#line 45 "parser.rl"
+#line 46 "parser.rl"
 	{
     token_end = p;
     request.headers.emplace_back(std::make_pair<boost::string_ref>(TOKEN_REF, ""));
@@ -932,7 +933,7 @@ ctr47:
 st33:
 	p += 1;
 case 33:
-#line 936 "parser_ragel.cpp"
+#line 937 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 13: {
 goto ctr52;
@@ -963,7 +964,7 @@ goto st28;
 	goto st26;
 }
 ctr52:
-#line 55 "parser.rl"
+#line 56 "parser.rl"
 	{
     token_end = p;
     request.headers.back().second = TOKEN_REF;
@@ -971,13 +972,13 @@ ctr52:
 }
 	goto st34;
 ctr48:
-#line 45 "parser.rl"
+#line 46 "parser.rl"
 	{
     token_end = p;
     request.headers.emplace_back(std::make_pair<boost::string_ref>(TOKEN_REF, ""));
     token_begin = token_end = nullptr;
 }
-#line 55 "parser.rl"
+#line 56 "parser.rl"
 	{
     token_end = p;
     request.headers.back().second = TOKEN_REF;
@@ -987,7 +988,7 @@ ctr48:
 st34:
 	p += 1;
 case 34:
-#line 991 "parser_ragel.cpp"
+#line 992 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 9: {
 goto st33;
@@ -1082,13 +1083,13 @@ goto st25;
 	goto st0;
 }
 st63:
-#line 133 "parser.rl"
+#line 134 "parser.rl"
 	{
                     {p++; cs = 63; goto _out;}
                 }
 	p += 1;
 case 63:
-#line 1092 "parser_ragel.cpp"
+#line 1093 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 32: {
 goto st24;
@@ -1104,7 +1105,7 @@ goto st25;
 	goto st0;
 }
 ctr18:
-#line 35 "parser.rl"
+#line 36 "parser.rl"
 	{
     token_end = p;
     request.uri = TOKEN_REF;
@@ -1112,49 +1113,49 @@ ctr18:
 }
 	goto st37;
 ctr59:
-#line 61 "parser.rl"
+#line 62 "parser.rl"
 	{
     token_begin = p;
 }
-#line 65 "parser.rl"
+#line 66 "parser.rl"
 	{
     token_end = p;
-    request.query_params.emplace_back(std::make_pair<std::string>({UTILS::url_decode(token_begin, token_end)}, ""));
+    request.query_params.emplace_back(std::make_pair<std::string, boost::string_ref>({UTILS::url_decode(token_begin, token_end)}, ""));
     token_begin = token_end = nullptr;
 }
 	goto st37;
 ctr63:
-#line 65 "parser.rl"
+#line 66 "parser.rl"
 	{
     token_end = p;
-    request.query_params.emplace_back(std::make_pair<std::string>({UTILS::url_decode(token_begin, token_end)}, ""));
+    request.query_params.emplace_back(std::make_pair<std::string, boost::string_ref>({UTILS::url_decode(token_begin, token_end)}, ""));
     token_begin = token_end = nullptr;
 }
 	goto st37;
 ctr67:
-#line 71 "parser.rl"
+#line 72 "parser.rl"
 	{
     token_begin = p;
 }
-#line 75 "parser.rl"
+#line 76 "parser.rl"
 	{
     token_end = p;
-    request.query_params.back().second = UTILS::url_decode(token_begin, token_end);
+    request.query_params.back().second = TOKEN_REF;
     token_begin = token_end = nullptr;
 }
 	goto st37;
 ctr70:
-#line 75 "parser.rl"
+#line 76 "parser.rl"
 	{
     token_end = p;
-    request.query_params.back().second = UTILS::url_decode(token_begin, token_end);
+    request.query_params.back().second = TOKEN_REF;
     token_begin = token_end = nullptr;
 }
 	goto st37;
 st37:
 	p += 1;
 case 37:
-#line 1158 "parser_ragel.cpp"
+#line 1159 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 32: {
 goto ctr58;
@@ -1189,7 +1190,7 @@ goto ctr60;
 	goto ctr57;
 }
 ctr57:
-#line 61 "parser.rl"
+#line 62 "parser.rl"
 	{
     token_begin = p;
 }
@@ -1197,7 +1198,7 @@ ctr57:
 st38:
 	p += 1;
 case 38:
-#line 1201 "parser_ragel.cpp"
+#line 1202 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 32: {
 goto ctr62;
@@ -1232,29 +1233,29 @@ goto ctr64;
 	goto st38;
 }
 ctr60:
-#line 61 "parser.rl"
+#line 62 "parser.rl"
 	{
     token_begin = p;
 }
-#line 65 "parser.rl"
+#line 66 "parser.rl"
 	{
     token_end = p;
-    request.query_params.emplace_back(std::make_pair<std::string>({UTILS::url_decode(token_begin, token_end)}, ""));
+    request.query_params.emplace_back(std::make_pair<std::string, boost::string_ref>({UTILS::url_decode(token_begin, token_end)}, ""));
     token_begin = token_end = nullptr;
 }
 	goto st39;
 ctr64:
-#line 65 "parser.rl"
+#line 66 "parser.rl"
 	{
     token_end = p;
-    request.query_params.emplace_back(std::make_pair<std::string>({UTILS::url_decode(token_begin, token_end)}, ""));
+    request.query_params.emplace_back(std::make_pair<std::string, boost::string_ref>({UTILS::url_decode(token_begin, token_end)}, ""));
     token_begin = token_end = nullptr;
 }
 	goto st39;
 st39:
 	p += 1;
 case 39:
-#line 1258 "parser_ragel.cpp"
+#line 1259 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 32: {
 goto ctr66;
@@ -1282,7 +1283,7 @@ goto ctr67;
 	goto ctr65;
 }
 ctr65:
-#line 71 "parser.rl"
+#line 72 "parser.rl"
 	{
     token_begin = p;
 }
@@ -1290,7 +1291,7 @@ ctr65:
 st40:
 	p += 1;
 case 40:
-#line 1294 "parser_ragel.cpp"
+#line 1295 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 32: {
 goto ctr69;
@@ -1318,7 +1319,7 @@ goto ctr70;
 	goto st40;
 }
 ctr2:
-#line 81 "parser.rl"
+#line 82 "parser.rl"
 	{
     token_begin = p;
 }
@@ -1326,7 +1327,7 @@ ctr2:
 st41:
 	p += 1;
 case 41:
-#line 1330 "parser_ragel.cpp"
+#line 1331 "parser_ragel.cpp"
 	if ( (*p) == 69 ) {
 		goto st42;
 	}
@@ -1370,7 +1371,7 @@ case 45:
 	goto st0;
 }
 ctr3:
-#line 81 "parser.rl"
+#line 82 "parser.rl"
 	{
     token_begin = p;
 }
@@ -1378,7 +1379,7 @@ ctr3:
 st46:
 	p += 1;
 case 46:
-#line 1382 "parser_ragel.cpp"
+#line 1383 "parser_ragel.cpp"
 	if ( (*p) == 69 ) {
 		goto st7;
 	}
@@ -1386,7 +1387,7 @@ case 46:
 	goto st0;
 }
 ctr4:
-#line 81 "parser.rl"
+#line 82 "parser.rl"
 	{
     token_begin = p;
 }
@@ -1394,7 +1395,7 @@ ctr4:
 st47:
 	p += 1;
 case 47:
-#line 1398 "parser_ragel.cpp"
+#line 1399 "parser_ragel.cpp"
 	if ( (*p) == 69 ) {
 		goto st48;
 	}
@@ -1420,7 +1421,7 @@ case 49:
 	goto st0;
 }
 ctr5:
-#line 81 "parser.rl"
+#line 82 "parser.rl"
 	{
     token_begin = p;
 }
@@ -1428,7 +1429,7 @@ ctr5:
 st50:
 	p += 1;
 case 50:
-#line 1432 "parser_ragel.cpp"
+#line 1433 "parser_ragel.cpp"
 	if ( (*p) == 80 ) {
 		goto st51;
 	}
@@ -1481,7 +1482,7 @@ case 55:
 	goto st0;
 }
 ctr6:
-#line 81 "parser.rl"
+#line 82 "parser.rl"
 	{
     token_begin = p;
 }
@@ -1489,7 +1490,7 @@ ctr6:
 st56:
 	p += 1;
 case 56:
-#line 1493 "parser_ragel.cpp"
+#line 1494 "parser_ragel.cpp"
 	switch( (*p) ) {
 		case 79: {
 goto st57;
@@ -1511,7 +1512,7 @@ case 57:
 	goto st0;
 }
 ctr7:
-#line 81 "parser.rl"
+#line 82 "parser.rl"
 	{
     token_begin = p;
 }
@@ -1519,7 +1520,7 @@ ctr7:
 st58:
 	p += 1;
 case 58:
-#line 1523 "parser_ragel.cpp"
+#line 1524 "parser_ragel.cpp"
 	if ( (*p) == 82 ) {
 		goto st59;
 	}
@@ -1549,7 +1550,7 @@ case 60:
 	_out: {}
 	}
 
-#line 139 "parser.rl"
+#line 140 "parser.rl"
 
 
     if (cs < http_first_final)

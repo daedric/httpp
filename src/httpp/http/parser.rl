@@ -16,6 +16,7 @@
 #include "httpp/http/Parser.hpp"
 #include "httpp/http/Request.hpp"
 #include "httpp/utils/URL.hpp"
+#include "httpp/utils/LazyDecodedValue.hpp"
 
 #if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
 
@@ -64,7 +65,7 @@ action start_qkey {
 
 action end_qkey {
     token_end = fpc;
-    request.query_params.emplace_back(std::make_pair<std::string>({UTILS::url_decode(token_begin, token_end)}, ""));
+    request.query_params.emplace_back(std::make_pair<std::string, boost::string_ref>({UTILS::url_decode(token_begin, token_end)}, ""));
     token_begin = token_end = nullptr;
 }
 
@@ -74,7 +75,7 @@ action start_qvalue {
 
 action end_qvalue {
     token_end = fpc;
-    request.query_params.back().second = UTILS::url_decode(token_begin, token_end);
+    request.query_params.back().second = TOKEN_REF;
     token_begin = token_end = nullptr;
 }
 

@@ -16,6 +16,7 @@
 # include <commonpp/core/string/std_tostring.hpp>
 
 # include <httpp/detail/config.hpp>
+# include <httpp/utils/LazyDecodedValue.hpp>
 
 namespace HTTPP
 {
@@ -26,8 +27,10 @@ using KV = std::pair<std::string, std::string>;
 using KVRef = std::pair<boost::string_ref, boost::string_ref>;
 using Header = KV;
 # if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
+using QueryParamRef = std::pair<std::string, UTILS::LazyDecodedValue>;
 using HeaderRef = KVRef;
 # else
+using QueryParamRef = KV;
 using HeaderRef = KV;
 # endif
 

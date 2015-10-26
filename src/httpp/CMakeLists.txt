@@ -24,6 +24,8 @@ SET(SOURCES
     http/client/Manager.cpp
     http/client/Request.cpp
 
+    utils/LazyDecodedValue.cpp
+
     ${VERSION_TO_GENERATE}
 )
 

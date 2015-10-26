@@ -20,7 +20,7 @@ using HTTPP::HTTP::Parser;
 
 namespace std
 {
-ostream& operator<<(ostream& os, const Request::QueryParam& h)
+ostream& operator<<(ostream& os, const Request::QueryParamRef& h)
 {
     return os << h.first << ": " << h.second;
 }
@@ -138,10 +138,10 @@ BOOST_AUTO_TEST_CASE(test_http_header_query_parser_sorted)
 
     BOOST_CHECK_EQUAL(params["something"], "");
 
-    Request::QueryParam a {"a", "a"};
-    Request::QueryParam b {"b", "b"};
-    Request::QueryParam y {"y", "y"};
-    Request::QueryParam z {"z", "z"};
+    Request::QueryParamRef a {"a", "a"};
+    Request::QueryParamRef b {"b", "b"};
+    Request::QueryParamRef y {"y", "y"};
+    Request::QueryParamRef z {"z", "z"};
 
     BOOST_CHECK_EQUAL(params[0], a);
     BOOST_CHECK_EQUAL(params[1], b);
