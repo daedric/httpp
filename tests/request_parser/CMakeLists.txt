@@ -6,6 +6,9 @@
 # Copyright (c) 2013 Thomas Sanchez.  All rights reserved.
 #
 
-ADD_HTTPP_TEST(Parser query)
-ADD_HTTPP_TEST(Parser parser_streambuf)
-ADD_HTTPP_TEST(Parser headers)
+set(MODULE "Parser")
+add_definitions("-DBOOST_TEST_MODULE=${MODULE}")
+
+ADD_HTTPP_TEST(query)
+ADD_HTTPP_TEST(parser_streambuf)
+ADD_HTTPP_TEST(headers)
