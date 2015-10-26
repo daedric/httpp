@@ -51,21 +51,6 @@ Connection::~Connection()
     }
 }
 
-template <typename Buffer, typename Handler>
-void Connection::async_read_some(Buffer&& buffer, Handler&& handler)
-{
-    if (ssl_socket_)
-    {
-        return ssl_socket_->async_read_some(std::forward<Buffer>(buffer),
-                                            std::forward<Handler>(handler));
-    }
-    else
-    {
-        return socket_.async_read_some(std::forward<Buffer>(buffer),
-                                       std::forward<Handler>(handler));
-    }
-}
-
 void Connection::releaseFromHandler(Connection* connection)
 {
     if (!connection->own())
@@ -198,10 +183,8 @@ void Connection::start()
 
 void Connection::read_request()
 {
-    std::unique_lock<std::mutex> lock(mutex_);
     if (shouldBeDeleted())
     {
-        lock.unlock();
         disown();
         handler_.destroy(this);
         return;
@@ -221,7 +204,6 @@ void Connection::read_request()
             buf.shrinkVector();
             body_buffer_.swap(request_buffer_);
 
-            lock.unlock();
             disown();
             handler_.connection_notify_request(this);
         }
@@ -242,7 +224,6 @@ void Connection::read_request()
                 request_buffer_.resize(consumed);
             }
 
-            lock.unlock();
             disown();
             handler_.connection_notify_request(this);
         }
@@ -258,7 +239,6 @@ void Connection::read_request()
                     std::string("An error occured in the request parsing indicating an error"));
             response_.connectionShouldBeClosed(true);
 
-            lock.unlock();
             disown();
             sendResponse();
         }
@@ -291,10 +271,8 @@ void Connection::read_request()
 
 void Connection::sendResponse(Callback&& cb)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
     if (shouldBeDeleted())
     {
-        lock.unlock();
         disown();
         handler_.destroy(this);
         return;
@@ -311,6 +289,7 @@ void Connection::sendResponse(Callback&& cb)
         cb();
     };
 
+    std::unique_lock<std::mutex> lock(mutex_);
     if (ssl_socket_)
     {
         response_.sendResponse(*ssl_socket_, std::move(handler));

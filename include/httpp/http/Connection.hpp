@@ -109,25 +109,23 @@ public:
         auto buf_size = std::min(BUF_SIZE, body_size);
 
         body_buffer_.resize(buf_size);
-        std::lock_guard<std::mutex> lock(mutex_);
 
-        socket_.async_read_some(
-            boost::asio::buffer(body_buffer_),
-            [body_size, callable, this](const boost::system::error_code& ec,
-                                        size_t size) {
-                disown();
+        async_read_some(boost::asio::buffer(body_buffer_),
+                        [body_size, callable, this](
+                            const boost::system::error_code& ec, size_t size) {
+                            disown();
 
-                if (ec)
-                {
-                    LOG(logger_, error)
-                        << "Error detected while reading the body";
-                    callable(ec, nullptr, 0);
-                    return;
-                }
+                            if (ec)
+                            {
+                                LOG(logger_, error)
+                                    << "Error detected while reading the body";
+                                callable(ec, nullptr, 0);
+                                return;
+                            }
 
-                body_buffer_.resize(size);
-                readBody(body_size, callable);
-            });
+                            body_buffer_.resize(size);
+                            readBody(body_size, callable);
+                        });
     }
 
     void sendResponse();
@@ -150,7 +148,20 @@ private:
     void recycle();
 
     template <typename Buffer, typename Handler>
-    void async_read_some(Buffer&& buffer, Handler&& handler);
+    void async_read_some(Buffer&& buffer, Handler&& handler)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (ssl_socket_)
+        {
+            return ssl_socket_->async_read_some(std::forward<Buffer>(buffer),
+                                                std::forward<Handler>(handler));
+        }
+        else
+        {
+            return socket_.async_read_some(std::forward<Buffer>(buffer),
+                                           std::forward<Handler>(handler));
+        }
+    }
 
     void sendResponse(Callback&& cb);
 
