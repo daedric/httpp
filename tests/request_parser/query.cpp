@@ -26,7 +26,7 @@ ostream& operator<<(ostream& os, const Request::QueryParam& h)
 }
 }
 
-#if PARSER_BACKEND == STREAM_BACKEND
+#if HTTPP_PARSER_BACKEND == HTTPP_STREAM_BACKEND
 Request parse(const std::string& req)
 {
     const std::string query = "GET " + req + " HTTP/1.1\r\n\r\n";
@@ -37,7 +37,7 @@ Request parse(const std::string& req)
     BOOST_CHECK(b);
     return request;
 }
-#elif PARSER_BACKEND == RAGEL_BACKEND
+#elif HTTPP_PARSER_BACKEND == HTTP_RAGEL_BACKEND
 Request parse(const std::string& req)
 {
     const std::string query = "GET " + req + " HTTP/1.1\r\n\r\n";

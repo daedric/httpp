@@ -19,7 +19,7 @@
 #include "httpp/http/Request.hpp"
 #include "httpp/utils/URL.hpp"
 
-# if PARSER_BACKEND == RAGEL_BACKEND
+#if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
 
 #define TOKEN_LEN size_t(token_end - token_begin)
 #define TOKEN_REF boost::string_ref(token_begin, TOKEN_LEN)

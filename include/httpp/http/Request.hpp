@@ -42,7 +42,7 @@ struct Request
     TimePoint received = Clock::now();
     Method method;
 
-# if PARSER_BACKEND == RAGEL_BACKEND
+# if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
     boost::string_ref uri;
 # else
     std::string uri;

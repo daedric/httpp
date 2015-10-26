@@ -26,7 +26,7 @@ namespace HTTPP
 namespace HTTP
 {
 
-# if PARSER_BACKEND == STREAM_BACKEND
+#if HTTPP_PARSER_BACKEND == HTTPP_STREAM_BACKEND
 
 CREATE_LOGGER(parser_logger, "httpp::HttpServer::Parser");
 
@@ -281,7 +281,7 @@ bool Parser::parse(std::istream& is, Request& request)
     return ret;
 }
 
-# endif // if PARSER_BACKEND == STREAM_BACKEND
+#endif // if HTTPP_PARSER_BACKEND == HTTPP_STREAM_BACKEND
 
 bool Parser::isComplete(const char* buffer, size_t n)
 {

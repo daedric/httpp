@@ -202,7 +202,7 @@ void Connection::read_request()
     if (Parser::isComplete(request_buffer_.data(), size_))
     {
         request_.setDate();
-#if PARSER_BACKEND == STREAM_BACKEND
+#if HTTPP_PARSER_BACKEND == HTTPP_STREAM_BACKEND
         UTILS::VectorStreamBuf buf(request_buffer_, size_);
         std::istream is(std::addressof(buf));
         if (Parser::parse(is, request_))
@@ -216,7 +216,7 @@ void Connection::read_request()
             disown();
             handler_.connection_notify_request(this);
         }
-#elif PARSER_BACKEND == RAGEL_BACKEND
+#elif HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
         const char* begin = request_buffer_.data();
         const char* end = begin + size_;
         size_t consumed = 0;
