@@ -138,10 +138,10 @@ private:
 
     void start();
 
-    void disown() noexcept;
+    void disown();
     bool own() noexcept;
     bool shouldBeDeleted() const noexcept;
-    void markToBeDeleted() noexcept;
+    void markToBeDeleted();
 
     void cancel() noexcept;
     void close() noexcept;

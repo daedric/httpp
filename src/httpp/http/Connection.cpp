@@ -90,7 +90,7 @@ void Connection::cancel() noexcept
     socket_.cancel(ec);
 }
 
-void Connection::disown() noexcept
+void Connection::disown()
 {
     bool expected = true;
     if (!is_owned_.compare_exchange_strong(expected, false))
@@ -104,7 +104,7 @@ bool Connection::shouldBeDeleted() const noexcept
     return should_be_deleted_;
 }
 
-void Connection::markToBeDeleted() noexcept
+void Connection::markToBeDeleted()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!should_be_deleted_)
