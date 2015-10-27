@@ -1,3 +1,13 @@
+/*
+ * File: src/httpp/utils/LazyDecodedValue.cpp
+ * Part of httpp.
+ *
+ * Distributed under the 2-clause BSD licence (See LICENCE.TXT file at the
+ * project root).
+ *
+ * Copyright (c) 2015 Thomas Sanchez.  All rights reserved.
+ *
+ */
 #include "httpp/utils/LazyDecodedValue.hpp"
 
 #include <ostream>
