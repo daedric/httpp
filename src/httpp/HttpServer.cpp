@@ -39,7 +39,9 @@ struct HttpServer::Acceptor : boost::asio::ip::tcp::acceptor
         auto flags = boost::asio::ssl::context::default_workarounds |
                      boost::asio::ssl::context::no_sslv2 |
                      boost::asio::ssl::context::no_sslv3 |
+#ifndef __APPLE__
                      boost::asio::ssl::context::no_tlsv1 |
+#endif
                      boost::asio::ssl::context::single_dh_use;
 
         ssl_ctx->set_options(flags);

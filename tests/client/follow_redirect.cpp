@@ -51,7 +51,7 @@ void handler(Connection* connection)
 BOOST_AUTO_TEST_CASE(follow_redirect)
 {
     commonpp::core::init_logging();
-    commonpp::core::set_logging_level(commonpp::warning);
+    commonpp::core::set_logging_level(commonpp::trace);
     commonpp::core::enable_console_logging();
 
     HttpServer server;

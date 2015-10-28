@@ -62,6 +62,7 @@ static std::atomic_int nb_gconns = { 0 };
 static std::vector<Connection*> gconns;
 void handler_push(Connection* connection)
 {
+    ++nb_gconns;
     gconns.push_back(connection);
 }
 
@@ -73,6 +74,7 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
     server.setSink(&handler_push);
     server.bind("localhost", "8080");
 
+    static const auto NB_CONN = 100;
     std::atomic_int nb_cb {0};
 
     {
@@ -81,7 +83,7 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
         HttpClient::Request request;
         request.url("http://localhost:8080");
 
-        for (int i = 0; i < 1000; ++i)
+        for (int i = 0; i < NB_CONN; ++i)
         {
             client.async_get(HttpClient::Request{ request },
                              [&nb_cb](HttpClient::Future&& fut)
@@ -91,7 +93,10 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
             });
         }
 
-        //std::this_thread::sleep_for(std::chrono::seconds(1));
+        while (nb_gconns != NB_CONN)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 
     server.stopListeners();
@@ -99,7 +104,7 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
         std::begin(gconns), std::end(gconns), &Connection::releaseFromHandler);
     server.stop();
 
-    BOOST_CHECK_EQUAL(nb_cb.load(), 1000);
+    BOOST_CHECK_EQUAL(nb_cb.load(), NB_CONN);
 }
 
 BOOST_AUTO_TEST_CASE(delete_pending_connection_google)
