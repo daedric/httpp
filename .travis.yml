@@ -28,9 +28,24 @@ before_script:
     - if [ "${CXX}" == "clang++" ]; then export CXX="clang++-3.6" CC="clang-3.6"; fi
 
 script:
-    - mkdir build
+    - rm -rf build
+    - mkdir -p build
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} -DBUILD_TESTS=${BUILD_TESTS} -DBUILD_EXAMPLES=${BUILD_EXAMPLES} ..
     - make VERBOSE=1
-    - make test || cat Testing/Temporary/LastTest.log
+    - if [ "${COVERITY_SCAN_BRANCH}" != 1 ]; then make test || cat Testing/Temporary/LastTest.log ; fi
     - make package
+
+env:
+  global:
+   - secure: "aniUHYHxhL+P0wddpW5zkZE5NEPD+BKwb7FN2TojQ4q2dZ6U3bJwsm/iyhrj+/d6gtde8pWUuRLEQ9aGf2Zoxn7uahjgPCnFGskGtOV+vpDlvWl4wXioEYdom+ztHd2MDCeA2mFjRCo923IWEbLmMnx6lSlyNLcmVi+CHU/Hm0o="
+
+addons:
+  coverity_scan:
+    project:
+      name: "daedric/httpp"
+      description: "Micro HTTP server/client"
+    notification_email: thomas.sanchz@gmail.com
+    build_command_prepend: "make cmake"
+    build_command:   "make -C build"
+    branch_pattern:  coverity
