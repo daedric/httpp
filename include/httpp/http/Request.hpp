@@ -48,8 +48,8 @@ struct Request
     std::string uri;
 #endif
 
-    int major;
-    int minor;
+    int major = 0;
+    int minor = 0;
 
     using QueryParamRef = HTTP::QueryParamRef;
 

@@ -164,6 +164,8 @@ curl_socket_t Connection::opensocket(void* clientp,
         boost::asio::ip::tcp::socket* socket =
             new boost::asio::ip::tcp::socket(conn->service);
 
+        std::unique_ptr<boost::asio::ip::tcp::socket> raii(socket);
+
         if (address->family == AF_INET)
         {
             socket->open(boost::asio::ip::tcp::v4(), ec);
@@ -188,6 +190,8 @@ curl_socket_t Connection::opensocket(void* clientp,
             << ", native socket: " << handle;
 
         (*conn->sockets)[handle] = socket;
+
+        raii.release(); // release *ownership*
 
         if (conn->poll_action)
         {

@@ -145,16 +145,16 @@ struct Connection : public std::enable_shared_from_this<Connection>
     }
 
     Manager& handler;
-    ThreadPool* dispatch;
+    ThreadPool* dispatch = nullptr;
 
-    CURL* handle;
+    CURL* handle = nullptr;
     int poll_action = 0;
     std::atomic_bool cancelled = { false };
     char error_buffer[CURL_ERROR_SIZE] = { 0 };
 
     boost::asio::io_service& service;
     boost::asio::ip::tcp::socket* socket = nullptr;
-    std::map<curl_socket_t, boost::asio::ip::tcp::socket*>* sockets;
+    std::map<curl_socket_t, boost::asio::ip::tcp::socket*>* sockets = nullptr;
 
     client::Request request;
     client::Response response;

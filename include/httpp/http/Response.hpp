@@ -41,7 +41,7 @@ public:
     using ChunkedResponseCallback = std::function<std::string()>;
 
 
-    Response();
+    Response() = default;
     Response(HttpCode code);
     Response(HttpCode code, const boost::string_ref& body);
     Response(HttpCode code, ChunkedResponseCallback&& callback);
@@ -226,7 +226,7 @@ private:
     }
 
 private:
-    HttpCode code_;
+    HttpCode code_ = HttpCode::Ok;
     char code_str_[4];
 
     std::vector<char> body_;

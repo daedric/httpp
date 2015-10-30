@@ -33,11 +33,6 @@ char const Response::END_OF_STREAM_MARKER[] = {
     '0', '\r', '\n', '\r', '\n',
 };
 
-Response::Response()
-: Response(HttpCode::Ok)
-{
-}
-
 Response::Response(HttpCode code)
 {
     setCode(code);
