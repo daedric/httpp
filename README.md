@@ -1,4 +1,5 @@
 [![Build Status](http://travis-ci.org/daedric/httpp.png)](http://travis-ci.org/daedric/httpp)
+[![Coverity Status](https://scan.coverity.com/projects/6818/badge.svg)](https://scan.coverity.com/projects/daedric-httpp)
 
 httpp
 =====
