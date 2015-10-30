@@ -39,12 +39,12 @@ script:
     - if [ "${COVERITY_SCAN_BRANCH}" != 1 ]; then make test || cat Testing/Temporary/LastTest.log ; fi
     - make package
 
-addons:
-  coverity_scan:
-    project:
-      name: "daedric/httpp"
-      description: "Micro HTTP server/client"
-    notification_email: thomas.sanchz@gmail.com
-    build_command_prepend: "make cmake"
-    build_command:   "make -C build"
-    branch_pattern:  master
+#addons:
+#  coverity_scan:
+#    project:
+#      name: "daedric/httpp"
+#      description: "Micro HTTP server/client"
+#    notification_email: thomas.sanchz@gmail.com
+#    build_command_prepend: "make cmake"
+#    build_command:   "make -C build"
+#    branch_pattern:  master
