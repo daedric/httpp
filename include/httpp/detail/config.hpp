@@ -28,6 +28,7 @@
 # define HTTPP_STREAM_BACKEND 1
 
 # ifndef HTTPP_PARSER_BACKEND
+#  warning "No HTTPP Parser selected, use ragel by default"
 #  define HTTPP_PARSER_BACKEND HTTPP_RAGEL_BACKEND
 # endif
 
