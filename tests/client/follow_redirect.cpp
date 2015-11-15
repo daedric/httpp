@@ -23,13 +23,13 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
-
+    auto& request = connection->request();
     auto headers = request.getSortedHeaders();
 
     auto const& host = headers["Host"];
-    auto port = stoi(host.substr(host.find(':') + 1));
+    auto port = stoi(to_string(host.substr(host.find(':') + 1)));
 
     if (port < 8084)
     {
@@ -50,6 +50,10 @@ void handler(Connection* connection, Request&& request)
 
 BOOST_AUTO_TEST_CASE(follow_redirect)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::trace);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler);
@@ -75,8 +79,9 @@ BOOST_AUTO_TEST_CASE(follow_redirect)
     }
 }
 
-void handler2(Connection* connection, Request&& request)
+void handler2(Connection* connection)
 {
+    auto& request = connection->request();
     if (request.uri == "//redirect")
     {
         connection->response()
@@ -100,6 +105,10 @@ void handler2(Connection* connection, Request&& request)
 
 BOOST_AUTO_TEST_CASE(follow_redirect2)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::warning);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler2);
@@ -120,5 +129,3 @@ BOOST_AUTO_TEST_CASE(follow_redirect2)
         std::cout << h.first << ": " << h.second << std::endl;
     }
 }
-
-

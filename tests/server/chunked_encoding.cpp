@@ -13,11 +13,13 @@
 #include <atomic>
 #include <string>
 #include <functional>
+
+#include <commonpp/core/LoggingInterface.hpp>
+
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
 #include "httpp/utils/Exception.hpp"
 #include "httpp/http/Utils.hpp"
-#include <boost/log/trivial.hpp>
 
 using namespace HTTPP;
 
@@ -39,13 +41,13 @@ std::function<std::string()> make_stream(int numChunks, int chunkSize)
     {
         if (numChunks > 0)
         {
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":Sending Chunk ";
+            GLOG(debug) << __FUNCTION__ << ":Sending Chunk ";
             numChunks--;
             return std::string(chunkSize, 'X');
         }
         else
         {
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":End of Stream ";
+            GLOG(debug) << __FUNCTION__ << ":End of Stream ";
             return "";
         }
     };
@@ -53,15 +55,15 @@ std::function<std::string()> make_stream(int numChunks, int chunkSize)
 }
 
 
-void chunked_data_handler(Connection* connection, Request&&)
-{    
+void chunked_data_handler(Connection* connection)
+{
     auto body = make_stream(DEFAULT_NUMBER_OF_CHUNKS, DEFAULT_CHUNK_SIZE);
     connection->response().setCode(HTTP::HttpCode::Ok).setBody(std::move(body));
     connection->sendResponse();
 }
 
 //
-// Test we correctly set the Transfer-Encoding header when streaming 
+// Test we correctly set the Transfer-Encoding header when streaming
 //
 BOOST_AUTO_TEST_CASE(test_transfer_encoding_header_is_set_correctly)
 {
@@ -106,7 +108,7 @@ BOOST_AUTO_TEST_CASE(test_client_receives_expected_body)
 // Test we can send an empty response with no data. Should return 200 OK, but
 // nothing in the payload.
 //
-void empty_chunk_response(Connection* connection, Request&&)
+void empty_chunk_response(Connection* connection)
 {
     auto empty_response = []()
     { return ""; };
@@ -126,7 +128,7 @@ BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
     request.url("http://localhost:8080");
     HttpClient client;
 
-    auto response = client.get(std::move(request));    
+    auto response = client.get(std::move(request));
     auto headers = response.getSortedHeaders();
 
     BOOST_CHECK_EQUAL(headers["Transfer-Encoding"], "chunked");
@@ -139,7 +141,7 @@ BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
 // Test we can cancel a streaming request. Also check the client api gets the
 // correct exception.
 //
-void infinite_response(Connection* connection, Request&&)
+void infinite_response(Connection* connection)
 {
     connection->response()
         .setCode(HTTP::HttpCode::Ok)
@@ -173,8 +175,6 @@ BOOST_AUTO_TEST_CASE(test_cancelling_request_while_streaming_stops_functor)
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     BOOST_CHECK_EQUAL(server.getNbConnection(), 1);
 }
-
-
 
 //
 // Test the raw response contains the correct header and chunk data.
@@ -223,8 +223,8 @@ BOOST_AUTO_TEST_CASE(test_format_of_raw_response)
         auto chunkHeader = rawResponse.substr(chunkIterator, 4);
         BOOST_CHECK_EQUAL(chunkHeader, "64\r\n");
         chunkIterator += 4;
-        auto chunkBody = rawResponse.substr(chunkIterator, 100);        
-        BOOST_CHECK_EQUAL(chunkBody, std::string(DEFAULT_CHUNK_SIZE, 'X'));   
+        auto chunkBody = rawResponse.substr(chunkIterator, 100);
+        BOOST_CHECK_EQUAL(chunkBody, std::string(DEFAULT_CHUNK_SIZE, 'X'));
         chunkIterator += 100;
         auto chunkTrailer = rawResponse.substr(chunkIterator, 2);
         BOOST_CHECK_EQUAL(chunkTrailer, "\r\n");

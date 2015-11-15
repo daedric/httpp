@@ -42,11 +42,12 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     }
 }
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
     gconnection = connection;
+    auto& request = connection->request();
     auto headers = request.getSortedHeaders();
-    auto size = std::stoi(headers["Content-Length"]);
+    auto size = std::stoi(to_string(headers["Content-Length"]));
     if (headers["Expect"] == "100-continue")
     {
         connection->sendContinue([connection, size]

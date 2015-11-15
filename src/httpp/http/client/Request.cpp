@@ -41,7 +41,7 @@ Request& Request::joinUrlPath(const std::string& dir, bool trailing_sep)
         }
     }
 
-    url_ += HTTPP::UTILS::encode(dir);
+    url_ += HTTPP::UTILS::url_encode(dir);
 
     if (trailing_sep)
     {
@@ -53,7 +53,7 @@ Request& Request::joinUrlPath(const std::string& dir, bool trailing_sep)
 
 Request& Request::addUrlVariable(const std::string& var, const std::string& val)
 {
-    query_params_.emplace_back(var, UTILS::encode(val));
+    query_params_.emplace_back(var, UTILS::url_encode(val));
     return *this;
 }
 
@@ -69,11 +69,11 @@ Request& Request::pushPostData(const std::string& name,
 {
     if (encoding == PostEncoding::FormUrlEncoded)
     {
-        content_ += name + "=" + UTILS::encode(value) + '&';
+        content_ += name + "=" + UTILS::url_encode(value) + '&';
     }
     else
     {
-        post_params_.emplace_back(name, UTILS::encode(value));
+        post_params_.emplace_back(name, UTILS::url_encode(value));
     }
 
     return *this;

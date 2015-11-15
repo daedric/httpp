@@ -15,9 +15,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/preprocessor/stringize.hpp>
 
@@ -54,7 +51,9 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     {
         std::cout << "Check" << std::endl;
         BOOST_CHECK_EQUAL(body_read, BODY);
-        (gconnection->response() = Response(HTTP::HttpCode::Ok)).connectionShouldBeClosed(true);
+        gconnection->response()
+            .setCode(HTTP::HttpCode::Ok)
+            .connectionShouldBeClosed(true);
         gconnection->sendResponse();
     }
     else if (ec)
@@ -67,25 +66,21 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     }
 }
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
+    auto& request = connection->request();
     gconnection = connection;
     std::cout << "got a request" << std::endl;
     auto headers = request.getSortedHeaders();
-    auto size = std::stoi(headers["Content-Length"]);
+    auto size = std::stoi(to_string(headers["Content-Length"]));
     connection->readBody(size, &body_handler);
 }
 
 BOOST_AUTO_TEST_CASE(listener)
 {
-    boost::log::core::get()->set_filter
-    (
-        boost::log::trivial::severity >= boost::log::trivial::warning
-    );
-
     for (int i = 0; i < BODY_SIZE; ++i)
     {
-        BODY += char(i % 127);
+        BODY += char('a');
     }
 
     HttpServer server;

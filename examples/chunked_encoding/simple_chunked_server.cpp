@@ -21,8 +21,9 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::HttpCode;
 
-void chunked_handler(Connection* connection, Request&& request)
+void chunked_handler(Connection* connection)
 {
+    auto& request = connection->request();
     auto numChunks = 10;
     auto chunkSize = 8192;
 

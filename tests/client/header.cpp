@@ -23,8 +23,9 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
+    auto& request = connection->request();
     auto headers = request.getSortedHeaders();
 
     BOOST_CHECK_EQUAL(headers["test"], "toto");

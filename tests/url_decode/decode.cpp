@@ -31,6 +31,6 @@ BOOST_AUTO_TEST_CASE(basic_decode)
                                     "button, or read a brief \r\nexplanation of "
                                     "the process of HTML encoding.\r\n\r\n";
 
-    BOOST_CHECK_EQUAL(decode(ENCODED_URL), DECODED_URL);
-    BOOST_CHECK_EQUAL(encode(DECODED_URL), ENCODED_URL_PCT);
+    BOOST_CHECK_EQUAL(url_decode(ENCODED_URL), DECODED_URL);
+    BOOST_CHECK_EQUAL(url_encode(DECODED_URL), ENCODED_URL_PCT);
 }

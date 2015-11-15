@@ -24,8 +24,9 @@ static const std::map<std::string, std::string> map = {
     { "toto", "kiki" }, { "bad", "12^%$@#1245&/?\\" }
 };
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
+    auto& request = connection->request();
     BOOST_CHECK_EQUAL(request.uri, "/test/kiki/");
 
     auto const& query_params = request.query_params;

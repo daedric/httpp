@@ -8,6 +8,7 @@
  *
  */
 
+#include "httpp/detail/config.hpp"
 #include "httpp/http/Parser.hpp"
 
 #include <sstream>
@@ -19,13 +20,13 @@ using HTTPP::HTTP::Parser;
 
 namespace std
 {
-ostream& operator<<(ostream& os, const Request::QueryParam& h)
+ostream& operator<<(ostream& os, const Request::QueryParamRef& h)
 {
     return os << h.first << ": " << h.second;
 }
 }
 
-
+#if HTTPP_PARSER_BACKEND == HTTPP_STREAM_BACKEND
 Request parse(const std::string& req)
 {
     const std::string query = "GET " + req + " HTTP/1.1\r\n\r\n";
@@ -36,6 +37,19 @@ Request parse(const std::string& req)
     BOOST_CHECK(b);
     return request;
 }
+#elif HTTPP_PARSER_BACKEND == HTTP_RAGEL_BACKEND
+Request parse(const std::string& req)
+{
+    const std::string query = "GET " + req + " HTTP/1.1\r\n\r\n";
+
+    Request request;
+    size_t consumed;
+    bool b = Parser::parse(query.data(), query.data() + query.size(), consumed,
+                           request);
+    BOOST_CHECK(b);
+    return request;
+}
+#endif
 
 BOOST_AUTO_TEST_CASE(test_http_header_query_parser_no_query)
 {
@@ -124,10 +138,10 @@ BOOST_AUTO_TEST_CASE(test_http_header_query_parser_sorted)
 
     BOOST_CHECK_EQUAL(params["something"], "");
 
-    Request::QueryParam a {"a", "a"};
-    Request::QueryParam b {"b", "b"};
-    Request::QueryParam y {"y", "y"};
-    Request::QueryParam z {"z", "z"};
+    Request::QueryParamRef a {"a", "a"};
+    Request::QueryParamRef b {"b", "b"};
+    Request::QueryParamRef y {"y", "y"};
+    Request::QueryParamRef z {"z", "z"};
 
     BOOST_CHECK_EQUAL(params[0], a);
     BOOST_CHECK_EQUAL(params[1], b);

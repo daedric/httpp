@@ -20,7 +20,7 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-void handler(Connection* connection, Request&&)
+void handler(Connection* connection)
 {
     connection->response()
         .setCode(HTTPP::HTTP::HttpCode::Ok)

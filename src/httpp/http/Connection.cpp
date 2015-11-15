@@ -12,28 +12,32 @@
 
 #include <sstream>
 
-#include <boost/log/trivial.hpp>
-
+#include "httpp/detail/config.hpp"
 #include "httpp/HttpServer.hpp"
 #include "httpp/http/Parser.hpp"
-#include "httpp/http/Request.hpp"
-#include "httpp/utils/ThreadPool.hpp"
 #include "httpp/utils/VectorStreamBuf.hpp"
 
 namespace HTTPP
 {
 namespace HTTP
 {
-const size_t Connection::BUF_SIZE = 8196;
+
+
+namespace connection_detail
+{
+DECLARE_LOGGER(conn_logger_, "httpp::HttpServer::Connection");
+}
+
+using namespace connection_detail;
+
+const size_t Connection::BUF_SIZE = 8192;
 
 
 Connection::Connection(HTTPP::HttpServer& handler,
                        boost::asio::io_service& service,
-                       UTILS::ThreadPool& pool,
                        boost::asio::ssl::context* ctx
                        )
 : handler_(handler)
-, pool_(pool)
 , socket_(service)
 {
     if (ctx)
@@ -44,30 +48,15 @@ Connection::Connection(HTTPP::HttpServer& handler,
 
 Connection::~Connection()
 {
-    BOOST_LOG_TRIVIAL(debug) << "Disconnect client";
+    LOG(conn_logger_, debug) << "Disconnect client";
     cancel();
     close();
 
     if (is_owned_)
     {
-        BOOST_LOG_TRIVIAL(error) << "A connection is destroyed manually, this "
+        LOG(conn_logger_, error) << "A connection is destroyed manually, this "
                                     "should always be done by the HttpServer";
         handler_.destroy(this, false);
-    }
-}
-
-template <typename Buffer, typename Handler>
-void Connection::async_read_some(Buffer&& buffer, Handler&& handler)
-{
-    if (ssl_socket_)
-    {
-        return ssl_socket_->async_read_some(std::forward<Buffer>(buffer),
-                                            std::forward<Handler>(handler));
-    }
-    else
-    {
-        return socket_.async_read_some(std::forward<Buffer>(buffer),
-                                       std::forward<Handler>(handler));
     }
 }
 
@@ -95,12 +84,12 @@ void Connection::cancel() noexcept
     socket_.cancel(ec);
 }
 
-void Connection::disown() noexcept
+void Connection::disown()
 {
     bool expected = true;
     if (!is_owned_.compare_exchange_strong(expected, false))
     {
-        BOOST_LOG_TRIVIAL(warning) << "Disown a connection already disowned";
+        LOG(conn_logger_, warning) << "Disown a connection already disowned";
     }
 }
 
@@ -109,13 +98,13 @@ bool Connection::shouldBeDeleted() const noexcept
     return should_be_deleted_;
 }
 
-void Connection::markToBeDeleted() noexcept
+void Connection::markToBeDeleted()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!should_be_deleted_)
     {
         should_be_deleted_ = true;
-        BOOST_LOG_TRIVIAL(debug) << "Connection marked to be deleted: " << this;
+        LOG(conn_logger_, debug) << "Connection marked to be deleted: " << this;
         cancel();
         close();
     }
@@ -156,26 +145,44 @@ std::string Connection::source() const
 
 void Connection::start()
 {
-    size_ = buffer_.size();
-    if (!size_)
+    if (!own())
     {
-        buffer_.resize(BUF_SIZE);
+        throw std::logic_error("Invalid connection state");
     }
-    response_ = Response();
+
+    // Maybe we have the beginning of the next request in the
+    // body_buffer_
+    if (not body_buffer_.empty())
+    {
+        request_buffer_.swap(body_buffer_);
+        size_ = request_buffer_.size();
+    }
+    else
+    {
+        size_ = 0;
+    }
+
+    request_buffer_.resize(BUF_SIZE, 0);
+
+    body_buffer_.clear();
+    body_buffer_.reserve(BUF_SIZE);
+
+    request_.clear();
+    response_.clear();
 
     if (ssl_socket_ && need_handshake_)
     {
         need_handshake_ = false;
         ssl_socket_->async_handshake(boost::asio::ssl::stream_base::server,
-                                     [this](boost::system::error_code const& ec)
-                                     {
-            if (ec)
-            {
-                handler_.connection_error(this, ec);
-                return;
-            }
-            read_request();
-        });
+                                     [this](boost::system::error_code const& ec) {
+                                         if (ec)
+                                         {
+                                             disown();
+                                             handler_.connection_error(this, ec);
+                                             return;
+                                         }
+                                         read_request();
+                                     });
     }
     else
     {
@@ -185,82 +192,104 @@ void Connection::start()
 
 void Connection::read_request()
 {
-    std::unique_lock<std::mutex> lock(mutex_);
     if (shouldBeDeleted())
     {
-        lock.unlock();
+        disown();
         handler_.destroy(this);
         return;
     }
 
-    if (Parser::isComplete(buffer_.data(), size_))
+    if (Parser::isComplete(request_buffer_.data(), size_))
     {
-        UTILS::VectorStreamBuf buf(buffer_, size_);
+        request_.setDate();
+#if HTTPP_PARSER_BACKEND == HTTPP_STREAM_BACKEND
+        UTILS::VectorStreamBuf buf(request_buffer_, size_);
         std::istream is(std::addressof(buf));
-        Request request;
-        if (Parser::parse(is, request))
+        if (Parser::parse(is, request_))
         {
-            BOOST_LOG_TRIVIAL(trace) << "Received a request from: " << source()
-                                     << ": " << request;
+            DLOG(conn_logger_, trace) << "Received a request from: " << source()
+                                      << ": " << request_;
 
             buf.shrinkVector();
+            body_buffer_.swap(request_buffer_);
 
-            lock.unlock();
-            handler_.connection_notify_request(this, std::move(request));
+            disown();
+            handler_.connection_notify_request(this);
         }
+#elif HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
+        const char* begin = request_buffer_.data();
+        const char* end = begin + size_;
+        size_t consumed = 0;
+        if (Parser::parse(begin, end, consumed, request_))
+        {
+            DLOG(conn_logger_, trace) << "Received a request from: " << source()
+                                      << ": " << request_;
+
+            if (consumed != size_)
+            {
+                body_buffer_.insert(body_buffer_.begin(),
+                                    request_buffer_.begin() + consumed,
+                                    request_buffer_.begin() + size_);
+                request_buffer_.resize(consumed);
+            }
+
+            disown();
+            handler_.connection_notify_request(this);
+        }
+#endif
         else
         {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Invalid request received from: " << source();
-            BOOST_LOG_TRIVIAL(error) << std::string(buffer_.data(), size_);
+            LOG(conn_logger_, warning)
+                << "Invalid request received from: " << source() << "\n"
+                << std::string(request_buffer_.data(), size_);
 
             response_ = Response(
                     HttpCode::BadRequest,
                     std::string("An error occured in the request parsing indicating an error"));
             response_.connectionShouldBeClosed(true);
 
-            lock.unlock();
             disown();
             sendResponse();
         }
     }
     else
     {
-        if (size_ == buffer_.size())
+        if (size_ == request_buffer_.size())
         {
-            buffer_.resize(buffer_.size() + BUF_SIZE);
+            request_buffer_.resize(request_buffer_.size() + BUF_SIZE);
         }
 
-        char* data = buffer_.data();
+        char* data = request_buffer_.data();
         data += size_;
 
-        async_read_some(boost::asio::buffer(data, buffer_.capacity() - size_),
-                        [&](boost::system::error_code const& ec, size_t size)
-                        {
-            if (ec)
-            {
-                handler_.connection_error(this, ec);
-                return;
-            }
+        async_read_some(
+            boost::asio::buffer(data, request_buffer_.capacity() - size_),
+            [this](boost::system::error_code const& ec, size_t size) {
+                if (ec)
+                {
+                    disown();
+                    handler_.connection_error(this, ec);
+                    return;
+                }
 
-            this->size_ += size;
-            read_request();
-        });
+                this->size_ += size;
+                read_request();
+            });
     }
 }
 
 void Connection::sendResponse(Callback&& cb)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
     if (shouldBeDeleted())
     {
-        lock.unlock();
+        disown();
         handler_.destroy(this);
         return;
     }
 
     auto handler = [cb, this](boost::system::error_code const& ec, size_t)
     {
+        disown();
         if (ec)
         {
             handler_.connection_error(this, ec);
@@ -269,6 +298,7 @@ void Connection::sendResponse(Callback&& cb)
         cb();
     };
 
+    std::unique_lock<std::mutex> lock(mutex_);
     if (ssl_socket_)
     {
         response_.sendResponse(*ssl_socket_, std::move(handler));
@@ -289,7 +319,7 @@ void Connection::sendResponse()
 {
     if (!own())
     {
-        BOOST_LOG_TRIVIAL(error) << "Connection should be disowned";
+        LOG(conn_logger_, error) << "Connection should be disowned";
         throw std::logic_error("Invalid connection state");
     }
 
@@ -300,7 +330,7 @@ void Connection::sendContinue(Callback&& cb)
 {
     if (!own())
     {
-        BOOST_LOG_TRIVIAL(error) << "Connection should be disowned";
+        LOG(conn_logger_, error) << "Connection should be disowned";
         throw std::logic_error("Invalid connection state");
     }
 
@@ -308,15 +338,12 @@ void Connection::sendContinue(Callback&& cb)
         .setBody("")
         .setCode(HttpCode::Continue);
 
-    sendResponse([this, cb]
-                 {
-                     disown();
-                     cb();
-                 });
+    sendResponse([this, cb] { cb(); });
 }
 
 void Connection::recycle()
 {
+    // Here Connection is not owned.
     if (shouldBeDeleted() || response_.connectionShouldBeClosed())
     {
         handler_.destroy(this);

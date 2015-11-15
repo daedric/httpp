@@ -15,9 +15,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpServer.hpp"
@@ -33,7 +30,7 @@ static const std::string REQUEST = "GET / HTTP/1.1\r\n"
                                    "\r\n";
 
 static Connection* gconn = nullptr;
-void handler(Connection* connection, Request&&)
+void handler(Connection* connection)
 {
     std::cout << "Got a request";
     gconn = connection;
@@ -41,10 +38,9 @@ void handler(Connection* connection, Request&&)
 
 BOOST_AUTO_TEST_CASE(simple)
 {
-    boost::log::core::get()->set_filter
-    (
-        boost::log::trivial::severity >= boost::log::trivial::debug
-    );
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::trace);
+    commonpp::core::enable_console_logging();
 
     HttpServer server;
     server.start();
@@ -59,9 +55,7 @@ BOOST_AUTO_TEST_CASE(simple)
     boost::asio::write(s, boost::asio::buffer(REQUEST));
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::async(std::launch::async,
-               []
-               {
+    std::async(std::launch::async, [] {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         gconn->response().setBody("Helloworld");
         gconn->sendResponse();
@@ -70,12 +64,14 @@ BOOST_AUTO_TEST_CASE(simple)
     server.stop();
 }
 
-
-
 static const std::string REQUEST_INCOMPLETE = "GET / HTTP/1.1";
 
 BOOST_AUTO_TEST_CASE(during_read)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::trace);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler);

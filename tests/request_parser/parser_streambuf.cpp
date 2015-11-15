@@ -8,12 +8,16 @@
  *
  */
 
+#include <httpp/detail/config.hpp>
+
 #include "httpp/http/Parser.hpp"
 
 #include <sstream>
 #include "httpp/utils/VectorStreamBuf.hpp"
 #include <boost/test/unit_test.hpp>
 #include "httpp/http/Request.hpp"
+
+#if HTTPP_PARSER_BACKEND == HTTPP_STREAM_BACKEND
 
 using HTTPP::UTILS::VectorStreamBuf;
 using HTTPP::HTTP::Request;
@@ -36,4 +40,9 @@ BOOST_AUTO_TEST_CASE(parser_streambuf)
     BOOST_CHECK_EQUAL(remaining, "qwertyuiop");
 }
 
+#else
 
+BOOST_AUTO_TEST_CASE(skip)
+{}
+
+#endif

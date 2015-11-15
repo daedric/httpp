@@ -8,6 +8,9 @@
  *
  */
 
+#include <commonpp/core/string/stringify.hpp>
+#include <commonpp/core/string/std_tostring.hpp>
+
 #include "httpp/http/Request.hpp"
 #include <ostream>
 
@@ -18,13 +21,13 @@ namespace HTTP
 std::ostream& operator<<(std::ostream& os, const Request& request)
 {
     os << to_string(request.method) << " ";
-    std::string uri = request.uri;
+    std::string uri = to_string(request.uri);
     if (!request.query_params.empty())
     {
         uri += '?';
         for (auto const& q : request.query_params)
         {
-            uri += q.first + "=" + q.second + "&";
+            uri += q.first + "=" + to_string(q.second) + "&";
         }
     }
 
@@ -35,6 +38,19 @@ std::ostream& operator<<(std::ostream& os, const Request& request)
     }
 
     return os;
+}
+
+void Request::setDate()
+{
+    received = Clock::now();
+}
+
+void Request::clear()
+{
+    uri.clear();
+    headers.clear();
+    query_params.clear();
+    major = minor = 0;
 }
 
 } // namespace HTTP

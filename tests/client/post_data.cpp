@@ -41,11 +41,12 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     }
 }
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
+    auto& request = connection->request();
     gconnection = connection;
     auto headers = request.getSortedHeaders();
-    auto size = std::stoi(headers["Content-Length"]);
+    auto size = std::stoi(to_string(headers["Content-Length"]));
     connection->readBody(size, &body_handler);
 }
 

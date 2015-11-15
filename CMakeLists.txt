@@ -16,7 +16,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     MESSAGE(STATUS "Setting cmake build type to 'Release' as none was specified.")
     SET(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
-  SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
+  SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
 endif()
 
 
@@ -40,14 +40,16 @@ FOREACH(p LIB BIN INCLUDE CMAKE)
 ENDFOREACH()
 
 
-OPTION(BUILD_TESTS "Should the tests be built")
-OPTION(BUILD_EXAMPLES "Should the examples be built")
-OPTION(BUILD_SHARED_LIBS "Should the shared lib be built")
+OPTION(BUILD_TESTS "Build the tests")
+OPTION(BUILD_EXAMPLES "Build the examples")
+OPTION(BUILD_SHARED_LIBS "Build shared lib instead of static ones")
+OPTION(PROFILE_HTTPP "Enable profiling")
+OPTION(LINK_OPTIMIZATION "Enable link time optimization")
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
-SET(HTTPP_VERSION_MINOR "6")
-SET(HTTPP_VERSION_PATCH "2")
+SET(HTTPP_VERSION_MINOR "7")
+SET(HTTPP_VERSION_PATCH "0")
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${HTTPP_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${HTTPP_VERSION_MINOR})
@@ -56,6 +58,21 @@ SET(CPACK_PACKAGE_VERSION_PATCH ${HTTPP_VERSION_PATCH})
 SET(HTTPP_VERSION "${HTTPP_VERSION_MAJOR}.${HTTPP_VERSION_MINOR}.${HTTPP_VERSION_PATCH}")
 
 SET(CPACK_PACKAGE_VERSION ${HTTPP_VERSION})
+
+SET(RAGEL_BACKEND 0)
+SET(STREAM_BACKEND 1)
+
+IF (${HTTPP_PARSER_BACKEND} MATCHES "Stream")
+    ADD_DEFINITIONS("-DHTTPP_PARSER_BACKEND=${STREAM_BACKEND}")
+    MESSAGE(STATUS "HTTPP PARSER Backend : Stream")
+ELSEIF (${HTTPP_PARSER_BACKEND} MATCHES "Ragel")
+    ADD_DEFINITIONS("-DHTTPP_PARSER_BACKEND=${RAGEL_BACKEND}")
+    MESSAGE(STATUS "HTTPP PARSER Backend : Ragel")
+ELSE()
+    ADD_DEFINITIONS("-DHTTPP_PARSER_BACKEND=${RAGEL_BACKEND}")
+    MESSAGE(STATUS "HTTPP PARSER Backend : Ragel (Defaulted)")
+ENDIF()
+
 
 MESSAGE(STATUS "Cmake Version        : ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
 MESSAGE(STATUS "HTTPP Version        : ${HTTPP_VERSION}")
@@ -83,6 +100,30 @@ IF (${CMAKE_CXX_COMPILER_ID} MATCHES GNU OR ${CMAKE_CXX_COMPILER_ID} MATCHES Cla
   IF (${CMAKE_BUILD_TYPE} MATCHES "DEBUG")
       ADD_DEFINITIONS("-ggdb -g3")
   ENDIF ()
+
+  IF (${PROFILE_HTTPP})
+      MESSAGE(STATUS "HTTPP Profile enabled")
+      SET(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -pg)
+      SET(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -pg)
+      SET(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -pg)
+  ENDIF()
+
+  IF (${LINK_OPTIMIZATION})
+      IF (NOT ${CMAKE_CXX_COMPILER_ID} MATCHES GNU)
+          MESSAGE(FATAL "GCC is required")
+      ENDIF()
+
+      FIND_PROGRAM(AR gcc-ar)
+      SET(CMAKE_AR ${AR})
+      FIND_PROGRAM(RANLIB gcc-ranlib)
+      SET(CMAKE_RANLIB ${RANLIB})
+
+      MESSAGE(STATUS "HTTPP link time optimization enabled")
+      SET(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-flto -flto-odr-type-merging")
+      SET(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-flto -flto-odr-type-merging")
+      SET(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-flto -flto-odr-type-merging")
+  ENDIF()
+
 ENDIF()
 
 IF (${BUILD_SHARED_LIBS})
@@ -98,28 +139,36 @@ IF (WIN32 AND CMAKE_SYSTEM_VERSION)
     ADD_DEFINITIONS(-D_WIN32_WINNT=${VERSION})
 endif()
 
+# commonpp
+
+FIND_PACKAGE(commonpp
+    PATHS
+        /usr/lib/CMake/
+        /usr/local/lib/CMake/
+        $ENV{COMMONPP_CMAKE_DIR}
+    PATH_SUFFIXES
+        commonpp
+    QUIET
+)
+
+IF (NOT ${commonpp_FOUND})
+    MESSAGE(STATUS "Use bundled commonpp")
+    ADD_SUBDIRECTORY(third_party/commonpp ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp)
+    INCLUDE_DIRECTORIES(third_party/commonpp/include ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp/include)
+    SET(commonpp_LIBRARIES commonpp)
+    SET(EXPORT_commonpp TRUE)
+ELSE ()
+    INCLUDE_DIRECTORIES(${commonpp_INCLUDE_DIRS})
+ENDIF()
+
 # Actual Stuff ################################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${HTTPP_SOURCE_DIR}/CMakeScripts)
 
-INCLUDE (ThreadLocal)
-CHECK_HAS_THREAD_LOCAL_SPECIFIER()
-IF (${HAS_THREAD_LOCAL_SPECIFIER})
-    ADD_DEFINITIONS("-DHAS_THREAD_LOCAL_SPECIFIER=1")
-ELSE()
-    ADD_DEFINITIONS("-DHAS_THREAD_LOCAL_SPECIFIER=0")
-ENDIF()
-
-INCLUDE (CheckIncludeFiles)
-
-CHECK_INCLUDE_FILES(sys/prctl.h HAVE_SYS_PRCTL_H)
-IF (${HAVE_SYS_PRCTL_H})
-    ADD_DEFINITIONS("-DHAVE_SYS_PRCTL_H=${HAVE_SYS_PRCTL_H}")
-ELSE()
-    ADD_DEFINITIONS("-DHAVE_SYS_PRCTL_H=0")
-ENDIF()
-
 #Thread
 FIND_PACKAGE(Threads REQUIRED)
+
+# TBB, commonpp dependency
+FIND_PACKAGE(TBB REQUIRED)
 
 #TCMALLOC
 FIND_PACKAGE(TCMALLOC)
@@ -138,16 +187,26 @@ SET(Boost_USE_MULTITHREADED  ON)
 
 MESSAGE(STATUS "Boost static library use     : ${Boost_USE_STATIC_LIBS}")
 
-FIND_PACKAGE(Boost 1.54.0 COMPONENTS log log_setup unit_test_framework thread system REQUIRED)
+FIND_PACKAGE(Boost 1.54.0
+    COMPONENTS
+        log
+        log_setup
+        filesystem
+        unit_test_framework
+        thread
+        system
+    REQUIRED
+)
+
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
 LINK_DIRECTORIES(${Boost_LIBRARY_DIR})
 
 FIND_PACKAGE(CURL REQUIRED)
 INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIRS})
 
-
-
 SET(DEFAULT_LIBRARIES
+    ${commonpp_LIBRARIES}
+    ${TBB_LIBRARIES}
     ${Boost_LIBRARIES}
     ${CURL_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
@@ -180,8 +239,13 @@ ENDIF()
 
 # CMake export targets
 
-EXPORT(TARGETS httpp
-       FILE "${PROJECT_BINARY_DIR}/httpp_target.cmake")
+IF (${EXPORT_commonpp})
+    EXPORT(TARGETS httpp ${commonpp_LIBRARIES}
+           FILE "${PROJECT_BINARY_DIR}/httpp_target.cmake")
+ELSE()
+    EXPORT(TARGETS httpp
+           FILE "${PROJECT_BINARY_DIR}/httpp_target.cmake")
+ENDIF()
 
 EXPORT(PACKAGE HTTPP)
 
@@ -237,7 +301,7 @@ SET(BIN_INSTALL_DIR, ${CMAKE_INSTALL_PREFIX})
 SET(INCLUDE_INSTALL_DIR, ${CMAKE_INSTALL_PREFIX})
 
 IF (UNIX)
-    SET(CPACK_GENERATOR "DEB;TGZ;RPM")
+    SET(CPACK_GENERATOR "DEB;TGZ")
 ENDIF (UNIX)
 
 INCLUDE(CPack)

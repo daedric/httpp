@@ -17,10 +17,11 @@
 # include <mutex>
 # include <boost/asio.hpp>
 # include <boost/asio/ssl.hpp>
+# include <commonpp/thread/ThreadPool.hpp>
+# include <commonpp/core/LoggingInterface.hpp>
 
 # include "http/Connection.hpp"
 # include "http/Request.hpp"
-# include "utils/ThreadPool.hpp"
 
 namespace HTTPP
 {
@@ -44,13 +45,14 @@ private:
     using AcceptorPtr = std::shared_ptr<Acceptor>;
 
 public:
-    using ConnectionPtr = HTTP::Connection*; //std::shared_ptr<HTTP::Connection>;
-    using SinkCb = std::function<void (ConnectionPtr, HTTP::Request&&)>;
-    using ThreadInit = UTILS::ThreadPool::ThreadInit;
+    using ConnectionPtr = HTTP::Connection*;
+    using SinkCb = std::function<void(ConnectionPtr)>;
+    using ThreadPool = commonpp::thread::ThreadPool;
+    using ThreadInit = ThreadPool::ThreadInit;
 
 public:
     HttpServer(size_t threads = 1);
-    HttpServer(UTILS::ThreadPool& pool);
+    HttpServer(ThreadPool& pool);
     ~HttpServer();
 
     void bind(const std::string& address, const std::string& port = "8000");
@@ -90,13 +92,12 @@ private: // called by Connection
     void connection_error(ConnectionPtr connection,
                           const boost::system::error_code& err);
 
-    void connection_notify_request(ConnectionPtr connection,
-                                   HTTP::Request&& request);
+    void connection_notify_request(ConnectionPtr connection);
     void connection_recycle(ConnectionPtr connection);
 
 private:
     bool running_ = false;
-    std::shared_ptr<UTILS::ThreadPool> pool_;
+    std::shared_ptr<ThreadPool> pool_;
     std::atomic_int running_acceptors_ = { 0 };
     std::atomic_int connection_count_ = { 0 };
     std::vector<AcceptorPtr> acceptors_;

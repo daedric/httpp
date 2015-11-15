@@ -9,7 +9,9 @@
  */
 
 #include "httpp/http/Protocol.hpp"
+#include <cstring>
 #include <string>
+#include <stdexcept>
 
 namespace HTTPP
 {
@@ -40,6 +42,43 @@ std::string to_string(Method method)
             return "DELETE";
     }
 }
+
+#define APPLY_ON_METHOD(FN) \
+    FN(HEAD, HEAD)          \
+    FN(GET, GET)            \
+    FN(POST, POST)          \
+    FN(PUT, PUT)            \
+    FN(DELETE, DELETE_)     \
+    FN(OPTIONS, OPTIONS)    \
+    FN(TRACE, TRACE)        \
+    FN(CONNECT, CONNECT)
+
+Method method_from(const std::string& str)
+{
+#define fn(name, e)   \
+    if (str == #name) \
+        return Method::e;
+    APPLY_ON_METHOD(fn)
+#undef fn
+
+    throw std::runtime_error("Unknown method");
+}
+
+Method method_from(const char* str)
+{
+#define my_strlen(str)                                               \
+    (__extension__(__builtin_constant_p(str) ? __builtin_strlen(str) \
+                                             : ::strlen(str)))
+
+#define fn(name, e)                                   \
+    if (::strncmp(#name, str, my_strlen(#name)) == 0) \
+        return Method::e;
+    APPLY_ON_METHOD(fn)
+#undef fn
+
+    throw std::runtime_error("Unknown method");
+}
+
 #define APPLY_ON_HTTP_CODE(FN)       \
     FN(Continue)                     \
     FN(SwitchingProtocols)           \
@@ -83,7 +122,7 @@ std::string to_string(Method method)
     FN(GatewayTimeout)               \
     FN(HttpVersionNotSupported)
 
-std::string getDefaultMessage(HttpCode code)
+const char* getDefaultMessage(HttpCode code)
 {
     switch (code)
     {

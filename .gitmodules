@@ -1,0 +1,3 @@
+[submodule "third_party/commonpp"]
+	path = third_party/commonpp
+	url = https://github.com/daedric/commonpp.git

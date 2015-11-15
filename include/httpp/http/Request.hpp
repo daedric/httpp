@@ -26,26 +26,41 @@ namespace HTTP
 
 struct Request
 {
-
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
 
-    const TimePoint received = Clock::now();
+
+    Request()
+    {
+        query_params.reserve(10);
+        headers.reserve(10);
+    }
+
+    void setDate();
+    void clear();
+
+    TimePoint received = Clock::now();
     Method method;
+
+# if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
+    boost::string_ref uri;
+# else
     std::string uri;
-    int major;
-    int minor;
+#endif
 
-    using QueryParam = KV;
+    int major = 0;
+    int minor = 0;
 
-    std::vector<QueryParam> query_params;
+    using QueryParamRef = HTTP::QueryParamRef;
+
+    std::vector<QueryParamRef> query_params;
 
     auto getSortedQueryParams() const -> decltype(UTILS::create_sorted_vector(query_params))
     {
         return UTILS::create_sorted_vector(query_params);
     }
 
-    std::vector<Header> headers;
+    std::vector<HeaderRef> headers;
 
     auto getSortedHeaders() const -> decltype(UTILS::create_sorted_vector(headers))
     {

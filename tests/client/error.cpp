@@ -22,7 +22,7 @@ using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 using HTTPP::UTILS::RequestError;
 
-void handler(Connection* connection, Request&&)
+void handler(Connection* connection)
 {
     Connection::releaseFromHandler(connection);
 }
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(no_server)
 
 BOOST_AUTO_TEST_CASE(bad_server)
 {
-    UTILS::ThreadPool pool(1);
+    commonpp::thread::ThreadPool pool(1);
     pool.start();
     boost::asio::io_service& service = pool.getService();
 
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(bad_server)
 
     acceptor.async_accept(socket, [&](const boost::system::error_code& error)
             {
-                BOOST_LOG_TRIVIAL(debug) << "Connection received";
+                GLOG(debug) << "Connection received";
                 if (error)
                 {
                     throw UTILS::convert_boost_ec_to_std_ec(error);
@@ -93,10 +93,10 @@ BOOST_AUTO_TEST_CASE(bad_server)
                 {
                     std::string str;
                     is >> str;
-                    BOOST_LOG_TRIVIAL(debug) << "receive: " << str;
+                    GLOG(debug) << "receive: " << str;
                 }
 
-                BOOST_LOG_TRIVIAL(debug) << "Send payload";
+                GLOG(debug) << "Send payload";
 
                 boost::asio::write(
                     socket,
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(bad_server)
                                         "Connection: Close\r\n"
                                         "This is an invalid header\r\n"
                                         "\r\n"));
-                BOOST_LOG_TRIVIAL(debug) << "Payload sent";
+                GLOG(debug) << "Payload sent";
             });
 
     HttpClient client;
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(bad_server)
 
 static Connection* conn_manager_deletion = nullptr;
 
-void handler_manager_deletion(Connection* connection, Request&&)
+void handler_manager_deletion(Connection* connection)
 {
   conn_manager_deletion = connection;
 }

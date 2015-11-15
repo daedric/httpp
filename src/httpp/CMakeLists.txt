@@ -13,10 +13,10 @@ SET(SOURCES
 
     http/Connection.cpp
     http/Parser.cpp
+    http/parser_ragel.cpp
     http/Protocol.cpp
     http/Request.cpp
     http/Response.cpp
-    http/URL.cpp
     http/Utils.cpp
 
     http/client/curl_parser.cpp
@@ -24,8 +24,7 @@ SET(SOURCES
     http/client/Manager.cpp
     http/client/Request.cpp
 
-    utils/ThreadPool.cpp
-    utils/Thread.cpp
+    utils/LazyDecodedValue.cpp
 
     ${VERSION_TO_GENERATE}
 )

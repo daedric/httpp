@@ -8,9 +8,6 @@
  *
  */
 
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpServer.hpp"
@@ -23,26 +20,7 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-static const std::string EXPECTED_BODY = R"*(PREFIX ?= /usr/local
-
-all:
-	make -C build all
-
-clean:
-	make -C build clean
-
-cmake:
-	rm -rf build
-	mkdir build
-	cd build && cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..
-
-package:
-	make -C build package
-
-test:
-	make -C build test
-
-re : cmake all)*";
+static const std::string EXPECTED_BODY(1024 * 100, 'a'); // 1MB
 
 static Connection* gconnection = nullptr;
 void body_handler(const boost::system::error_code& ec, const char* buffer, size_t n)
@@ -53,7 +31,8 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     {
         BOOST_CHECK_EQUAL(body_read, EXPECTED_BODY);
         body_read.clear();
-        (gconnection->response() = Response(HTTP::HttpCode::Ok))
+        gconnection->response()
+            .setCode(HTTP::HttpCode::Ok)
             .setBody(EXPECTED_BODY)
             .connectionShouldBeClosed(true);
         gconnection->sendResponse();
@@ -68,14 +47,15 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     }
 }
 
-void handler(Connection* connection, Request&& request)
+void handler(Connection* connection)
 {
+    auto& request = connection->request();
     gconnection = connection;
     auto headers = request.getSortedHeaders();
     auto content_length = headers["Content-Length"];
     if (!content_length.empty())
     {
-        auto size = std::stoi(headers["Content-Length"]);
+        auto size = std::stoi(to_string(headers["Content-Length"]));
         connection->readBody(size, &body_handler);
     } else {
         connection->response()
@@ -87,6 +67,10 @@ void handler(Connection* connection, Request&& request)
 
 BOOST_AUTO_TEST_CASE(post_content)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::trace);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler);
@@ -97,6 +81,7 @@ BOOST_AUTO_TEST_CASE(post_content)
     HttpClient::Request request;
     request
         .url("http://localhost:8080")
+        .addHeader("Expect", "")
         .setContent(EXPECTED_BODY);
 
     auto resp = client.post(std::move(request));
@@ -139,6 +124,10 @@ static const std::string key =
 
 BOOST_AUTO_TEST_CASE(https_post_content)
 {
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::trace);
+    commonpp::core::enable_console_logging();
+
     HttpServer server;
     server.start();
     server.setSink(&handler);
@@ -150,10 +139,12 @@ BOOST_AUTO_TEST_CASE(https_post_content)
     request
         .allowInsecure()
         .url("https://localhost:8080")
+        .addHeader("Expect", "")
         .setContent(EXPECTED_BODY);
 
     auto resp = client.post(std::move(request));
     std::string str(resp.body.data(), resp.body.size());
 
+    BOOST_CHECK(resp.code == HTTP::HttpCode::Ok);
     BOOST_CHECK_EQUAL(EXPECTED_BODY, str);
 }

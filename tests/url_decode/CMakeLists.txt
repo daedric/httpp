@@ -6,4 +6,6 @@
 # Copyright (c) 2013 Thomas Sanchez.  All rights reserved.
 #
 
-ADD_HTTPP_TEST(decode decode)
+set(MODULE "url")
+add_definitions("-DBOOST_TEST_MODULE=${MODULE}")
+ADD_HTTPP_TEST(decode)
