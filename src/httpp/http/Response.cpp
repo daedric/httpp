@@ -88,9 +88,8 @@ Response& Response::addHeader(std::string k, std::string v)
 Response& Response::setBody(const boost::string_ref& body)
 {
     chunkedBodyCallback_ = nullptr;
-    body_.clear();
     body_.reserve(body.size());
-    std::copy(body.begin(), body.end(), std::back_inserter(body_));
+    body_.assign(std::begin(body), std::end(body));
     return *this;
 }
 
