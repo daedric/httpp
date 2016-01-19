@@ -105,5 +105,11 @@ to achieve between 160K and 180K request per second with the `ping` program
 options on the same machine, this means that HTTPP overhead is about 5 to 6
 micro seconds.
 
+With a slightly more complex server that decoded the request, performed some string manipulation 
+and returned a predefined json payload, we have seen approximately 220K requests per second on 
+identical hardware, using [wrk](https://github.com/wg/wrk) to drive the load testing. 5 threads were allocated
+to the httpp server, and 3 to wrk (with 500 concurrent connections).
+
 This is scaling as threads are added but I don't have enough proper machine to
 do a real benchmark.
+
