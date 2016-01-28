@@ -161,6 +161,12 @@ void HttpServer::stop()
 
 void HttpServer::bind(const std::string& address, const std::string& port)
 {
+    if (not running_)
+    {
+        throw std::logic_error(
+            "Http server must be started before bind is called");
+    }
+
     auto acc = HttpServer::bind(pool_->getService(), address, port);
     LOG(server_logger, debug) << "Bind address: " << address
                               << " on port: " << port;
@@ -173,6 +179,11 @@ void HttpServer::bind(const std::string& address,
                       SSLContext ctx,
                       const std::string& port)
 {
+    if (not running_)
+    {
+        throw std::logic_error(
+            "Http server must be started before bind is called");
+    }
 
     auto acc = HttpServer::bind(pool_->getService(), address, port);
     acc->setSSLContext(std::move(ctx));
