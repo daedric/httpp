@@ -39,12 +39,15 @@ FOREACH(p LIB BIN INCLUDE CMAKE)
     ENDIF()
 ENDFOREACH()
 
+set(CPP_VERSION "c++11" CACHE STRING "C++ version to use")
+set_property(CACHE CPP_VERSION PROPERTY STRINGS "c++11" "c++14" "c++1y")
 
 OPTION(BUILD_TESTS "Build the tests")
 OPTION(BUILD_EXAMPLES "Build the examples")
 OPTION(BUILD_SHARED_LIBS "Build shared lib instead of static ones")
 OPTION(PROFILE_HTTPP "Enable profiling")
 OPTION(LINK_OPTIMIZATION "Enable link time optimization")
+OPTION(SEARCH_COMMONPP "Should commonpp be looked for" ON)
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
@@ -85,18 +88,19 @@ MESSAGE(STATUS "Source Directory     : ${HTTPP_SOURCE_DIR}")
 
 IF (${CMAKE_CXX_COMPILER_ID} MATCHES GNU OR ${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
   INCLUDE(CheckCXXCompilerFlag)
-  CHECK_CXX_COMPILER_FLAG(-std=c++11 HAVE_STD11)
+  CHECK_CXX_COMPILER_FLAG("-std=${CPP_VERSION}" HAVE_CPP_VERSION)
   CHECK_CXX_COMPILER_FLAG(-Wno-unused-local-typedefs HAVE_NOUNUSED_LOCAL_TYPEDEF)
 
   IF (HAVE_NOUNUSED_LOCAL_TYPEDEF)
         ADD_DEFINITIONS("-Wno-unused-local-typedefs")
   ENDIF()
 
-  IF (NOT HAVE_STD11)
-      MESSAGE(FATAL_ERROR "No advanced standard C++ support (-std=c++11 not defined).")
-  ENDIF()
+  if (NOT HAVE_CPP_VERSION)
+      message(FATAL_ERROR "No advanced standard C++ support (-std=${CPP_VERSION} not defined).")
+  endif()
 
-  ADD_DEFINITIONS("-std=c++11 -Wextra -Wall")
+  add_definitions("-std=${CPP_VERSION}")
+  add_definitions("-Wextra -Wall")
   IF (${CMAKE_BUILD_TYPE} MATCHES "DEBUG")
       ADD_DEFINITIONS("-ggdb -g3")
   ENDIF ()
@@ -140,25 +144,27 @@ IF (WIN32 AND CMAKE_SYSTEM_VERSION)
 endif()
 
 # commonpp
+# micro hack to allow commonpp and httpp to be configured separatly within one project
+IF (${SEARCH_COMMONPP})
+    FIND_PACKAGE(commonpp
+        PATHS
+            /usr/lib/CMake/
+            /usr/local/lib/CMake/
+            $ENV{COMMONPP_CMAKE_DIR}
+        PATH_SUFFIXES
+            commonpp
+        QUIET
+    )
 
-FIND_PACKAGE(commonpp
-    PATHS
-        /usr/lib/CMake/
-        /usr/local/lib/CMake/
-        $ENV{COMMONPP_CMAKE_DIR}
-    PATH_SUFFIXES
-        commonpp
-    QUIET
-)
-
-IF (NOT ${commonpp_FOUND})
-    MESSAGE(STATUS "Use bundled commonpp")
-    ADD_SUBDIRECTORY(third_party/commonpp ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp)
-    INCLUDE_DIRECTORIES(third_party/commonpp/include ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp/include)
-    SET(commonpp_LIBRARIES commonpp)
-    SET(EXPORT_commonpp TRUE)
-ELSE ()
-    INCLUDE_DIRECTORIES(${commonpp_INCLUDE_DIRS})
+    IF (NOT ${commonpp_FOUND})
+        MESSAGE(STATUS "Use bundled commonpp")
+        ADD_SUBDIRECTORY(third_party/commonpp ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp)
+        INCLUDE_DIRECTORIES(third_party/commonpp/include ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp/include)
+        SET(commonpp_LIBRARIES commonpp)
+        SET(EXPORT_commonpp TRUE)
+    ELSE ()
+        INCLUDE_DIRECTORIES(${commonpp_INCLUDE_DIRS})
+    ENDIF()
 ENDIF()
 
 # Actual Stuff ################################################################
