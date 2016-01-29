@@ -21,68 +21,45 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::HttpCode;
 
-void body_handler(Connection* connection,
-                  const boost::system::error_code& ec,
-                  const char* buffer,
-                  size_t n)
-{
-    std::cout << "Received body part" << std::endl;
-    if (ec == boost::asio::error::eof)
-    {
-        connection->response()
-            .setCode(HttpCode::Ok)
-            .setBody("request received entirely");
-        HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(),
-                                                 connection->response());
-        connection->sendResponse(); // connection pointer may become invalid
-
-        auto end = Request::Clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
-            end - connection->request().received);
-        std::cout << "Request handled in: " << elapsed.count() << "us"
-                  << std::endl;
-    }
-    else if (ec)
-    {
-        throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-    }
-    else
-    {
-        std::cout.write(buffer,n) << std::endl;
-    }
-}
-
 void handler(Connection* connection)
 {
-    auto& request = connection->request();
-    std::cout << "got a request" << std::endl;
-    auto headers = request.getSortedHeaders();
-    auto const& content_length = headers["Content-Length"];
-    if (content_length.empty())
-    {
+    read_everything(connection, [](std::unique_ptr<HTTPP::HTTP::helper::ReadEverything> hndl,
+                                   const boost::system::error_code& ec) {
+        const auto& body = hndl->body;
+        const auto& connection = hndl->connection;
+        const auto& request  = connection->request();
+
+        if (ec)
+        {
+            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+        }
+
         std::ostringstream out;
         out << request;
-        connection->response()
-            .setCode(HttpCode::Ok)
-            .setBody("request received: " + out.str());
+
+        if (body.empty())
+        {
+            connection->response()
+                .setCode(HttpCode::Ok)
+                .setBody("request received: " + out.str());
+        }
+        else
+        {
+            connection->response()
+                .setCode(HttpCode::Ok)
+                .setBody("request received entirely: " + out.str() +
+                         ", body size: " + std::to_string(body.size()));
+        }
+
         HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
         connection->sendResponse(); // connection pointer may become invalid
+
         auto end = Request::Clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
             end - request.received);
         std::cout << "Request handled in: " << elapsed.count() << "us"
                   << std::endl;
-    }
-    else
-    {
-        auto size = std::stoi(to_string(content_length));
-        connection->readBody(size,
-                             std::bind(&body_handler,
-                                     connection,
-                                     std::placeholders::_1,
-                                     std::placeholders::_2,
-                                     std::placeholders::_3));
-    }
+    });
 }
 
 int main(int, char**)

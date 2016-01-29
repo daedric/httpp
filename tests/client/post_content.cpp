@@ -22,47 +22,33 @@ using HTTPP::HTTP::Connection;
 
 static const std::string EXPECTED_BODY(1024 * 100, 'a'); // 1MB
 
-static Connection* gconnection = nullptr;
-void body_handler(const boost::system::error_code& ec, const char* buffer, size_t n)
-{
-    static std::string body_read;
-
-    if (ec == boost::asio::error::eof)
-    {
-        BOOST_CHECK_EQUAL(body_read, EXPECTED_BODY);
-        body_read.clear();
-        gconnection->response()
-            .setCode(HTTP::HttpCode::Ok)
-            .setBody(EXPECTED_BODY)
-            .connectionShouldBeClosed(true);
-        gconnection->sendResponse();
-    }
-    else if (ec)
-    {
-        throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-    }
-    else
-    {
-        body_read.append(buffer, n);
-    }
-}
-
 void handler(Connection* connection)
 {
-    auto& request = connection->request();
-    gconnection = connection;
-    auto headers = request.getSortedHeaders();
-    auto content_length = headers["Content-Length"];
-    if (!content_length.empty())
-    {
-        auto size = std::stoi(to_string(headers["Content-Length"]));
-        connection->readBody(size, &body_handler);
-    } else {
-        connection->response()
-            .setCode(HTTP::HttpCode::BadRequest)
-            .setBody("Expected body!");
-        connection->sendResponse();
-    }
+    read_everything(connection, [](std::unique_ptr<HTTP::helper::ReadEverything> hndl,
+                                   const boost::system::error_code& ec) {
+        if (ec)
+        {
+            throw UTILS::convert_boost_ec_to_std_ec(ec);
+        }
+
+        if (hndl->body.empty())
+        {
+            hndl->connection->response()
+                .setCode(HTTP::HttpCode::BadRequest)
+                .setBody("Expected body!");
+            hndl->connection->sendResponse();
+            return;
+        }
+
+        BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()),
+                          EXPECTED_BODY);
+
+        hndl->connection->response()
+            .setCode(HTTP::HttpCode::Ok)
+            .connectionShouldBeClosed(true)
+            .setBody(EXPECTED_BODY);
+        hndl->connection->sendResponse();
+    });
 }
 
 BOOST_AUTO_TEST_CASE(post_content)

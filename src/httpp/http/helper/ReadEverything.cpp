@@ -11,8 +11,13 @@ namespace helper
 
 ReadEverything::ReadEverything(
     Connection* conn,
-    std::function<void(ReadEverything*, const boost::system::error_code&)> cb)
+    std::function<void(std::unique_ptr<ReadEverything>,
+                       const boost::system::error_code&)> cb)
 : connection(conn), cb(std::move(cb))
+{
+}
+
+void ReadEverything::start()
 {
     auto& request = connection->request();
     auto it = std::find_if(
@@ -32,7 +37,7 @@ ReadEverything::ReadEverything(
     }
     else
     {
-        cb(this, boost::asio::error::eof);
+        cb(std::unique_ptr<ReadEverything>(this), boost::system::error_code());
     }
 }
 
@@ -40,9 +45,9 @@ void ReadEverything::operator()(boost::system::error_code const& errc,
                                 const char* data,
                                 size_t len)
 {
-    if (errc)
+    if (errc || data == nullptr)
     {
-        cb(this, errc);
+        cb(std::unique_ptr<ReadEverything>(this), errc);
     }
     else
     {

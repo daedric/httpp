@@ -84,39 +84,21 @@ BOOST_AUTO_TEST_CASE(pipeline)
 }
 
 size_t total_size = 0;
-void body_handler(const Request&,
-                  Connection* connection,
-                  const boost::system::error_code& ec,
-                  const char*,
-                  size_t n)
-{
-    if (ec == boost::asio::error::eof)
-    {
-        connection->response().setCode(HTTP::HttpCode::Ok).setBody("");
-        connection->sendResponse(); // connection pointer may become invalid
-    }
-    else if (ec)
-    {
-        throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-    }
-    else
-    {
-        total_size += n;
-    }
-}
 
 void handler_w_body(Connection* connection)
 {
-    auto& request = connection->request();
-    auto headers = request.getSortedHeaders();
-    auto const& content_length = headers["Content-Length"];
-    auto size = std::stoi(to_string(content_length));
-    connection->readBody(size, std::bind(&body_handler, std::cref(request),
-                                         connection, std::placeholders::_1,
-                                         std::placeholders::_2,
-                                         std::placeholders::_3));
+    read_everything(
+        connection, [](std::unique_ptr<HTTP::helper::ReadEverything> hndl,
+                       const boost::system::error_code& ec) {
+            if (ec)
+            {
+                throw UTILS::convert_boost_ec_to_std_ec(ec);
+            }
+            total_size += hndl->body.size();
+            hndl->connection->response().setCode(HTTP::HttpCode::Ok).setBody("");
+            hndl->connection->sendResponse();
+        });
 }
-
 
 BOOST_AUTO_TEST_CASE(pipeline_with_body)
 {

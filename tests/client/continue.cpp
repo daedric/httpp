@@ -20,38 +20,28 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-static Connection* gconnection = nullptr;
-void body_handler(const boost::system::error_code& ec, const char* buffer, size_t n)
-{
-    static std::string body_read;
-
-    if (ec == boost::asio::error::eof)
-    {
-        (gconnection->response() =
-            Response(HTTP::HttpCode::Ok))
-                .setBody("Body received");
-        gconnection->sendResponse();
-    }
-    else if (ec)
-    {
-        throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-    }
-    else
-    {
-        body_read.append(buffer, n);
-    }
-}
-
 void handler(Connection* connection)
 {
-    gconnection = connection;
     auto& request = connection->request();
     auto headers = request.getSortedHeaders();
-    auto size = std::stoi(to_string(headers["Content-Length"]));
     if (headers["Expect"] == "100-continue")
     {
-        connection->sendContinue([connection, size]
-                                 { connection->readBody(size, &body_handler); });
+        connection->sendContinue([connection] {
+            read_everything(
+                connection,
+                [](std::unique_ptr<HTTPP::HTTP::helper::ReadEverything> hndl,
+                   const boost::system::error_code& ec) {
+
+                    if (ec)
+                    {
+                        throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+                    }
+                    hndl->connection->response()
+                        .setCode(HTTP::HttpCode::Ok)
+                        .setBody("Body received");
+                    hndl->connection->sendResponse();
+                });
+        });
     }
 }
 

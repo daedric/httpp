@@ -20,34 +20,21 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-static Connection* gconnection = nullptr;
-void body_handler(const boost::system::error_code& ec, const char* buffer, size_t n)
-{
-    static std::string body_read;
-
-    if (ec == boost::asio::error::eof)
-    {
-        (gconnection->response() = Response(HTTP::HttpCode::Ok))
-            .connectionShouldBeClosed(true);
-        gconnection->sendResponse();
-    }
-    else if (ec)
-    {
-        throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-    }
-    else
-    {
-        body_read.append(buffer, n);
-    }
-}
-
 void handler(Connection* connection)
 {
-    auto& request = connection->request();
-    gconnection = connection;
-    auto headers = request.getSortedHeaders();
-    auto size = std::stoi(to_string(headers["Content-Length"]));
-    connection->readBody(size, &body_handler);
+    read_everything(connection, [](std::unique_ptr<HTTP::helper::ReadEverything> hndl,
+                                   const boost::system::error_code& ec) {
+        if (ec)
+        {
+            throw UTILS::convert_boost_ec_to_std_ec(ec);
+        }
+
+        hndl->connection->response()
+            .setCode(HTTP::HttpCode::Ok)
+            .connectionShouldBeClosed(true)
+            .setBody("");
+        hndl->connection->sendResponse();
+    });
 }
 
 BOOST_AUTO_TEST_CASE(post_data)

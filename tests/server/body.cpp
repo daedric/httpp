@@ -47,7 +47,7 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
 
     std::cout << "Received body part" << std::endl;
 
-    if (ec == boost::asio::error::eof)
+    if (buffer == nullptr)
     {
         std::cout << "Check" << std::endl;
         BOOST_CHECK_EQUAL(body_read, BODY);
@@ -112,11 +112,14 @@ BOOST_AUTO_TEST_CASE(read_body)
 
 static void handler2(Connection* conn)
 {
-    read_everything(conn, [](HTTP::helper::ReadEverything* handler,
+    read_everything(conn, [](std::unique_ptr<HTTP::helper::ReadEverything> handler,
                              const boost::system::error_code& ec) {
-        std::unique_ptr<HTTP::helper::ReadEverything> raii(handler);
-
-        if (ec == boost::asio::error::eof)
+        if (ec)
+        {
+            Connection::releaseFromHandler(handler->connection);
+            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+        }
+        else
         {
             std::cout << "Check" << std::endl;
             std::string str(handler->body.data(), handler->body.size());
@@ -126,15 +129,10 @@ static void handler2(Connection* conn)
                 .connectionShouldBeClosed(true);
             handler->connection->sendResponse();
         }
-        else
-        {
-            Connection::releaseFromHandler(handler->connection);
-            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-        }
     });
 }
 
-BOOST_AUTO_TEST_CASE(read_everything)
+BOOST_AUTO_TEST_CASE(read_everything1)
 {
     BODY.clear();
     for (int i = 0; i < BODY_SIZE; ++i)
@@ -165,5 +163,44 @@ BOOST_AUTO_TEST_CASE(read_everything)
     std::cout << line << std::endl;
 
     BOOST_CHECK_EQUAL(line, "HTTP/1.1 200 Ok");
+}
+
+static void handler3(Connection* conn)
+{
+    read_everything(conn, [](std::unique_ptr<HTTP::helper::ReadEverything> handler,
+                             const boost::system::error_code& ec) {
+        if (ec)
+        {
+            Connection::releaseFromHandler(handler->connection);
+        }
+        else
+        {
+            BOOST_REQUIRE(false);
+        }
+    });
+}
+
+BOOST_AUTO_TEST_CASE(read_everything_with_err)
+{
+    BODY.clear();
+    for (int i = 0; i < BODY_SIZE / 2; ++i)
+    {
+        BODY += char('a');
+    }
+
+    HttpServer server;
+    server.start();
+    server.setSink(&handler3);
+    server.bind("localhost");
+
+    using boost::asio::ip::tcp;
+    boost::asio::io_service io_service;
+    tcp::socket s(io_service);
+    tcp::resolver resolver(io_service);
+    boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
+    boost::asio::write(s, boost::asio::buffer(REQUEST));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    boost::asio::write(s, boost::asio::buffer(BODY));
+    s.close();
 
 }

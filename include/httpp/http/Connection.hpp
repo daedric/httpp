@@ -108,7 +108,7 @@ public:
         if (!body_size)
         {
             disown();
-            callable(boost::asio::error::eof, nullptr, 0);
+            callable(boost::system::error_code(), nullptr, 0);
             return;
         }
 
