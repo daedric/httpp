@@ -46,7 +46,7 @@ class Connection
     using ThreadPool = commonpp::thread::ThreadPool;
 
 public:
-    static const size_t BUF_SIZE;
+    static constexpr size_t BUF_SIZE = BUFSIZ;
     using Callback = std::function<void ()>;
 
     Connection(HTTPP::HttpServer& handler,
@@ -78,7 +78,7 @@ public:
         return request_;
     }
 
-    template <typename Callable>
+    template <typename Callable, size_t BUFFER_SIZE = BUF_SIZE>
     void readBody(size_t body_size, Callable&& callable)
     {
         if (!own())
@@ -112,7 +112,7 @@ public:
             return;
         }
 
-        auto buf_size = std::min(BUF_SIZE, body_size);
+        auto buf_size = std::min(BUFFER_SIZE, body_size);
 
         body_buffer_.resize(buf_size);
 

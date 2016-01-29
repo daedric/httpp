@@ -30,9 +30,6 @@ DECLARE_LOGGER(conn_logger_, "httpp::HttpServer::Connection");
 
 using namespace connection_detail;
 
-const size_t Connection::BUF_SIZE = 8192;
-
-
 Connection::Connection(HTTPP::HttpServer& handler,
                        boost::asio::io_service& service,
                        boost::asio::ssl::context* ctx
