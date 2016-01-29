@@ -69,7 +69,7 @@ HttpClient::handle_request(HTTP::Method method,
     }
     else
     {
-        fut = std::move(connection->promise.get_future());
+        fut = connection->promise.get_future();
     }
 
     manager->handleRequest(method, std::move(connection));
