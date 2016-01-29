@@ -27,15 +27,16 @@ void handler(Connection* connection)
     if (headers["Expect"] == "100-continue")
     {
         connection->sendContinue([connection] {
-            read_everything(
+            read_whole_request(
                 connection,
-                [](std::unique_ptr<HTTPP::HTTP::helper::ReadEverything> hndl,
+                [](std::unique_ptr<HTTPP::HTTP::helper::ReadWholeRequest> hndl,
                    const boost::system::error_code& ec) {
 
                     if (ec)
                     {
                         throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
                     }
+
                     hndl->connection->response()
                         .setCode(HTTP::HttpCode::Ok)
                         .setBody("Body received");

@@ -23,8 +23,9 @@ using HTTPP::HTTP::HttpCode;
 
 void handler(Connection* connection)
 {
-    read_everything(connection, [](std::unique_ptr<HTTPP::HTTP::helper::ReadEverything> hndl,
-                                   const boost::system::error_code& ec) {
+    read_whole_request(connection, [](std::unique_ptr<
+                                          HTTPP::HTTP::helper::ReadWholeRequest> hndl,
+                                      const boost::system::error_code& ec) {
         const auto& body = hndl->body;
         const auto& connection = hndl->connection;
         const auto& request  = connection->request();

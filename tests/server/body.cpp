@@ -112,8 +112,8 @@ BOOST_AUTO_TEST_CASE(read_body)
 
 static void handler2(Connection* conn)
 {
-    read_everything(conn, [](std::unique_ptr<HTTP::helper::ReadEverything> handler,
-                             const boost::system::error_code& ec) {
+    read_whole_request(conn, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
+                                const boost::system::error_code& ec) {
         if (ec)
         {
             Connection::releaseFromHandler(handler->connection);
@@ -167,17 +167,18 @@ BOOST_AUTO_TEST_CASE(read_everything1)
 
 static void handler3(Connection* conn)
 {
-    read_everything(conn, [](std::unique_ptr<HTTP::helper::ReadEverything> handler,
-                             const boost::system::error_code& ec) {
-        if (ec)
-        {
-            Connection::releaseFromHandler(handler->connection);
-        }
-        else
-        {
-            BOOST_REQUIRE(false);
-        }
-    });
+    read_whole_request(
+        conn, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
+                 const boost::system::error_code& ec) {
+            if (ec)
+            {
+                Connection::releaseFromHandler(handler->connection);
+            }
+            else
+            {
+                BOOST_REQUIRE(false);
+            }
+        });
 }
 
 BOOST_AUTO_TEST_CASE(read_everything_with_err)
@@ -203,4 +204,60 @@ BOOST_AUTO_TEST_CASE(read_everything_with_err)
     boost::asio::write(s, boost::asio::buffer(BODY));
     s.close();
 
+}
+
+static void handler4(Connection* conn)
+{
+    read_whole_request(conn, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
+                                const boost::system::error_code& ec) {
+        if (ec == boost::asio::error::message_size)
+        {
+            handler->connection->response().connectionShouldBeClosed(true);
+            handler->connection->sendResponse();
+            return;
+        }
+        else if (ec)
+        {
+            Connection::releaseFromHandler(handler->connection);
+            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+        }
+        else
+        {
+            BOOST_REQUIRE(false);
+            Connection::releaseFromHandler(handler->connection);
+        }
+    }, 10);
+}
+
+BOOST_AUTO_TEST_CASE(body_too_big)
+{
+    BODY.clear();
+    for (int i = 0; i < BODY_SIZE; ++i)
+    {
+        BODY += char('a');
+    }
+
+    HttpServer server;
+    server.start();
+    server.setSink(&handler4);
+    server.bind("localhost");
+
+    using boost::asio::ip::tcp;
+    boost::asio::io_service io_service;
+    tcp::socket s(io_service);
+    tcp::resolver resolver(io_service);
+    boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
+    boost::asio::write(s, boost::asio::buffer(REQUEST));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    boost::asio::write(s, boost::asio::buffer(BODY));
+
+    boost::asio::streambuf b;
+    boost::asio::read_until(s, b, "\r\n");
+    std::istream is(&b);
+    std::string line;
+    std::getline(is, line);
+    boost::trim(line);
+    std::cout << line << std::endl;
+
+    BOOST_CHECK_EQUAL(line, "HTTP/1.1 413 RequestEntityTooLarge");
 }

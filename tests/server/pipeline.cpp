@@ -87,8 +87,8 @@ size_t total_size = 0;
 
 void handler_w_body(Connection* connection)
 {
-    read_everything(
-        connection, [](std::unique_ptr<HTTP::helper::ReadEverything> hndl,
+    read_whole_request(
+        connection, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> hndl,
                        const boost::system::error_code& ec) {
             if (ec)
             {

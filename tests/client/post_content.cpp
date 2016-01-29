@@ -24,8 +24,8 @@ static const std::string EXPECTED_BODY(1024 * 100, 'a'); // 1MB
 
 void handler(Connection* connection)
 {
-    read_everything(connection, [](std::unique_ptr<HTTP::helper::ReadEverything> hndl,
-                                   const boost::system::error_code& ec) {
+    read_whole_request(connection, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> hndl,
+                                      const boost::system::error_code& ec) {
         if (ec)
         {
             throw UTILS::convert_boost_ec_to_std_ec(ec);
