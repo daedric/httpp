@@ -27,7 +27,7 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 using HTTPP::HTTP::Connection;
 
-#define BODY_SIZE 8092
+#define BODY_SIZE 8192
 
 static const std::string REQUEST =
     "POST / HTTP/1.1\r\n"
@@ -76,8 +76,9 @@ void handler(Connection* connection)
     connection->readBody(size, &body_handler);
 }
 
-BOOST_AUTO_TEST_CASE(listener)
+BOOST_AUTO_TEST_CASE(read_body)
 {
+    BODY.clear();
     for (int i = 0; i < BODY_SIZE; ++i)
     {
         BODY += char('a');
@@ -109,3 +110,60 @@ BOOST_AUTO_TEST_CASE(listener)
 
 }
 
+static void handler2(Connection* conn)
+{
+    read_everything(conn, [](HTTP::helper::ReadEverything* handler,
+                             const boost::system::error_code& ec) {
+        std::unique_ptr<HTTP::helper::ReadEverything> raii(handler);
+
+        if (ec == boost::asio::error::eof)
+        {
+            std::cout << "Check" << std::endl;
+            std::string str(handler->body.data(), handler->body.size());
+            BOOST_CHECK_EQUAL(str, BODY);
+            handler->connection->response()
+                .setCode(HTTP::HttpCode::Ok)
+                .connectionShouldBeClosed(true);
+            handler->connection->sendResponse();
+        }
+        else
+        {
+            Connection::releaseFromHandler(handler->connection);
+            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+        }
+    });
+}
+
+BOOST_AUTO_TEST_CASE(read_everything)
+{
+    BODY.clear();
+    for (int i = 0; i < BODY_SIZE; ++i)
+    {
+        BODY += char('a');
+    }
+
+    HttpServer server;
+    server.start();
+    server.setSink(&handler2);
+    server.bind("localhost");
+
+    using boost::asio::ip::tcp;
+    boost::asio::io_service io_service;
+    tcp::socket s(io_service);
+    tcp::resolver resolver(io_service);
+    boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
+    boost::asio::write(s, boost::asio::buffer(REQUEST));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    boost::asio::write(s, boost::asio::buffer(BODY));
+
+    boost::asio::streambuf b;
+    boost::asio::read_until(s, b, "\r\n");
+    std::istream is(&b);
+    std::string line;
+    std::getline(is, line);
+    boost::trim(line);
+    std::cout << line << std::endl;
+
+    BOOST_CHECK_EQUAL(line, "HTTP/1.1 200 Ok");
+
+}

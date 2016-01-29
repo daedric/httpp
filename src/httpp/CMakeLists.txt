@@ -11,6 +11,7 @@ SET(SOURCES
     HttpServer.cpp
     HttpClient.cpp
 
+    http/helper/ReadEverything.cpp
     http/Connection.cpp
     http/Parser.cpp
     http/parser_ragel.cpp
