@@ -13,6 +13,9 @@
 
 # include <type_traits>
 
+# include <httpp/detail/generated/config.hpp>
+# include <httpp/version.hpp>
+
 # ifndef HTTPP_USE_BOOST_PROMISE
 #  define HTTPP_USE_BOOST_PROMISE 1
 # endif

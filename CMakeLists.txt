@@ -48,6 +48,7 @@ OPTION(BUILD_SHARED_LIBS "Build shared lib instead of static ones")
 OPTION(PROFILE_HTTPP "Enable profiling")
 OPTION(LINK_OPTIMIZATION "Enable link time optimization")
 OPTION(SEARCH_COMMONPP "Should commonpp be looked for" ON)
+OPTION(USE_BOOST_PROMISE "Use boost promise instead of the stl one" ON)
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
@@ -76,6 +77,9 @@ ELSE()
     MESSAGE(STATUS "HTTPP PARSER Backend : Ragel (Defaulted)")
 ENDIF()
 
+IF (${USE_BOOST_PROMISE})
+    SET(HTTPP_USE_BOOST_PROMISE 1)
+ENDIF()
 
 MESSAGE(STATUS "Cmake Version        : ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
 MESSAGE(STATUS "HTTPP Version        : ${HTTPP_VERSION}")
@@ -237,6 +241,7 @@ ENDIF()
 
 
 INCLUDE_DIRECTORIES(include/)
+INCLUDE_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/include/")
 ADD_SUBDIRECTORY(include/)
 ADD_SUBDIRECTORY(src/)
 
