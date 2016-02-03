@@ -10,11 +10,11 @@
 
 #include "Manager.hpp"
 
-#include <exception>
-#include <stdexcept>
 #include <atomic>
-#include <mutex>
+#include <exception>
 #include <functional>
+#include <mutex>
+#include <stdexcept>
 
 #include "httpp/utils/Exception.hpp"
 #include "Connection.hpp"

@@ -12,8 +12,8 @@
 
 #include <sstream>
 
-#include "httpp/detail/config.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/detail/config.hpp"
 #include "httpp/http/Parser.hpp"
 #include "httpp/utils/VectorStreamBuf.hpp"
 
@@ -26,7 +26,7 @@ namespace HTTP
 namespace connection_detail
 {
 DECLARE_LOGGER(conn_logger_, "httpp::HttpServer::Connection");
-}
+} // namespace connection_detail
 
 using namespace connection_detail;
 

@@ -13,7 +13,9 @@
 
 # include <type_traits>
 
-# define HTTPP_USE_BOOST_PROMISE 1
+# ifndef HTTPP_USE_BOOST_PROMISE
+#  define HTTPP_USE_BOOST_PROMISE 1
+# endif
 
 # if HTTPP_USE_BOOST_PROMISE
 #  include <boost/thread/future.hpp>
