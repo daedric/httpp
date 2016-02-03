@@ -13,6 +13,7 @@
 #include <thread>
 
 #include <boost/test/unit_test.hpp>
+#include <commonpp/core/string/stringify.hpp>
 
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
@@ -29,7 +30,8 @@ void handler(Connection* connection)
     auto headers = request.getSortedHeaders();
 
     auto const& host = headers["Host"];
-    auto port = stoi(to_string(host.substr(host.find(':') + 1)));
+    auto port =
+        std::stoi(commonpp::string::stringify(host.substr(host.find(':') + 1)));
 
     if (port < 8084)
     {

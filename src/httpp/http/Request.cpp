@@ -21,7 +21,7 @@ namespace HTTP
 std::ostream& operator<<(std::ostream& os, const Request& request)
 {
     os << to_string(request.method) << " ";
-    std::string uri = to_string(request.uri);
+    std::string uri = commonpp::string::stringify(request.uri);
     if (!request.query_params.empty())
     {
         uri += '?';

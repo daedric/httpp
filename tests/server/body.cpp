@@ -18,6 +18,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/preprocessor/stringize.hpp>
 
+#include <commonpp/core/string/stringify.hpp>
+
 #include "httpp/HttpServer.hpp"
 #include "httpp/utils/Exception.hpp"
 
@@ -72,7 +74,8 @@ void handler(Connection* connection)
     gconnection = connection;
     std::cout << "got a request" << std::endl;
     auto headers = request.getSortedHeaders();
-    auto size = std::stoi(to_string(headers["Content-Length"]));
+    auto size =
+        std::stoi(commonpp::string::stringify(headers["Content-Length"]));
     connection->readBody(size, &body_handler);
 }
 
