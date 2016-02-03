@@ -31,9 +31,10 @@ A C++11 compliant compiler is also required.
 BUILD
 =====
 
+    $> mkdir -p $HTTPP_PATH && cd $HTTPP_PATH
+    $> git clone https://github.com/daedric/httpp.git .
     $> git submodule update --init
-    $> mkdir build
-    $> cd build
+    $> mkdir -p $HTTPP_BUILD_PATH && cd $HTTPP_BUILD_PATH
     $> cmake $HTTPP_PATH
     $> make
 
