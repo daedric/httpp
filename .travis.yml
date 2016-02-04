@@ -31,7 +31,6 @@ env:
         - BUILD_EXAMPLES="ON" BUILD_TESTS="ON" CMAKE_BUILD_TYPE="Release" HTTPP_PARSER_BACKEND=Stream USE_BOOST_PROMISE=OFF
         - BUILD_EXAMPLES="ON" BUILD_TESTS="ON" CMAKE_BUILD_TYPE="Debug"   HTTPP_PARSER_BACKEND=Stream USE_BOOST_PROMISE=OFF
 
-
 addons:
     apt:
         packages:
@@ -51,8 +50,8 @@ before_install:
 
 before_script:
     # update compilers
-    - if [ "${CXX}" == "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-    - if [ "${CXX}" == "clang++" ]; then export CXX="clang++-3.6" CC="clang-3.6"; fi
+    - if [ "$TRAVIS_OS_NAME" != "osx" && "${CXX}" == "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+    - if [ "$TRAVIS_OS_NAME" != "osx" && "${CXX}" == "clang++" ]; then export CXX="clang++-3.6" CC="clang-3.6"; fi
 
 script:
     - rm -rf build
