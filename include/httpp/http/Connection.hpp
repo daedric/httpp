@@ -78,8 +78,57 @@ public:
         return request_;
     }
 
+    template <typename Callable>
+    void read(size_t size, char* buffer, Callable&& callable)
+    {
+        if (!own())
+        {
+            throw std::logic_error("Invalid connection state");
+        }
+
+        size_t offset = 0;
+
+        if (not body_buffer_.empty())
+        {
+            if (size <= body_buffer_.size())
+            {
+                std::copy(begin(body_buffer_), begin(body_buffer_) + size,
+                          buffer);
+                body_buffer_.erase(begin(body_buffer_),
+                                   begin(body_buffer_) + size);
+                disown();
+                callable(boost::system::error_code());
+                return;
+            }
+            else
+            {
+                std::copy(begin(body_buffer_), end(body_buffer_), buffer);
+                size -= body_buffer_.size();
+                offset += body_buffer_.size();
+                body_buffer_.clear();
+                body_buffer_.clear();
+            }
+        }
+
+        async_read(boost::asio::buffer(buffer + offset, size),
+                   [buffer, size, callable,
+                    this](const boost::system::error_code& ec, size_t) {
+                       disown();
+
+                       if (ec)
+                       {
+                           LOG(connection_detail::conn_logger_, error)
+                               << "Error detected while reading the body";
+                           callable(ec);
+                           return;
+                       }
+
+                       callable(boost::system::error_code());
+                   });
+    }
+
     template <typename Callable, size_t BUFFER_SIZE = BUF_SIZE>
-    void readBody(size_t body_size, Callable&& callable)
+    void read(size_t body_size, Callable&& callable)
     {
         if (!own())
         {
@@ -130,7 +179,7 @@ public:
                             }
 
                             body_buffer_.resize(size);
-                            readBody(body_size, callable);
+                            read(body_size, callable);
                         });
     }
 
@@ -153,19 +202,31 @@ private:
     void read_request();
     void recycle();
 
-    template <typename Buffer, typename Handler>
-    void async_read_some(Buffer&& buffer, Handler&& handler)
+    template <typename... Args>
+    void async_read_some(Args&&... a)
     {
         std::unique_lock<std::mutex> lock(mutex_);
         if (ssl_socket_)
         {
-            ssl_socket_->async_read_some(std::forward<Buffer>(buffer),
-                                         std::forward<Handler>(handler));
+            ssl_socket_->async_read_some(std::forward<Args>(a)...);
         }
         else
         {
-            socket_.async_read_some(std::forward<Buffer>(buffer),
-                                    std::forward<Handler>(handler));
+            socket_.async_read_some(std::forward<Args>(a)...);
+        }
+    }
+
+    template <typename... Args>
+    void async_read(Args&&... a)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (ssl_socket_)
+        {
+            boost::asio::async_read(*ssl_socket_, std::forward<Args>(a)...);
+        }
+        else
+        {
+            boost::asio::async_read(socket_, std::forward<Args>(a)...);
         }
     }
 
