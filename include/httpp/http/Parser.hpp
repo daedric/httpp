@@ -30,7 +30,7 @@ public:
     Parser() = delete;
     static bool isComplete(const char* buffer, size_t n);
 
-# if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
+# if HTTPP_PARSER_BACKEND_IS_RAGEL
     static bool parse(const char* start,
                       const char* end,
                       size_t& consumed,

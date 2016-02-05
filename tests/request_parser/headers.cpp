@@ -27,7 +27,7 @@ ostream& operator<<(ostream& os, const HTTPP::HTTP::Header& h)
 }
 }
 
-#if HTTPP_PARSER_BACKEND == HTTPP_STREAM_BACKEND
+#if HTTPP_PARSER_BACKEND_IS_STREAM
 BOOST_AUTO_TEST_CASE(parser_streambuf)
 {
     const std::string query = "GET /test?1234=4321 HTTP/1.1\r\n"

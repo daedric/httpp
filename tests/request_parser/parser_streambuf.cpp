@@ -17,7 +17,7 @@
 #include <boost/test/unit_test.hpp>
 #include "httpp/http/Request.hpp"
 
-#if HTTPP_PARSER_BACKEND == HTTPP_STREAM_BACKEND
+#if HTTPP_PARSER_BACKEND_IS_STREAM
 
 using HTTPP::UTILS::VectorStreamBuf;
 using HTTPP::HTTP::Request;
