@@ -16,6 +16,7 @@
 # include <iosfwd>
 # include <chrono>
 
+# include <httpp/detail/config.hpp>
 # include "Protocol.hpp"
 # include "httpp/utils/SortedVectorKP.hpp"
 
@@ -42,7 +43,7 @@ struct Request
     TimePoint received = Clock::now();
     Method method;
 
-# if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
+# if HTTPP_PARSER_BACKEND_IS_RAGEL
     boost::string_ref uri;
 # else
     std::string uri;

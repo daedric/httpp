@@ -76,7 +76,7 @@ void handler(Connection* connection)
     auto headers = request.getSortedHeaders();
     auto size =
         std::stoi(commonpp::string::stringify(headers["Content-Length"]));
-    connection->readBody(size, &body_handler);
+    connection->read(size, &body_handler);
 }
 
 BOOST_AUTO_TEST_CASE(read_body)

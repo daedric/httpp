@@ -9,8 +9,25 @@ namespace HTTP
 namespace helper
 {
 
-ReadWholeRequest::ReadWholeRequest(Connection* conn, Callback cb, size_t size_limit)
-: connection(conn), cb(std::move(cb)), size_limit(size_limit)
+ReadWholeRequest::ReadWholeRequest(Connection* conn,
+                                   std::vector<char>& dest,
+                                   Callback cb,
+                                   size_t size_limit)
+: connection(conn)
+, cb(std::move(cb))
+, body(dest)
+, size_limit(size_limit)
+{
+}
+
+ReadWholeRequest::ReadWholeRequest(Connection* conn,
+                                   Callback cb,
+                                   size_t size_limit)
+: connection(conn)
+, cb(std::move(cb))
+, fallback(new std::vector<char>())
+, body(*fallback)
+, size_limit(size_limit)
 {
 }
 
@@ -41,7 +58,8 @@ void ReadWholeRequest::start()
 
     if (size)
     {
-        connection->readBody(size, std::ref(*this));
+        body.resize(size);
+        connection->read(size, body.data(), std::ref(*this));
     }
     else
     {
@@ -49,19 +67,9 @@ void ReadWholeRequest::start()
     }
 }
 
-void ReadWholeRequest::operator()(boost::system::error_code const& errc,
-                                  const char* data,
-                                  size_t len)
+void ReadWholeRequest::operator()(boost::system::error_code const& errc)
 {
-    if (errc || data == nullptr)
-    {
-        cb(Handle(this), errc);
-    }
-    else
-    {
-        body.reserve(body.size() + len);
-        body.insert(body.end(), data, data + len);
-    }
+    cb(Handle(this), errc);
 }
 
 } // namespace helper

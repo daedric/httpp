@@ -22,16 +22,22 @@ struct ReadWholeRequest
     using Callback =
         std::function<void(Handle, const boost::system::error_code&)>;
 
-    ReadWholeRequest(Connection* conn, Callback, size_t size_limit = 0);
+    ReadWholeRequest(Connection* conn,
+                     std::vector<char>& dest,
+                     Callback,
+                     size_t size_limit = 0);
+
+    ReadWholeRequest(Connection* conn,
+                     Callback,
+                     size_t size_limit = 0);
 
     void start();
-    void operator()(boost::system::error_code const& errc,
-                    const char* data,
-                    size_t len);
+    void operator()(boost::system::error_code const& errc);
 
     Connection* connection;
     Callback cb;
-    std::vector<char> body;
+    std::unique_ptr<std::vector<char>> fallback;
+    std::vector<char>& body;
     size_t size_limit = 0;
 };
 
@@ -44,6 +50,17 @@ void read_whole_request(Connection* conn,
 {
     auto h = new helper::ReadWholeRequest(conn, std::forward<Callable>(callable),
                                           size_limit);
+    h->start();
+}
+
+template <typename Callable>
+void read_whole_request(Connection* conn,
+                        Callable&& callable,
+                        std::vector<char>& dest,
+                        size_t size_limit = 0)
+{
+    auto h = new helper::ReadWholeRequest(
+        conn, dest, std::forward<Callable>(callable), size_limit);
     h->start();
 }
 

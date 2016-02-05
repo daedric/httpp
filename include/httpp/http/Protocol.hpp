@@ -26,7 +26,7 @@ namespace HTTP
 using KV = std::pair<std::string, std::string>;
 using KVRef = std::pair<boost::string_ref, boost::string_ref>;
 using Header = KV;
-# if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
+# if HTTPP_PARSER_BACKEND_IS_RAGEL
 using QueryParamRef = std::pair<std::string, UTILS::LazyDecodedValue>;
 using HeaderRef = KVRef;
 # else

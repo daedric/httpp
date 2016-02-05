@@ -20,7 +20,7 @@
 #include "httpp/utils/URL.hpp"
 #include "httpp/utils/LazyDecodedValue.hpp"
 
-#if HTTPP_PARSER_BACKEND == HTTPP_RAGEL_BACKEND
+#if HTTPP_PARSER_BACKEND_IS_RAGEL
 
 #define TOKEN_LEN size_t(token_end - token_begin)
 #define TOKEN_REF boost::string_ref(token_begin, TOKEN_LEN)
