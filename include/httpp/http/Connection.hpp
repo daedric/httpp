@@ -106,7 +106,6 @@ public:
                 size -= body_buffer_.size();
                 offset += body_buffer_.size();
                 body_buffer_.clear();
-                body_buffer_.clear();
             }
         }
 
