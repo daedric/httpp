@@ -19,14 +19,25 @@
 using HTTPP::HttpServer;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
+using HTTPP::HTTP::helper::ReadWholeRequest;
 using HTTPP::HTTP::HttpCode;
 
 void handler(Connection* connection)
 {
-    connection->response().setCode(HttpCode::Ok);
-    HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(),
-                                             connection->response());
-    connection->sendResponse(); // connection pointer may become invalid
+    read_whole_request(connection, [](std::unique_ptr<ReadWholeRequest> handle,
+                                      const boost::system::error_code& ec) {
+
+        if (ec)
+        {
+            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+        }
+
+        auto connection = handle->connection;
+        connection->response().setCode(HttpCode::Ok);
+        HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(),
+                                                 connection->response());
+        connection->sendResponse(); // connection pointer may become invalid
+    });
 }
 
 int main(int, char**)
