@@ -1,5 +1,8 @@
 #include "httpp/http/helper/ReadWholeRequest.hpp"
 
+#include <algorithm>
+#include <cstring>
+
 #include "httpp/http/Connection.hpp"
 
 namespace HTTPP
