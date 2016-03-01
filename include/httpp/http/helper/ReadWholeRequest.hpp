@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cstring>
 #include <functional>
-#include <algorithm>
 #include <memory>
+#include <vector>
 
 #include <boost/system/error_code.hpp>
 
