@@ -40,13 +40,28 @@ void handler(Connection* connection)
     });
 }
 
-int main(int, char**)
+int main(int ac, char** av)
 {
+    std::string port = "8080";
+
+    if (ac > 1)
+    {
+        port = av[1];
+    }
+
+    {
+        auto port_env = getenv("PORT");
+        if (port_env)
+        {
+            port = port_env;
+        }
+    }
+
     commonpp::core::init_logging();
     commonpp::core::set_logging_level(commonpp::warning);
     HttpServer server(1);
     server.start();
     server.setSink(&handler);
-    server.bind("localhost", "8080");
+    server.bind("localhost", port);
     while (true) std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
