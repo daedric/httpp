@@ -62,6 +62,6 @@ int main(int ac, char** av)
     HttpServer server(1);
     server.start();
     server.setSink(&handler);
-    server.bind("localhost", port);
+    server.bind("0.0.0.0", port);
     while (true) std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
