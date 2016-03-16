@@ -48,7 +48,7 @@ int main(int ac, char** av)
     {
         port = av[1];
     }
-
+    else
     {
         auto port_env = getenv("PORT");
         if (port_env)
