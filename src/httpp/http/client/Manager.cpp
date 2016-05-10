@@ -345,7 +345,7 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
     if (still_running <= 0)
     {
         LOG(manager_logger, trace)
-            << "No more ooperation is running, cancel the timer";
+            << "No more operations are running, cancelling the timer";
         timer.cancel();
     }
     else
