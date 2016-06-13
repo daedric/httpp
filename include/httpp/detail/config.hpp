@@ -16,10 +16,6 @@
 # include <httpp/detail/generated/config.hpp>
 # include <httpp/version.hpp>
 
-# ifndef HTTPP_USE_BOOST_PROMISE
-#  define HTTPP_USE_BOOST_PROMISE 1
-# endif
-
 # if HTTPP_USE_BOOST_PROMISE
 #  include <boost/thread/future.hpp>
 #  include <boost/exception/all.hpp>
