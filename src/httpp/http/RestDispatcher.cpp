@@ -114,7 +114,7 @@ void RestDispatcher::sink(HTTP::Connection* conn)
     const auto& path = conn->request().uri;
     auto it = std::lower_bound(table_.begin(), table_.end(), path, Comparator());
 
-    for (auto end = table_.end(); it->first == path && it != end; ++it)
+    for (auto end = table_.end(); it != end && it->first == path; ++it)
     {
         if (it->second.handle(conn))
         {
