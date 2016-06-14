@@ -13,6 +13,7 @@
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
 #include "httpp/utils/Exception.hpp"
+#include "httpp/http/RestDispatcher.hpp"
 
 using namespace HTTPP;
 
@@ -22,14 +23,18 @@ using HTTPP::HTTP::Connection;
 
 static const std::string EXPECTED_BODY(1024 * 100, 'a'); // 1MB
 
-void handler(Connection* connection)
+BOOST_AUTO_TEST_CASE(post_content)
 {
-    read_whole_request(connection, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> hndl,
-                                      const boost::system::error_code& ec) {
-        if (ec)
-        {
-            throw UTILS::convert_boost_ec_to_std_ec(ec);
-        }
+    commonpp::core::init_logging();
+    commonpp::core::set_logging_level(commonpp::trace);
+    commonpp::core::enable_console_logging();
+
+    HttpServer server;
+    server.start();
+
+    HTTP::RestDispatcher dispatcher(server);
+    dispatcher.add<HTTP::Method::POST>("/", [](HTTP::helper::ReadWholeRequest::Handle
+                                                   hndl) {
 
         if (hndl->body.empty())
         {
@@ -49,17 +54,7 @@ void handler(Connection* connection)
             .setBody(EXPECTED_BODY);
         hndl->connection->sendResponse();
     });
-}
 
-BOOST_AUTO_TEST_CASE(post_content)
-{
-    commonpp::core::init_logging();
-    commonpp::core::set_logging_level(commonpp::trace);
-    commonpp::core::enable_console_logging();
-
-    HttpServer server;
-    server.start();
-    server.setSink(&handler);
     server.bind("localhost", "8080");
 
     HttpClient client;
@@ -116,7 +111,30 @@ BOOST_AUTO_TEST_CASE(https_post_content)
 
     HttpServer server;
     server.start();
-    server.setSink(&handler);
+
+    HTTP::RestDispatcher dispatcher(server);
+    dispatcher.add<HTTP::Method::POST>("/", [](HTTP::helper::ReadWholeRequest::Handle
+                                                   hndl) {
+
+        if (hndl->body.empty())
+        {
+            hndl->connection->response()
+                .setCode(HTTP::HttpCode::BadRequest)
+                .setBody("Expected body!");
+            hndl->connection->sendResponse();
+            return;
+        }
+
+        BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()),
+                          EXPECTED_BODY);
+
+        hndl->connection->response()
+            .setCode(HTTP::HttpCode::Ok)
+            .connectionShouldBeClosed(true)
+            .setBody(EXPECTED_BODY);
+        hndl->connection->sendResponse();
+    });
+
     server.bind("localhost", {"", "", "", cert, key, ""}, "8080");
 
     HttpClient client;

@@ -19,6 +19,7 @@ SET(SOURCES
     http/Request.cpp
     http/Response.cpp
     http/Utils.cpp
+    http/RestDispatcher.cpp
 
     http/client/curl_parser.cpp
     http/client/Connection.cpp
