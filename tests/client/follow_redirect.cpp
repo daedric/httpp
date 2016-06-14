@@ -17,6 +17,7 @@
 
 #include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
+#include "httpp/http/RestDispatcher.hpp"
 
 using namespace HTTPP;
 
@@ -81,30 +82,6 @@ BOOST_AUTO_TEST_CASE(follow_redirect)
     }
 }
 
-void handler2(Connection* connection)
-{
-    auto& request = connection->request();
-    if (request.uri == "//redirect")
-    {
-        connection->response()
-            .setCode(HTTP::HttpCode::MovedPermanently)
-            .addHeader("Location", "/ok")
-            .setBody("");
-        connection->sendResponse();
-    }
-    else if (request.uri == "/ok")
-    {
-        connection->response()
-            .setCode(HTTP::HttpCode::Ok)
-            .setBody("Ok");
-        connection->sendResponse();
-    }
-    else
-    {
-        abort();
-    }
-}
-
 BOOST_AUTO_TEST_CASE(follow_redirect2)
 {
     commonpp::core::init_logging();
@@ -113,14 +90,29 @@ BOOST_AUTO_TEST_CASE(follow_redirect2)
 
     HttpServer server;
     server.start();
-    server.setSink(&handler2);
+
+    HTTP::RestDispatcher dispatcher(server);
+    dispatcher.add<HTTP::Method::GET>("/redirect", [](Connection* connection) {
+        connection->response()
+            .setCode(HTTP::HttpCode::MovedPermanently)
+            .addHeader("Location", "/ok")
+            .setBody("");
+        connection->sendResponse();
+    });
+    dispatcher.add<HTTP::Method::GET>("/ok", [](Connection* connection) {
+        connection->response()
+            .setCode(HTTP::HttpCode::Ok)
+            .setBody("Ok");
+        connection->sendResponse();
+    });
+
     server.bind("localhost", "8080");
 
     HttpClient client;
 
     HttpClient::Request request;
     request
-        .url("http://localhost:8080//redirect")
+        .url("http://localhost:8080/redirect")
         .followRedirect(true);
 
     auto response = client.get(std::move(request));
