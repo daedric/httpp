@@ -63,6 +63,12 @@ Request& Request::followRedirect(bool b)
     return *this;
 }
 
+Request& Request::setTimeout(int seconds)
+{
+    timeout_ = seconds;
+    return *this;
+}
+
 Request& Request::pushPostData(const std::string& name,
                                const std::string& value,
                                PostEncoding encoding)

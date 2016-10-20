@@ -50,6 +50,7 @@ public:
     // Allow insecure certificate
     Request& allowInsecure();
 
+    Request& setTimeout(int seconds);
     Request& joinUrlPath(const std::string& dir, bool trailing_sep = false);
     Request& addUrlVariable(const std::string& var, const std::string& val);
     Request& followRedirect(bool b = true);
@@ -71,6 +72,7 @@ private:
     std::vector<KV> http_headers_;
 
     std::string content_;
+    int timeout_ = 0;
 };
 
 } // namespace client

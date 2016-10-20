@@ -326,6 +326,10 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
 
     conn_setopt(CURLOPT_NOSIGNAL, 1L);
 
+    if (request.timeout_ > 0)
+    {
+        conn_setopt(CURLOPT_TIMEOUT, request.timeout_);
+    }
     // only on curl > 7.25, disable it for now
     //conn_setopt(CURLOPT_TCP_KEEPALIVE, 1L);
 
@@ -371,7 +375,12 @@ struct RequestNestedError : public RequestError, public std::nested_exception
 
 void Connection::buildResponse(CURLcode code)
 {
-    if (code != CURLE_OK)
+    if (code == CURLE_OPERATION_TIMEDOUT)
+    {
+        complete(HTTPP::detail::make_exception_ptr(HTTPP::UTILS::RequestTimeout()));
+        return;
+    }
+    else if (code != CURLE_OK)
     {
         complete(HTTPP::detail::make_exception_ptr(RequestError(
             curl_easy_strerror(code) + std::string(this->error_buffer),
