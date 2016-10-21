@@ -326,9 +326,9 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
 
     conn_setopt(CURLOPT_NOSIGNAL, 1L);
 
-    if (request.timeout_ > 0)
+    if (request.timeout_ != std::chrono::seconds::zero())
     {
-        conn_setopt(CURLOPT_TIMEOUT, request.timeout_);
+        conn_setopt(CURLOPT_TIMEOUT, request.timeout_.count());
     }
     // only on curl > 7.25, disable it for now
     //conn_setopt(CURLOPT_TCP_KEEPALIVE, 1L);

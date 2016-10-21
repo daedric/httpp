@@ -11,6 +11,7 @@
 #include "httpp/http/client/Request.hpp"
 #include "httpp/utils/URL.hpp"
 #include "Connection.hpp"
+#include <chrono>
 
 namespace HTTPP
 {
@@ -63,9 +64,9 @@ Request& Request::followRedirect(bool b)
     return *this;
 }
 
-Request& Request::setTimeout(int seconds)
+Request& Request::setTimeout(std::chrono::seconds timeout)
 {
-    timeout_ = seconds;
+    timeout_ = timeout;
     return *this;
 }
 
@@ -106,6 +107,7 @@ Request& Request::allowInsecure()
 void Request::clear()
 {
     url_.clear();
+    timeout_ = std::chrono::seconds::zero();
     follow_redirect_ = false;
     allow_insecure_ = false;
     query_params_.clear();
