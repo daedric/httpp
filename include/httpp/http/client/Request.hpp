@@ -14,6 +14,7 @@
 # include <memory>
 # include <string>
 # include <vector>
+# include <chrono>
 
 namespace HTTPP
 {
@@ -50,6 +51,7 @@ public:
     // Allow insecure certificate
     Request& allowInsecure();
 
+    Request& setTimeout(std::chrono::seconds timeout);
     Request& joinUrlPath(const std::string& dir, bool trailing_sep = false);
     Request& addUrlVariable(const std::string& var, const std::string& val);
     Request& followRedirect(bool b = true);
@@ -71,6 +73,7 @@ private:
     std::vector<KV> http_headers_;
 
     std::string content_;
+    std::chrono::seconds timeout_{0};
 };
 
 } // namespace client

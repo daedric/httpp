@@ -36,6 +36,13 @@ struct OperationAborted : BASE_EXCEPTION
     }
 };
 
+struct RequestTimeout : BASE_EXCEPTION
+{
+    RequestTimeout() : std::runtime_error("Request timed out")
+    {
+    }
+};
+
 class RequestError : BASE_EXCEPTION
 {
 public:
