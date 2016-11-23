@@ -52,6 +52,11 @@ public:
         return *this;
     }
 
+    HttpCode getCode() const noexcept
+    {
+        return code_;
+    }
+
     void clear();
 
     Response& addHeader(std::string k, std::string v);
