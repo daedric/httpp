@@ -36,9 +36,10 @@ struct Request
         query_params.reserve(10);
         headers.reserve(10);
     }
-
+	
+	std::string getUrl();
     void setDate();
-    void clear();
+	void clear();
 
     TimePoint received = Clock::now();
     Method method;
