@@ -36,8 +36,11 @@ struct Request
         query_params.reserve(10);
         headers.reserve(10);
     }
-	
-	std::string getUrl();
+	# if HTTPP_PARSER_BACKEND_IS_RAGEL
+        boost::string_ref getUrl()
+    # else
+        std::string getUrl()
+    #endif
     void setDate();
 	void clear();
 
