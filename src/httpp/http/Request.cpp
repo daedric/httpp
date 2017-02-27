@@ -40,13 +40,9 @@ std::ostream& operator<<(std::ostream& os, const Request& request)
     return os;
 }
 
-# if HTTPP_PARSER_BACKEND_IS_RAGEL
-    boost::string_ref getUrl()
-# else
-    std::string getUrl()
-#endif
+    std::string Request:getUrl()
     { 
-        return request.uri;
+        return std::to_string(uri);
     }
 
 void Request::setDate()

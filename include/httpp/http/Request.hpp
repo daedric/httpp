@@ -37,7 +37,7 @@ struct Request
         headers.reserve(10);
     }
 
-    std::string getUrl();
+    std::string Request:getUrl()
     void setDate();
 	void clear();
 
