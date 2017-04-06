@@ -47,7 +47,7 @@ struct Route
 public:
     Route()
     {
-        std::fill(allowed_method.begin(), allowed_method.end(), false);
+        allowed_method.fill(false);
     }
     
     Route& upon(HTTP::Method h);
