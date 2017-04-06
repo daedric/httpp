@@ -35,7 +35,7 @@ set(INSTALL_CMAKE_DIR "${_CMAKE_DIR}" CACHE PATH "Installation directory for CMa
 set(CPP_VERSION "c++11" CACHE STRING "C++ version to use")
 set_property(CACHE CPP_VERSION PROPERTY STRINGS "c++11" "c++14" "c++1y")
 
-OPTION(BUILD_TESTS "Build the tests")
+OPTION(BUILD_TESTS "Build the tests" ON)
 OPTION(BUILD_EXAMPLES "Build the examples")
 OPTION(BUILD_SHARED_LIBS "Build shared lib instead of static ones")
 OPTION(PROFILE_HTTPP "Enable profiling")
