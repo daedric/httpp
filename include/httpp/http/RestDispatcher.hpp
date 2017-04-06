@@ -45,6 +45,11 @@ struct Route
         std::function<void(HTTP::helper::ReadWholeRequest::Handle)>;
 
 public:
+    Route()
+    {
+        std::fill(allowed_method.begin(), allowed_method.end(), false);
+    }
+    
     Route& upon(HTTP::Method h);
 
     template <typename... Tail>
