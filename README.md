@@ -61,14 +61,15 @@ By default the build is in release mode, to change that you can:
 
 The compilation and tests have been run on Mac OS X (curl and openssl from homebrew seems to be required to have all tests passing, I don't know why yet), and GNU/Linux distro (Ubuntu, ArchLinux).
 
-V0.6 / v0.7
+Current stable
 ===========
-The v0.7 introduce a lot of changes and break the compatibility with the v0.6 branch that lasted for a long time.
-The v0.7, while not yet tagged, has been merged to master.
 
-Only minor adjustement regarding maybe the packaging and a couple of future improvements in commonpp are missing to make me happy. Also, I would like to review the dynamic linking part in CMake and retest it.
+The current stable is the v0.7.0.
+There are still some things missing:
 
-The v0.6 is stable and should be used for critical project, I plan to have the v0.7 production ready, stable and more documented by the end of 2015 or early 2016.
+* Optional commonpp dependencies;
+* Probes in the server.
+
 
 Design choices
 ==============
