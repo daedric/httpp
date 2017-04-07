@@ -57,8 +57,7 @@ struct Request
     std::vector<QueryParamRef> query_params;
 
     template <typename Comparator = std::less<QueryParamRef::first_type>>
-    auto getSortedQueryParams() const -> decltype(UTILS::create_sorted_vector<QueryParamRef::first_type,
-            QueryParamRef::second_type, Comparator>(query_params))
+    auto getSortedQueryParams() const
     {
         return UTILS::create_sorted_vector<QueryParamRef::first_type, QueryParamRef::second_type, Comparator>(query_params);
     }
@@ -66,7 +65,7 @@ struct Request
     std::vector<HeaderRef> headers;
 
     template <typename Comparator = std::less<HeaderRef::first_type>>
-    auto getSortedHeaders() const -> decltype(UTILS::create_sorted_vector<HeaderRef::first_type, HeaderRef::second_type, Comparator>(headers))
+    auto getSortedHeaders() const
     {
         return UTILS::create_sorted_vector<HeaderRef::first_type, HeaderRef::second_type, Comparator>(headers);
     }
