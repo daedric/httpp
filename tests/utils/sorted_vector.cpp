@@ -19,12 +19,6 @@
 using namespace HTTPP::UTILS;
 using namespace HTTPP::HTTP;
 
-struct case_insensitive {
-    bool operator()(const boost::string_ref &left, const boost::string_ref &right) {
-      return boost::ilexicographical_compare(left, right);
-    }
-};
-
 BOOST_AUTO_TEST_CASE(case_sensitive_lookup)
 {
     SortedVectorKP<boost::string_ref, boost::string_ref> kv(

@@ -13,11 +13,32 @@
 
 # include <algorithm>
 # include <vector>
+# include <strings.h>
 
 namespace HTTPP
 {
 namespace UTILS
 {
+
+struct case_insensitive
+{
+    template <typename StringLike>
+    bool operator()(const StringLike & left, const StringLike & right)
+    {
+        if (left.size() < right.size())
+        {
+            return true;
+        }
+        else if (left.size() == right.size())
+        {
+            return ::strncasecmp(left.data(), right.data(), left.size()) < 0;
+        }
+        else
+        {
+            return false;
+        }
+    }
+};
 
 template <typename Key, typename Value, typename Comparator = std::less<Key>>
 class SortedVectorKP : private std::vector<std::pair<Key, Value>>
