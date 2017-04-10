@@ -23,7 +23,7 @@ namespace UTILS
 struct case_insensitive
 {
     template <typename StringLike>
-    bool operator()(const StringLike & left, const StringLike & right)
+    bool operator()(const StringLike & left, const StringLike & right) const noexcept
     {
         if (left.size() < right.size())
         {
