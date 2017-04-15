@@ -45,7 +45,7 @@ OPTION(USE_BOOST_PROMISE "Use boost promise instead of the stl one" OFF)
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
-SET(HTTPP_VERSION_MINOR "7")
+SET(HTTPP_VERSION_MINOR "8")
 SET(HTTPP_VERSION_PATCH "0")
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${HTTPP_VERSION_MAJOR})

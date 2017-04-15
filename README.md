@@ -26,7 +26,7 @@ Boost is required, version >= 1.54 and libcurl. HTTPP has a dependency on
 [CommonPP](https://github.com/daedric/commonpp) since the version 0.7. CommonPP
 has a dependency on Boost and TBB. The TBB dependency will become optional.
 
-A C++11 compliant compiler is also required.
+A C++14 compliant compiler is also required.
 
 BUILD
 =====
