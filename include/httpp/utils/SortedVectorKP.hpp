@@ -13,7 +13,7 @@
 
 # include <algorithm>
 # include <vector>
-# include <strings.h>
+# include <cstring>
 
 namespace HTTPP
 {
