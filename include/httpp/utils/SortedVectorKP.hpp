@@ -13,13 +13,34 @@
 
 # include <algorithm>
 # include <vector>
+# include <cstring>
 
 namespace HTTPP
 {
 namespace UTILS
 {
 
-template <typename Key, typename Value>
+struct case_insensitive
+{
+    template <typename StringLike>
+    bool operator()(const StringLike & left, const StringLike & right) const noexcept
+    {
+        if (left.size() < right.size())
+        {
+            return true;
+        }
+        else if (left.size() == right.size())
+        {
+            return ::strncasecmp(left.data(), right.data(), left.size()) < 0;
+        }
+        else
+        {
+            return false;
+        }
+    }
+};
+
+template <typename Key, typename Value, typename Comparator = std::less<Key>>
 class SortedVectorKP : private std::vector<std::pair<Key, Value>>
 {
     using Base = std::vector<std::pair<Key, Value>>;
@@ -27,11 +48,10 @@ class SortedVectorKP : private std::vector<std::pair<Key, Value>>
 
     static bool comparator(const value_type& lhs, const value_type& rhs)
     {
-        return lhs.first < rhs.first;
+        return Comparator()(lhs.first, rhs.first);
     }
 
 public:
-
     using Base::begin;
     using Base::end;
     using Base::operator[];
@@ -44,10 +64,10 @@ public:
 
     Value const& find(const Key& key) const
     {
-        auto it = std::lower_bound(
-            begin(), end(), value_type{ key, not_found_ }, &comparator);
+        const value_type value{key, not_found_};
+        auto it = std::lower_bound(begin(), end(), value, &comparator);
 
-        if (it != end() && it->first == key)
+        if (it != end() && !comparator(value, *it))
         {
             return it->second;
         }
@@ -65,14 +85,14 @@ private:
 
 };
 
-template <typename K, typename V>
-SortedVectorKP<K, V> create_sorted_vector(const std::vector<std::pair<K, V>>& vector)
+template <typename K, typename V, typename C=std::less<K>>
+SortedVectorKP<K, V, C> create_sorted_vector(const std::vector<std::pair<K, V>>& vector)
 {
-    return SortedVectorKP<K, V>(vector);
+    return SortedVectorKP<K, V, C>(vector);
 }
 
-template <typename K, typename V>
-const V SortedVectorKP<K, V>::not_found_{};
+template <typename K, typename V, typename C>
+const V SortedVectorKP<K, V, C>::not_found_{};
 
 } // namespace UTILS
 } // namespace HTTPP
