@@ -40,6 +40,11 @@ std::ostream& operator<<(std::ostream& os, const Request& request)
     return os;
 }
 
+    std::string Request:getUrl()
+    { 
+        return std::to_string(uri);
+    }
+
 void Request::setDate()
 {
     received = Clock::now();
