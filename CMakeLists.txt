@@ -11,6 +11,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 #CMAKE_POLICY(SET CMP0005 NEW)
 
+# Require at least Windows 7
+# See: https://msdn.microsoft.com/en-us/library/windows/desktop/aa383745(v=vs.85).aspx
+if(WIN32)
+    add_definitions(-D_WIN32_WINNT=0x0601)
+    add_definitions(-DNTDDI_VERSION=0x06010000)
+endif()
+
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     MESSAGE(STATUS "Setting cmake build type to 'Release' as none was specified.")
