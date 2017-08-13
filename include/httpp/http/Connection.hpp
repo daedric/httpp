@@ -88,7 +88,7 @@ public:
 
         size_t offset = 0;
 
-        if (not body_buffer_.empty())
+        if (!body_buffer_.empty())
         {
             if (size <= body_buffer_.size())
             {
@@ -134,7 +134,7 @@ public:
             throw std::logic_error("Invalid connection state");
         }
 
-        if (not body_buffer_.empty())
+        if (!body_buffer_.empty())
         {
             if (body_size <= body_buffer_.size())
             {

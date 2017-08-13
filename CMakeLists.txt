@@ -11,6 +11,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 #CMAKE_POLICY(SET CMP0005 NEW)
 
+# Require at least Windows 7
+# See: https://msdn.microsoft.com/en-us/library/windows/desktop/aa383745(v=vs.85).aspx
+if(WIN32)
+    add_definitions(-D_WIN32_WINNT=0x0601)
+    add_definitions(-DNTDDI_VERSION=0x06010000)
+endif()
+
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     MESSAGE(STATUS "Setting cmake build type to 'Release' as none was specified.")
@@ -198,12 +205,19 @@ LINK_DIRECTORIES(${Boost_LIBRARY_DIR})
 FIND_PACKAGE(CURL REQUIRED)
 INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIRS})
 
+INCLUDE_DIRECTORIES(${HWLOC_INCLUDE_DIR})
+include_directories(${TBB_INCLUDE_DIRS})
+link_directories(${TBB_LIBRARY_DIRS})
+link_directories(${TBB_DEBUG_LIBRARY_DIRS})
+
 SET(HTTPP_DEPS
     ${commonpp_LIBRARIES}
     ${Boost_LIBRARIES}
     ${CURL_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${OPENSSL_LIBRARIES})
+    ${OPENSSL_LIBRARIES}
+    ${HWLOC_PROCESS_LIBS}
+    ${TBB_LIBRARIES})
 
 IF (UNIX AND NOT APPLE)
     SET (HTTPP_DEPS ${HTTPP_DEPS} rt)
