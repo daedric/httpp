@@ -66,10 +66,13 @@ Method method_from(const std::string& str)
 
 Method method_from(const char* str)
 {
+#ifdef WIN32
+#define my_strlen ::strlen
+#else
 #define my_strlen(str)                                               \
     (__extension__(__builtin_constant_p(str) ? __builtin_strlen(str) \
                                              : ::strlen(str)))
-
+#endif
 #define fn(name, e)                                   \
     if (::strncmp(#name, str, my_strlen(#name)) == 0) \
         return Method::e;

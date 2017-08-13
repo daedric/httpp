@@ -5,6 +5,10 @@
 
 #include "httpp/http/Connection.hpp"
 
+#ifdef WIN32
+#define strncasecmp(x,y,z) _strnicmp(x,y,z)
+#endif
+
 namespace HTTPP
 {
 namespace HTTP

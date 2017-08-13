@@ -31,7 +31,13 @@ struct case_insensitive
         }
         else if (left.size() == right.size())
         {
+#ifdef WIN32
+# define strncasecmp(x, y, z) _strnicmp(x, y, z)
+#endif
             return ::strncasecmp(left.data(), right.data(), left.size()) < 0;
+#ifdef WIN32
+# undef strncasecmp
+#endif
         }
         else
         {
