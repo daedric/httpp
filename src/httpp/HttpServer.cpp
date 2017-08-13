@@ -161,7 +161,7 @@ void HttpServer::stop()
 
 void HttpServer::bind(const std::string& address, const std::string& port)
 {
-    if (not running_)
+    if (!running_)
     {
         throw std::logic_error(
             "Http server must be started before bind is called");
@@ -179,7 +179,7 @@ void HttpServer::bind(const std::string& address,
                       SSLContext ctx,
                       const std::string& port)
 {
-    if (not running_)
+    if (!running_)
     {
         throw std::logic_error(
             "Http server must be started before bind is called");

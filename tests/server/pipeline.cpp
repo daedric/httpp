@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(pipeline)
             }
 
             //std::cout << i << std::endl;
-        } while (not is.eof() || i < 3);
+        } while (!is.eof() || i < 3);
     }
 }
 
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(pipeline_with_body)
             }
 
             //std::cout << i << std::endl;
-        } while (not is.eof() || i < 3);
+        } while (!is.eof() || i < 3);
     }
 
     BOOST_CHECK_EQUAL(total_size, BODY.size() * 3);

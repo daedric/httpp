@@ -151,7 +151,7 @@ void Connection::start()
 
     // Maybe we have the beginning of the next request in the
     // body_buffer_
-    if (not body_buffer_.empty())
+    if (!body_buffer_.empty())
     {
         request_buffer_.swap(body_buffer_);
         size_ = request_buffer_.size();
