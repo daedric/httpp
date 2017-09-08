@@ -253,6 +253,13 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
      case HTTPP::HTTP::Method::OPTIONS:
      case HTTPP::HTTP::Method::TRACE:
      case HTTPP::HTTP::Method::CONNECT:
+     case HTTPP::HTTP::Method::PROPFIND:
+     case HTTPP::HTTP::Method::PROPPATCH:
+     case HTTPP::HTTP::Method::MKCOL:
+     case HTTPP::HTTP::Method::COPY:
+     case HTTPP::HTTP::Method::MOVE:
+     case HTTPP::HTTP::Method::LOCK:
+     case HTTPP::HTTP::Method::UNLOCK:
          std::string method_str = to_string(method);
          conn_setopt(CURLOPT_CUSTOMREQUEST, method_str.data());
          break;

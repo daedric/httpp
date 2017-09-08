@@ -110,7 +110,7 @@ bool Parser::parse(const char* start,
     const char *token_begin, *token_end;
 
     %%{
-        method = ("GET" | "POST" | "HEAD" | "PUT" | "DELETE" | "OPTIONS" | "TRACE" | "CONNECT");
+        method = ("GET" | "POST" | "HEAD" | "PUT" | "DELETE" | "OPTIONS" | "TRACE" | "CONNECT" | "PROPFIND" | "PROPPATCH" | "MKCOL" | "COPY" | "MOVE" | "LOCK" | "UNLOCK");
 
         identifier = (alnum | '-')+;
 

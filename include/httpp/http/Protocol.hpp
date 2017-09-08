@@ -38,14 +38,22 @@ static char const HEADER_BODY_SEP[] = { '\r', '\n', '\r', '\n' };
 
 enum class Method
 {
-    HEAD    ,
-    GET     ,
-    POST    ,
-    PUT     ,
-    DELETE_ , // '_' for msvc workaround
-    OPTIONS ,
-    TRACE   ,
-    CONNECT
+    HEAD,
+    GET,
+    POST,
+    PUT,
+    DELETE_, // '_' for msvc workaround
+    OPTIONS,
+    TRACE,
+    CONNECT,
+    // WebDAV specific methods
+    PROPFIND,
+    PROPPATCH,
+    MKCOL,
+    COPY,
+    MOVE,
+    LOCK,
+    UNLOCK,
 };
 
 std::string to_string(Method method);
