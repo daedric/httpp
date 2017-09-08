@@ -101,6 +101,30 @@ static bool parse_method(Iterator& it, Request& request)
                     return true;
                 }
             }
+            else if (*it == 'R')
+            {
+                if (!expect(it, "ROP"))
+                {
+                    return false;
+                }
+
+                if (*it == 'F')
+                {
+                    if (expect(it, "FIND"))
+                    {
+                        request.method = Method::PROPFIND;
+                        return true;
+                    }
+                }
+                else if (*it == 'P')
+                {
+                    if (expect(it, "PATCH"))
+                    {
+                        request.method = Method::PROPPATCH;
+                        return true;
+                    }
+                }
+            }
             break;
         case 'D':
             if (expect(it, "DELETE"))
@@ -123,11 +147,60 @@ static bool parse_method(Iterator& it, Request& request)
                 return true;
             }
             break;
-
-        case 'C':
-            if (expect(it, "CONNECT"))
+        case 'M':
+            ++it;
+            if (*it == 'O')
             {
-                request.method = Method::CONNECT;
+                if (expect(it, "OVE"))
+                {
+                    request.method = Method::MOVE;
+                    return true;
+                }
+            }
+            else if (*it == 'K')
+            {
+                if (expect(it, "KCOL"))
+                {
+                    request.method = Method::MKCOL;
+                    return true;
+                }
+            }
+            break;
+        case 'C':
+            ++it;
+            if (*it != 'O')
+            {
+                return false;
+            }
+            ++it;
+            if (*it == 'N')
+            {
+                if (expect(it, "NNECT"))
+                {
+                    request.method = Method::CONNECT;
+                    return true;
+                }
+            }
+            else if (*it == 'P')
+            {
+                if (expect(it, "PY"))
+                {
+                    request.method = Method::COPY;
+                    return true;
+                }
+            }
+            break;
+        case 'L':
+            if (expect(it, "LOCK"))
+            {
+                request.method = Method::LOCK;
+                return true;
+            }
+            break;
+        case 'U':
+            if (expect(it, "UNLOCK"))
+            {
+                request.method = Method::UNLOCK;
                 return true;
             }
             break;
