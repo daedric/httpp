@@ -8,30 +8,22 @@
  *
  */
 
-#ifndef _HTTPP__DETAIL_CONFIG_HPP_
-# define _HTTPP__DETAIL_CONFIG_HPP_
+#pragma once
 
-# include <type_traits>
+#include <type_traits>
 
-# include <httpp/detail/generated/config.hpp>
-# include <httpp/version.hpp>
+#include <httpp/detail/generated/config.hpp>
+#include <httpp/version.hpp>
 
-# if HTTPP_USE_BOOST_PROMISE
-#  include <boost/thread/future.hpp>
-#  include <boost/exception/all.hpp>
-#  define HTTPP_PROMISE_NAMESPACE boost
-# else
-# include <future>
-#  define HTTPP_PROMISE_NAMESPACE std
-# endif
+#include <future>
 
-# define HTTPP_RAGEL_BACKEND 0
-# define HTTPP_STREAM_BACKEND 1
+#define HTTPP_RAGEL_BACKEND 0
+#define HTTPP_STREAM_BACKEND 1
 
-# ifndef HTTPP_PARSER_BACKEND
-#  warning "No HTTPP Parser selected, use ragel by default"
-#  define HTTPP_PARSER_BACKEND HTTPP_RAGEL_BACKEND
-# endif
+#ifndef HTTPP_PARSER_BACKEND
+#    warning "No HTTPP Parser selected, use ragel by default"
+#    define HTTPP_PARSER_BACKEND HTTPP_RAGEL_BACKEND
+#endif
 
 namespace HTTPP
 {
@@ -40,34 +32,10 @@ namespace detail
 {
 
 template <typename T>
-using Promise = HTTPP_PROMISE_NAMESPACE::promise<T>;
+using Promise = std::promise<T>;
 
 template <typename T>
 using Future = decltype(std::declval<Promise<T>>().get_future());
-
-# if HTTPP_USE_BOOST_PROMISE
-
-using ExceptionPtr = boost::exception_ptr;
-
-template <typename T>
-static inline ExceptionPtr
-make_exception_ptr(const T& ex) noexcept(noexcept(boost::copy_exception(ex)))
-{
-    return boost::copy_exception(ex);
-}
-
-static inline ExceptionPtr
-current_exception() noexcept(noexcept(boost::current_exception()))
-{
-    return boost::current_exception();
-}
-
-[[noreturn]] static void inline rethrow_exception(const ExceptionPtr& ex)
-{
-    boost::rethrow_exception(ex);
-}
-
-# else
 
 using ExceptionPtr = std::exception_ptr;
 
@@ -88,9 +56,5 @@ current_exception() noexcept(noexcept(std::current_exception()))
     std::rethrow_exception(ex);
 }
 
-# endif
-
 } // namespace detail
 } // namespace HTTPP
-
-#endif

@@ -39,9 +39,7 @@ OPTION(BUILD_TESTS "Build the tests" ON)
 OPTION(BUILD_EXAMPLES "Build the examples")
 OPTION(BUILD_SHARED_LIBS "Build shared lib instead of static ones")
 OPTION(PROFILE_HTTPP "Enable profiling")
-OPTION(LINK_OPTIMIZATION "Enable link time optimization")
 OPTION(SEARCH_COMMONPP "Should commonpp be looked for" ON)
-OPTION(USE_BOOST_PROMISE "Use boost promise instead of the stl one" OFF)
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
@@ -65,10 +63,6 @@ ELSEIF (${HTTPP_PARSER_BACKEND} MATCHES "Ragel")
 ELSE()
     SET(HTTPP_PARSER_BACKEND "HTTPP_RAGEL_BACKEND")
     MESSAGE(STATUS "HTTPP PARSER Backend : Ragel (Defaulted)")
-ENDIF()
-
-IF (${USE_BOOST_PROMISE})
-    SET(HTTPP_USE_BOOST_PROMISE 1)
 ENDIF()
 
 MESSAGE(STATUS "Cmake Version        : ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
@@ -105,23 +99,6 @@ IF (${CMAKE_CXX_COMPILER_ID} MATCHES GNU OR ${CMAKE_CXX_COMPILER_ID} MATCHES Cla
       SET(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -pg)
       SET(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -pg)
   ENDIF()
-
-  IF (${LINK_OPTIMIZATION})
-      IF (NOT ${CMAKE_CXX_COMPILER_ID} MATCHES GNU)
-          MESSAGE(FATAL "GCC is required")
-      ENDIF()
-
-      FIND_PROGRAM(AR gcc-ar)
-      SET(CMAKE_AR ${AR})
-      FIND_PROGRAM(RANLIB gcc-ranlib)
-      SET(CMAKE_RANLIB ${RANLIB})
-
-      MESSAGE(STATUS "HTTPP link time optimization enabled")
-      SET(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-flto -flto-odr-type-merging")
-      SET(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-flto -flto-odr-type-merging")
-      SET(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-flto -flto-odr-type-merging")
-  ENDIF()
-
 ENDIF()
 
 IF (${BUILD_SHARED_LIBS})
