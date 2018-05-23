@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
 
     auto handler = client.async_get(
             std::move(request),
-            [](HttpClient::Future&& fut)
+            [](HttpClient::Future fut)
             { BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted); });
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
         for (int i = 0; i < NB_CONN; ++i)
         {
             client.async_get(HttpClient::Request{ request },
-                             [&nb_cb](HttpClient::Future&& fut)
+                             [&nb_cb](HttpClient::Future fut)
                              {
                 ++nb_cb;
                 BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection_google)
     for (int i = 0; i < 10; ++i)
     {
         client.async_get(HttpClient::Request{ request },
-                         [](HttpClient::Future&& fut)
+                         [](HttpClient::Future fut)
                          {
             BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
         });
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(late_cancel)
 
     bool ok = false;
     auto handler = client.async_get(std::move(request),
-                                    [&ok](HttpClient::Future&& fut)
+                                    [&ok](HttpClient::Future fut)
                                     {
         ok = true;
         GLOG(debug) << "Response received";

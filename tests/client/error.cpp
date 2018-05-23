@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(manager_deletion)
         HttpClient::Request request;
         request.url("http://localhost:8080");
         client.async_get(std::move(request),
-                         [&notif](HttpClient::Future&& future)
+                         [&notif](HttpClient::Future future)
                          {
             notif = true;
             BOOST_CHECK_THROW(future.get(), HTTPP::UTILS::OperationAborted);

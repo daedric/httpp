@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(completion_handler)
     bool b = true;
     client.async_get(
             std::move(request),
-            [&b](HttpClient::Future&& future)
+            [&b](HttpClient::Future future)
             {
                 auto response = future.get();
                 std::string body(response.body.data(), response.body.size());

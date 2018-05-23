@@ -42,7 +42,7 @@ public:
     using Response = HTTP::client::Response;
 
     using Future = detail::Future<Response>;
-    using CompletionHandler = std::function<void (Future&&)>;
+    using CompletionHandler = std::function<void (Future)>;
 
     // AsyncHandler is garanteed to be always safe to call
     class AsyncHandler
@@ -60,10 +60,10 @@ public:
     HttpClient& operator=(const HttpClient&) = delete;
     ~HttpClient();
 
-#define METHOD(m)                        \
-    Response m(Request&& request);       \
-    Future async_##m(Request&& request); \
-    AsyncHandler async_##m(Request&& request, CompletionHandler&&);
+#define METHOD(m)                                                              \
+    Response m(Request request);                                               \
+    Future async_##m(Request request);                                         \
+    AsyncHandler async_##m(Request request, CompletionHandler);
 
     METHOD(post);
     METHOD(get);
@@ -79,7 +79,7 @@ public:
 private:
     std::pair<Future, AsyncHandler>
     handle_request(HTTP::Method method,
-                   Request&& request,
+                   Request request,
                    CompletionHandler handler = CompletionHandler());
 
 private:

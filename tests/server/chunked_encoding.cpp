@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(test_cancelling_request_while_streaming_stops_functor)
 
         auto handler = client.async_get(
             std::move(request),
-            [](HttpClient::Future&& fut)
+            [](HttpClient::Future fut)
             { BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted); });
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

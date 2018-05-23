@@ -48,10 +48,8 @@ HttpClient::~HttpClient()
     pool_dispatch_.stop();
 }
 
-std::pair<HttpClient::Future, HttpClient::AsyncHandler>
-HttpClient::handle_request(HTTP::Method method,
-                           Request&& request,
-                           CompletionHandler completion_handler)
+std::pair<HttpClient::Future, HttpClient::AsyncHandler> HttpClient::handle_request(
+    HTTP::Method method, Request request, CompletionHandler completion_handler)
 {
     Connection::ConnectionPtr connection =
         Connection::createConnection(*manager, manager->io.getService());
@@ -87,11 +85,11 @@ HttpClient::handle_request(HTTP::Method method,
 #define METHOD_connect CONNECT
 
 #define METHOD(m)                                                              \
-    HttpClient::Future HttpClient::async_##m(Request&& req)                    \
+    HttpClient::Future HttpClient::async_##m(Request req)                      \
     {                                                                          \
         return handle_request(HTTP::Method::METHOD_##m, std::move(req)).first; \
     }                                                                          \
-    HttpClient::Response HttpClient::m(Request&& request)                      \
+    HttpClient::Response HttpClient::m(Request request)                        \
     {                                                                          \
         Future fut = async_##m(std::move(request));                            \
                                                                                \
@@ -105,11 +103,11 @@ HttpClient::handle_request(HTTP::Method method,
         }                                                                      \
     }                                                                          \
     HttpClient::AsyncHandler HttpClient::async_##m(                            \
-        Request&& request, CompletionHandler&& completion_handler)             \
+        Request request, CompletionHandler completion_handler)                 \
     {                                                                          \
-        return handle_request(HTTP::Method::METHOD_##m,                        \
-                              std::move(request),                              \
-                              std::move(completion_handler)).second;           \
+        return handle_request(HTTP::Method::METHOD_##m, std::move(request),    \
+                              std::move(completion_handler))                   \
+            .second;                                                           \
     }
 
 METHOD(post);
