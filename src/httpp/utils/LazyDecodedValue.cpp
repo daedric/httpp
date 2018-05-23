@@ -10,8 +10,8 @@
  */
 #include "httpp/utils/LazyDecodedValue.hpp"
 
-#include <ostream>
 #include <cstring>
+#include <ostream>
 
 #include "httpp/utils/URL.hpp"
 

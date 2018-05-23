@@ -9,28 +9,32 @@
  */
 
 #ifndef HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
-# define HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
+#define HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
 
-# include <curl/curl.h>
-# include <memory>
-# include <stdexcept>
-# include <map>
-# include <set>
-# include <future>
+#include <curl/curl.h>
+#include <future>
+#include <map>
+#include <memory>
+#include <set>
+#include <stdexcept>
 
-# include <boost/asio.hpp>
+#include <boost/asio.hpp>
 
-# include <commonpp/thread/ThreadPool.hpp>
-# include <commonpp/core/LoggingInterface.hpp>
+#include <commonpp/core/LoggingInterface.hpp>
+#include <commonpp/thread/ThreadPool.hpp>
 
-# include "httpp/detail/config.hpp"
-# include "httpp/http/Protocol.hpp"
+#include "httpp/detail/config.hpp"
+#include "httpp/http/Protocol.hpp"
 
-namespace HTTPP {
-namespace HTTP {
-namespace client {
+namespace HTTPP
+{
+namespace HTTP
+{
+namespace client
+{
 
-namespace detail {
+namespace detail
+{
 
 struct Connection;
 
@@ -59,8 +63,8 @@ struct Manager
         auto rc = curl_multi_setopt(handler, opt, t);
         if (rc != CURLM_OK)
         {
-            LOG(manager_logger, error) << "Error setting curl option: "
-                                       << curl_multi_strerror(rc);
+            LOG(manager_logger, error)
+                << "Error setting curl option: " << curl_multi_strerror(rc);
             throw std::runtime_error("Cannot set option on curl");
         }
     }

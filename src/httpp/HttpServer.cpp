@@ -10,8 +10,8 @@
 
 #include "httpp/HttpServer.hpp"
 
-#include "httpp/utils/Exception.hpp"
 #include "httpp/http/Utils.hpp"
+#include "httpp/utils/Exception.hpp"
 
 namespace HTTPP
 {
@@ -95,7 +95,6 @@ HttpServer::HttpServer(ThreadPool& pool)
 {
 }
 
-
 HttpServer::~HttpServer()
 {
     if (running_)
@@ -129,7 +128,6 @@ void HttpServer::stopListeners()
     {
         std::this_thread::yield();
     }
-
 }
 
 void HttpServer::stop()
@@ -168,8 +166,8 @@ void HttpServer::bind(const std::string& address, const std::string& port)
     }
 
     auto acc = HttpServer::bind(pool_->getService(), address, port);
-    LOG(server_logger, debug) << "Bind address: " << address
-                              << " on port: " << port;
+    LOG(server_logger, debug)
+        << "Bind address: " << address << " on port: " << port;
     acceptors_.push_back(acc);
     ++running_acceptors_;
     start_accept(acc);
@@ -187,8 +185,8 @@ void HttpServer::bind(const std::string& address,
 
     auto acc = HttpServer::bind(pool_->getService(), address, port);
     acc->setSSLContext(std::move(ctx));
-    LOG(server_logger, debug) << "SSL bind address: " << address
-                              << " on port: " << port;
+    LOG(server_logger, debug)
+        << "SSL bind address: " << address << " on port: " << port;
     acceptors_.push_back(acc);
     ++running_acceptors_;
     start_accept(acc);
@@ -207,10 +205,9 @@ void HttpServer::destroy(ConnectionPtr connection, bool release)
 
     {
         std::lock_guard<std::mutex> lock(connections_mutex_);
-        auto it = std::find_if(std::begin(connections_),
-                               std::end(connections_),
-                               [&](ConnectionPtr conn)
-                               { return connection == conn; });
+        auto it =
+            std::find_if(std::begin(connections_), std::end(connections_),
+                         [&](ConnectionPtr conn) { return connection == conn; });
         if (it == std::end(connections_))
         {
             return;
@@ -238,10 +235,8 @@ void HttpServer::start_accept(AcceptorPtr acceptor)
         mark(connection);
 
         acceptor->async_accept(connection->socket_,
-                               std::bind(&HttpServer::accept_callback,
-                                         this,
-                                         std::placeholders::_1,
-                                         acceptor,
+                               std::bind(&HttpServer::accept_callback, this,
+                                         std::placeholders::_1, acceptor,
                                          connection));
     }
 }
@@ -261,8 +256,8 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
         }
         else
         {
-            LOG(server_logger, error) << "Error during accept: "
-                                      << error.message();
+            LOG(server_logger, error)
+                << "Error during accept: " << error.message();
         }
 
         --running_acceptors_;
@@ -272,8 +267,8 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
     {
         if (running_)
         {
-            LOG(server_logger, debug) << "New connection accepted from: "
-                                      << connection->source();
+            LOG(server_logger, debug)
+                << "New connection accepted from: " << connection->source();
             connection->start();
         }
         else
@@ -319,13 +314,14 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
     }
 
     acceptor->open(endpoint.protocol());
-    acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true), error);
+    acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true),
+                         error);
     if (error)
     {
 
-        LOG(server_logger, warning) << "Cannot set REUSEADDR on " << host
-                                    << " on " << port
-                                    << ", error msg: " << error.message();
+        LOG(server_logger, warning)
+            << "Cannot set REUSEADDR on " << host << " on " << port
+            << ", error msg: " << error.message();
     }
 
     acceptor->bind(endpoint, error);
@@ -354,8 +350,8 @@ void HttpServer::connection_error(ConnectionPtr connection,
         ec != boost::asio::error::connection_reset &&
         ec != boost::asio::error::operation_aborted)
     {
-        LOG(server_logger, warning) << "Got an error from a Connection: "
-                                    << ec.message();
+        LOG(server_logger, warning)
+            << "Got an error from a Connection: " << ec.message();
     }
 
     destroy(connection);
@@ -381,4 +377,4 @@ void HttpServer::connection_notify_request(ConnectionPtr connection)
     }
 }
 
-}
+} // namespace HTTPP

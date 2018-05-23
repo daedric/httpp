@@ -9,19 +9,21 @@
  */
 
 #ifndef _HTTPP__HTTP_SERVER_HPP_
-# define _HTTPP__HTTP_SERVER_HPP_
+#define _HTTPP__HTTP_SERVER_HPP_
 
-# include <string>
-# include <vector>
-# include <memory>
-# include <mutex>
-# include <boost/asio.hpp>
-# include <boost/asio/ssl.hpp>
-# include <commonpp/thread/ThreadPool.hpp>
-# include <commonpp/core/LoggingInterface.hpp>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
 
-# include "http/Connection.hpp"
-# include "http/Request.hpp"
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+
+#include <commonpp/core/LoggingInterface.hpp>
+#include <commonpp/thread/ThreadPool.hpp>
+
+#include "http/Connection.hpp"
+#include "http/Request.hpp"
 
 namespace HTTPP
 {
@@ -66,7 +68,9 @@ public:
     }
 
     int getNbConnection() const noexcept
-    { return connection_count_; }
+    {
+        return connection_count_;
+    }
 
     void start(ThreadInit fct = ThreadInit());
     void stop();
@@ -98,8 +102,8 @@ private: // called by Connection
 private:
     bool running_ = false;
     std::shared_ptr<ThreadPool> pool_;
-    std::atomic_int running_acceptors_ = { 0 };
-    std::atomic_int connection_count_ = { 0 };
+    std::atomic_int running_acceptors_ = {0};
+    std::atomic_int connection_count_ = {0};
     std::vector<AcceptorPtr> acceptors_;
     SinkCb sink_;
 

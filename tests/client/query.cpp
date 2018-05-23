@@ -11,18 +11,17 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 
-#include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
+#include "httpp/HttpServer.hpp"
 
 using namespace HTTPP;
 
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 static const std::map<std::string, std::string> map = {
-    { "toto", "kiki" }, { "bad", "12^%$@#1245&/?\\" }
-};
+    {"toto", "kiki"}, {"bad", "12^%$@#1245&/?\\"}};
 
 void handler(Connection* connection)
 {
@@ -36,7 +35,6 @@ void handler(Connection* connection)
     }
 
     BOOST_CHECK_EQUAL(query_params.size(), map.size());
-
 
     connection->response().setCode(HTTPP::HTTP::HttpCode::Ok);
     connection->sendResponse();
@@ -52,10 +50,7 @@ BOOST_AUTO_TEST_CASE(query_params)
     HttpClient client;
 
     HttpClient::Request request;
-    request
-        .url("http://localhost:8080")
-        .joinUrlPath("test")
-        .joinUrlPath("kiki", true);
+    request.url("http://localhost:8080").joinUrlPath("test").joinUrlPath("kiki", true);
 
     for (const auto& kv : map)
     {

@@ -8,25 +8,24 @@
  *
  */
 
+#include <chrono>
 #include <iostream>
 #include <string>
-#include <chrono>
 
 #include <httpp/HttpServer.hpp>
 #include <httpp/http/Utils.hpp>
 #include <httpp/utils/Exception.hpp>
 
 using HTTPP::HttpServer;
-using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
-using HTTPP::HTTP::helper::ReadWholeRequest;
 using HTTPP::HTTP::HttpCode;
+using HTTPP::HTTP::Request;
+using HTTPP::HTTP::helper::ReadWholeRequest;
 
 void handler(Connection* connection)
 {
     read_whole_request(connection, [](std::unique_ptr<ReadWholeRequest> handle,
                                       const boost::system::error_code& ec) {
-
         if (ec)
         {
             throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
@@ -63,5 +62,6 @@ int main(int ac, char** av)
     server.start();
     server.setSink(&handler);
     server.bind("0.0.0.0", port);
-    while (true) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    while (true)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }

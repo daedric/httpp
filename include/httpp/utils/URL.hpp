@@ -9,9 +9,9 @@
  */
 
 #ifndef _HTTPP_UTILS_URL_HPP_
-# define _HTTPP_UTILS_URL_HPP_
+#define _HTTPP_UTILS_URL_HPP_
 
-# include <commonpp/net/http/URL.hpp>
+#include <commonpp/net/http/URL.hpp>
 
 namespace HTTPP
 {

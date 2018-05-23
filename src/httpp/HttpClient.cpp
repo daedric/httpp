@@ -14,8 +14,8 @@
 #include <mutex>
 #include <stdexcept>
 
-#include "http/client/Manager.hpp"
 #include "http/client/Connection.hpp"
+#include "http/client/Manager.hpp"
 
 namespace HTTPP
 {
@@ -73,7 +73,6 @@ std::pair<HttpClient::Future, HttpClient::AsyncHandler> HttpClient::handle_reque
     manager->handleRequest(method, std::move(connection));
     return std::make_pair(std::move(fut), hndl);
 }
-
 
 #define METHOD_post POST
 #define METHOD_get GET

@@ -10,15 +10,15 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
+#include "httpp/HttpServer.hpp"
 #include "httpp/utils/Exception.hpp"
 
 using namespace HTTPP;
 
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 void handler(Connection* connection)
 {
@@ -31,7 +31,6 @@ void handler(Connection* connection)
                 connection,
                 [](std::unique_ptr<HTTPP::HTTP::helper::ReadWholeRequest> hndl,
                    const boost::system::error_code& ec) {
-
                     if (ec)
                     {
                         throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
@@ -58,8 +57,7 @@ BOOST_AUTO_TEST_CASE(expect_continue)
     using PostEncoding = HttpClient::Request::PostEncoding;
 
     HttpClient::Request request;
-    request
-        .url("http://localhost:8080")
+    request.url("http://localhost:8080")
         .pushPostData("Hello", "world")
         .pushPostData("test", "123!^&%@#^&%$");
 

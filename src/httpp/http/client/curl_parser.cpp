@@ -10,9 +10,9 @@
 
 #include <cstring>
 
-#include <vector>
-#include <string>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "httpp/http/client/Response.hpp"
 
@@ -32,7 +32,7 @@ void parseCurlResponseHeader(const std::vector<char>& headers, Response& respons
     if (it == end)
     {
         // In case of a file://xxxx we don't have any header.
-        return ;
+        return;
     }
 
     it = std::find(it, end, '\r') + 2;
@@ -42,10 +42,8 @@ void parseCurlResponseHeader(const std::vector<char>& headers, Response& respons
         std::string key;
         std::string value;
 
-        auto key_end = std::find_if(it,
-                                    end,
-                                    [](const char c)
-                                    { return strchr(": \r", c) != nullptr; });
+        auto key_end = std::find_if(
+            it, end, [](const char c) { return strchr(": \r", c) != nullptr; });
 
         key.assign(it, key_end);
 

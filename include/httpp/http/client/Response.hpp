@@ -9,13 +9,13 @@
  */
 
 #ifndef _HTTPP__HTTP_CLIENT_RESPONSE_HPP_
-# define _HTTPP__HTTP_CLIENT_RESPONSE_HPP_
+#define _HTTPP__HTTP_CLIENT_RESPONSE_HPP_
 
-# include <vector>
+#include <vector>
 
-# include <httpp/http/Protocol.hpp>
-# include <httpp/http/client/Request.hpp>
-# include <httpp/utils/SortedVectorKP.hpp>
+#include <httpp/http/Protocol.hpp>
+#include <httpp/http/client/Request.hpp>
+#include <httpp/utils/SortedVectorKP.hpp>
 
 namespace HTTPP
 {
@@ -28,7 +28,8 @@ struct Response
 {
     HTTPP::HTTP::HttpCode code;
     std::vector<Header> headers;
-    auto getSortedHeaders() const -> decltype(UTILS::create_sorted_vector(headers))
+    auto getSortedHeaders() const
+        -> decltype(UTILS::create_sorted_vector(headers))
     {
         return UTILS::create_sorted_vector(headers);
     }
@@ -42,4 +43,3 @@ struct Response
 } // namespace HTTPP
 
 #endif // _HTTPP__HTTP_CLIENT_RESPONSE_HPP_
-

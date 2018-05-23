@@ -10,8 +10,8 @@
 
 #include "httpp/http/Response.hpp"
 
-#include <stdexcept>
 #include <cstring>
+#include <stdexcept>
 
 namespace HTTPP
 {
@@ -24,10 +24,12 @@ char const Response::SPACE[] = {
     ' ',
 };
 char const Response::HTTP_DELIMITER[] = {
-    '\r', '\n',
+    '\r',
+    '\n',
 };
 char const Response::HEADER_SEPARATOR[] = {
-    ':', ' ',
+    ':',
+    ' ',
 };
 char const Response::END_OF_STREAM_MARKER[] = {
     '0', '\r', '\n', '\r', '\n',
@@ -73,12 +75,14 @@ Response& Response::addHeader(std::string k, std::string v)
 
     if (k == "Transfer-Encoding")
     {
-        throw std::invalid_argument("Transfer-Encoding header should not be set.");
+        throw std::invalid_argument(
+            "Transfer-Encoding header should not be set.");
     }
 
     if (k.empty() || v.empty())
     {
-        throw std::invalid_argument("Attempting to addHeader with an empty key or value");
+        throw std::invalid_argument(
+            "Attempting to addHeader with an empty key or value");
     }
 
     headers_.emplace_back(std::move(k), std::move(v));
@@ -103,7 +107,8 @@ Response& Response::setBody(ChunkedResponseCallback&& callback)
     }
     else
     {
-        throw std::invalid_argument("Setting chunked response body to an empty callback");
+        throw std::invalid_argument(
+            "Setting chunked response body to an empty callback");
     }
 }
 

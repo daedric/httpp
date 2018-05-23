@@ -9,15 +9,15 @@
  */
 
 #ifndef _HTTPP_HTPP_RESPONSE_HPP_
-# define _HTTPP_HTPP_RESPONSE_HPP_
+#define _HTTPP_HTPP_RESPONSE_HPP_
 
-# include <functional>
-# include <vector>
-# include <string>
+#include <functional>
+#include <string>
+#include <vector>
 
-# include <boost/asio.hpp>
+#include <boost/asio.hpp>
 
-# include "Protocol.hpp"
+#include "Protocol.hpp"
 
 namespace HTTPP
 {
@@ -33,13 +33,11 @@ class Response
     static char const END_OF_STREAM_MARKER[5];
 
 public:
-
-    // A ChunkedResponseCallback is responsible for generating individual "chunks"
-    // of a response. Each call to the ChunkedResponseCallback should return a string
-    // representing the content for an individual chunk. An empty string signifying
-    // the end of the response.
+    // A ChunkedResponseCallback is responsible for generating individual
+    // "chunks" of a response. Each call to the ChunkedResponseCallback should
+    // return a string representing the content for an individual chunk. An
+    // empty string signifying the end of the response.
     using ChunkedResponseCallback = std::function<std::string()>;
-
 
     Response() = default;
     Response(HttpCode code);
@@ -116,7 +114,7 @@ public:
 
         if (!is_chunked_enconding())
         {
-             // response is non-chunked, send everything at once.
+            // response is non-chunked, send everything at once.
             if (!body_.empty())
             {
                 buffers.emplace_back(boost::asio::buffer(body_));
@@ -127,11 +125,9 @@ public:
         {
             // send headers, then each chunks individually.
             boost::asio::async_write(
-                writer,
-                buffers,
-                [this, &writer, writeHandler](
-                    boost::system::error_code const& ec, size_t size)
-                {
+                writer, buffers,
+                [this, &writer,
+                 writeHandler](boost::system::error_code const& ec, size_t size) {
                     // if there was an error sending the headers, notify the
                     // caller, otherwise start sending the chunks.
                     if (ec)
@@ -168,9 +164,8 @@ public:
     }
 
 private:
-
-    // Sends individual chunks for a chunked response, until the end-of-stream is
-    // sent or an error occurs.
+    // Sends individual chunks for a chunked response, until the end-of-stream
+    // is sent or an error occurs.
     template <typename Writer, typename WriteHandler>
     void write_chunk(Writer& writer, WriteHandler writeHandler)
     {
@@ -197,11 +192,9 @@ private:
             buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
 
             boost::asio::async_write(
-                writer,
-                buffers,
-                [this, &writer, writeHandler](
-                    boost::system::error_code const& ec, size_t size)
-                {
+                writer, buffers,
+                [this, &writer,
+                 writeHandler](boost::system::error_code const& ec, size_t size) {
                     if (ec)
                     {
                         // notify the original caller that an error occured

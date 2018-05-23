@@ -8,8 +8,8 @@
  *
  */
 
-#include <commonpp/core/string/stringify.hpp>
 #include <commonpp/core/string/std_tostring.hpp>
+#include <commonpp/core/string/stringify.hpp>
 
 #include "httpp/http/Request.hpp"
 #include <ostream>
@@ -55,4 +55,3 @@ void Request::clear()
 
 } // namespace HTTP
 } // namespace HTTPP
-

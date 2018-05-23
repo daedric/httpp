@@ -23,9 +23,7 @@ ReadWholeRequest::ReadWholeRequest(Connection* conn,
 {
 }
 
-ReadWholeRequest::ReadWholeRequest(Connection* conn,
-                                   Callback cb,
-                                   size_t size_limit)
+ReadWholeRequest::ReadWholeRequest(Connection* conn, Callback cb, size_t size_limit)
 : connection(conn)
 , cb(std::move(cb))
 , fallback(new std::vector<char>())

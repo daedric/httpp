@@ -9,11 +9,11 @@
  */
 
 #ifndef _HTTPP_UTILS_SORTED_VECTOR_KEY_PAIR_HPP_
-# define _HTTPP_UTILS_SORTED_VECTOR_KEY_PAIR_HPP_
+#define _HTTPP_UTILS_SORTED_VECTOR_KEY_PAIR_HPP_
 
-# include <algorithm>
-# include <vector>
-# include <cstring>
+#include <algorithm>
+#include <cstring>
+#include <vector>
 
 namespace HTTPP
 {
@@ -23,7 +23,8 @@ namespace UTILS
 struct case_insensitive
 {
     template <typename StringLike>
-    bool operator()(const StringLike & left, const StringLike & right) const noexcept
+    bool operator()(const StringLike& left, const StringLike& right) const
+        noexcept
     {
         if (left.size() < right.size())
         {
@@ -82,11 +83,11 @@ public:
 
 private:
     static const Value not_found_;
-
 };
 
-template <typename K, typename V, typename C=std::less<K>>
-SortedVectorKP<K, V, C> create_sorted_vector(const std::vector<std::pair<K, V>>& vector)
+template <typename K, typename V, typename C = std::less<K>>
+SortedVectorKP<K, V, C>
+create_sorted_vector(const std::vector<std::pair<K, V>>& vector)
 {
     return SortedVectorKP<K, V, C>(vector);
 }
@@ -96,6 +97,5 @@ const V SortedVectorKP<K, V, C>::not_found_{};
 
 } // namespace UTILS
 } // namespace HTTPP
-
 
 #endif // !_HTTPP_UTILS_SORTED_VECTOR_KEY_PAIR_HPP_

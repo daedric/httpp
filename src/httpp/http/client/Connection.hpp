@@ -9,33 +9,36 @@
  */
 
 #ifndef HTTPP_HTTP_CLIENT_DETAIL_CONNECTION_HPP_
-# define HTTPP_HTTP_CLIENT_DETAIL_CONNECTION_HPP_
+#define HTTPP_HTTP_CLIENT_DETAIL_CONNECTION_HPP_
 
-# include <curl/curl.h>
-# include <memory>
-# include <vector>
-# include <atomic>
-# include <mutex>
-# include <future>
+#include <atomic>
+#include <curl/curl.h>
+#include <future>
+#include <memory>
+#include <mutex>
+#include <vector>
 
-# include <boost/asio.hpp>
+#include <boost/asio.hpp>
 
-# include <commonpp/thread/ThreadPool.hpp>
-# include <commonpp/core/LoggingInterface.hpp>
+#include <commonpp/core/LoggingInterface.hpp>
+#include <commonpp/thread/ThreadPool.hpp>
 
-# include "httpp/detail/config.hpp"
-# include "httpp/http/Protocol.hpp"
-# include "httpp/http/client/Request.hpp"
-# include "httpp/http/client/Response.hpp"
+#include "httpp/detail/config.hpp"
+#include "httpp/http/Protocol.hpp"
+#include "httpp/http/client/Request.hpp"
+#include "httpp/http/client/Response.hpp"
 
-namespace HTTPP {
-namespace HTTP {
-namespace client {
+namespace HTTPP
+{
+namespace HTTP
+{
+namespace client
+{
 
-void parseCurlResponseHeader(const std::vector<char>& headers,
-                             Response& response);
+void parseCurlResponseHeader(const std::vector<char>& headers, Response& response);
 
-namespace detail {
+namespace detail
+{
 
 struct Manager;
 
@@ -54,7 +57,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
 
     using ExceptionPtr = HTTPP::detail::ExceptionPtr;
 
-    using CompletionHandler = std::function<void (Future<Response>&&)>;
+    using CompletionHandler = std::function<void(Future<Response>&&)>;
 
     Connection(Manager& manager, boost::asio::io_service& service);
 
@@ -81,8 +84,8 @@ struct Connection : public std::enable_shared_from_this<Connection>
         auto rc = curl_easy_getinfo(handle, info, std::addressof(data));
         if (rc != CURLE_OK)
         {
-            LOG(client_connection_logger, error) << "Can't get info: "
-                                                 << curl_easy_strerror(rc);
+            LOG(client_connection_logger, error)
+                << "Can't get info: " << curl_easy_strerror(rc);
             throw std::runtime_error(curl_easy_strerror(rc));
         }
 
@@ -90,7 +93,8 @@ struct Connection : public std::enable_shared_from_this<Connection>
     }
 
     void init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& sockets);
-    static ConnectionPtr createConnection(Manager& manager, boost::asio::io_service& service);
+    static ConnectionPtr createConnection(Manager& manager,
+                                          boost::asio::io_service& service);
 
     static size_t writefn(char* buffer, size_t size, size_t nmemb, void* userdata);
     static size_t writeHd(char* buffer, size_t size, size_t nmemb, void* userdata);
@@ -149,8 +153,8 @@ struct Connection : public std::enable_shared_from_this<Connection>
 
     CURL* handle = nullptr;
     int poll_action = 0;
-    std::atomic_bool cancelled = { false };
-    char error_buffer[CURL_ERROR_SIZE] = { 0 };
+    std::atomic_bool cancelled = {false};
+    char error_buffer[CURL_ERROR_SIZE] = {0};
 
     boost::asio::io_service& service;
     boost::asio::ip::tcp::socket* socket = nullptr;
@@ -164,7 +168,7 @@ struct Connection : public std::enable_shared_from_this<Connection>
     bool expect_continue = false;
     std::vector<char> header;
     std::vector<char> buffer;
-    std::atomic_bool result_notified = { true };
+    std::atomic_bool result_notified = {true};
 
     struct curl_slist* http_headers = nullptr;
 };

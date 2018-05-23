@@ -8,18 +8,18 @@
  *
  */
 
+#include <chrono>
 #include <iostream>
 #include <string>
-#include <chrono>
 
 #include <httpp/HttpServer.hpp>
 #include <httpp/http/Utils.hpp>
 #include <httpp/utils/Exception.hpp>
- 
+
 using HTTPP::HttpServer;
-using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::HttpCode;
+using HTTPP::HTTP::Request;
 
 void chunked_handler(Connection* connection)
 {
@@ -27,8 +27,7 @@ void chunked_handler(Connection* connection)
     auto numChunks = 10;
     auto chunkSize = 8192;
 
-    auto body = [numChunks, chunkSize]() mutable -> std::string
-    {
+    auto body = [numChunks, chunkSize]() mutable -> std::string {
         if (numChunks-- > 0)
         {
             return std::string(chunkSize, 'X');
@@ -52,6 +51,6 @@ int main(int, char**)
     server.bind("localhost", "8080");
     while (true)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));        
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }

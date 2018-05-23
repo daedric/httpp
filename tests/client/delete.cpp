@@ -10,14 +10,14 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
+#include "httpp/HttpServer.hpp"
 
 using namespace HTTPP;
 
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 void handler(Connection* connection)
 {
@@ -39,5 +39,5 @@ BOOST_AUTO_TEST_CASE(delete_test)
     HttpClient client2;
 
     auto r = client.get(std::move(request));
-    r =  client2.get(std::move(r.request));
+    r = client2.get(std::move(r.request));
 }

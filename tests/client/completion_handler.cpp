@@ -11,20 +11,18 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 
-#include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
+#include "httpp/HttpServer.hpp"
 
 using namespace HTTPP;
 
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 void handler(Connection* connection)
 {
-    connection->response()
-        .setCode(HTTPP::HTTP::HttpCode::Ok)
-        .setBody("Hello world");
+    connection->response().setCode(HTTPP::HTTP::HttpCode::Ok).setBody("Hello world");
     connection->sendResponse();
 }
 
@@ -38,18 +36,14 @@ BOOST_AUTO_TEST_CASE(completion_handler)
     HttpClient client;
 
     HttpClient::Request request;
-    request
-        .url("http://localhost:8080");
+    request.url("http://localhost:8080");
     bool b = true;
-    client.async_get(
-            std::move(request),
-            [&b](HttpClient::Future future)
-            {
-                auto response = future.get();
-                std::string body(response.body.data(), response.body.size());
-                BOOST_CHECK_EQUAL(body, "Hello world");
-                b = false;
-            });
+    client.async_get(std::move(request), [&b](HttpClient::Future future) {
+        auto response = future.get();
+        std::string body(response.body.data(), response.body.size());
+        BOOST_CHECK_EQUAL(body, "Hello world");
+        b = false;
+    });
 
     while (b)
     {
@@ -57,4 +51,3 @@ BOOST_AUTO_TEST_CASE(completion_handler)
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
-

@@ -10,11 +10,11 @@
  */
 
 #ifndef HTTPP_UTILS_LAZYDECODEDVALUE_HPP
-# define HTTPP_UTILS_LAZYDECODEDVALUE_HPP
+#define HTTPP_UTILS_LAZYDECODEDVALUE_HPP
 
-# include <string>
-# include <iosfwd>
-# include <boost/utility/string_ref.hpp>
+#include <boost/utility/string_ref.hpp>
+#include <iosfwd>
+#include <string>
 
 namespace HTTPP
 {
@@ -46,7 +46,6 @@ private:
     boost::string_ref raw_value_;
     mutable std::string decoded_value_;
 };
-
 
 bool operator==(const LazyDecodedValue&, const char*);
 bool operator==(const char*, const LazyDecodedValue&);

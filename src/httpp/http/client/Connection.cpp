@@ -11,13 +11,13 @@
 #include "Connection.hpp"
 
 #include <curl/curl.h>
-#include <memory>
 #include <iostream>
-#include <vector>
+#include <memory>
 #include <thread>
+#include <vector>
 
-#include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/asio.hpp>
 #include <boost/exception_ptr.hpp>
 
 #include "httpp/http/Protocol.hpp"
@@ -27,11 +27,15 @@
 
 #include "Manager.hpp"
 
-namespace HTTPP {
-namespace HTTP {
-namespace client {
+namespace HTTPP
+{
+namespace HTTP
+{
+namespace client
+{
 
-namespace detail {
+namespace detail
+{
 
 DECLARE_LOGGER(client_connection_logger, "httpp::client::Connection");
 
@@ -51,8 +55,8 @@ Connection::Connection(Manager& manager, boost::asio::io_service& service)
 Connection::~Connection()
 {
 
-    LOG(client_connection_logger, trace) << "Destroy Connection: " << this
-                                         << ", socket: " << socket;
+    LOG(client_connection_logger, trace)
+        << "Destroy Connection: " << this << ", socket: " << socket;
 
     if (http_headers)
     {
@@ -177,8 +181,8 @@ curl_socket_t Connection::opensocket(void* clientp,
 
         if (ec)
         {
-            LOG(client_connection_logger, error) << "Cannot open a socket: "
-                                                 << ec.message();
+            LOG(client_connection_logger, error)
+                << "Cannot open a socket: " << ec.message();
             return CURL_SOCKET_BAD;
         }
 
@@ -228,9 +232,9 @@ void Connection::setSocket(curl_socket_t curl_socket)
                                  std::to_string(curl_socket));
     }
 
-    LOG(client_connection_logger, trace) << "Connection: " << this
-                                         << ": Set curl socket: " << curl_socket
-                                         << ", socket: " << it->second;
+    LOG(client_connection_logger, trace)
+        << "Connection: " << this << ": Set curl socket: " << curl_socket
+        << ", socket: " << it->second;
     socket = it->second;
 }
 
@@ -238,24 +242,24 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
 {
     switch (method)
     {
-     case HTTPP::HTTP::Method::GET:
+    case HTTPP::HTTP::Method::GET:
         conn_setopt(CURLOPT_HTTPGET, 1L);
         break;
-     case HTTPP::HTTP::Method::POST:
+    case HTTPP::HTTP::Method::POST:
         conn_setopt(CURLOPT_POST, 1L);
         break;
-     case HTTPP::HTTP::Method::HEAD:
+    case HTTPP::HTTP::Method::HEAD:
         conn_setopt(CURLOPT_NOBODY, 1L);
         break;
 
-     case HTTPP::HTTP::Method::PUT:
-     case HTTPP::HTTP::Method::DELETE_:
-     case HTTPP::HTTP::Method::OPTIONS:
-     case HTTPP::HTTP::Method::TRACE:
-     case HTTPP::HTTP::Method::CONNECT:
-         std::string method_str = to_string(method);
-         conn_setopt(CURLOPT_CUSTOMREQUEST, method_str.data());
-         break;
+    case HTTPP::HTTP::Method::PUT:
+    case HTTPP::HTTP::Method::DELETE_:
+    case HTTPP::HTTP::Method::OPTIONS:
+    case HTTPP::HTTP::Method::TRACE:
+    case HTTPP::HTTP::Method::CONNECT:
+        std::string method_str = to_string(method);
+        conn_setopt(CURLOPT_CUSTOMREQUEST, method_str.data());
+        break;
     }
 
     if (!request.query_params_.empty())
@@ -305,13 +309,8 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
     {
         for (const auto& e : request.post_params_)
         {
-            curl_formadd(&post,
-                            &last,
-                            CURLFORM_COPYNAME,
-                            e.first.data(),
-                            CURLFORM_COPYCONTENTS,
-                            e.second.data(),
-                            CURLFORM_END);
+            curl_formadd(&post, &last, CURLFORM_COPYNAME, e.first.data(),
+                         CURLFORM_COPYCONTENTS, e.second.data(), CURLFORM_END);
         }
 
         conn_setopt(CURLOPT_HTTPPOST, post);
@@ -331,15 +330,15 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
         conn_setopt(CURLOPT_TIMEOUT, request.timeout_.count());
     }
     // only on curl > 7.25, disable it for now
-    //conn_setopt(CURLOPT_TCP_KEEPALIVE, 1L);
+    // conn_setopt(CURLOPT_TCP_KEEPALIVE, 1L);
 
     if (!request.http_headers_.empty())
     {
         http_headers = nullptr;
         for (const auto& h : request.http_headers_)
         {
-            http_headers = curl_slist_append(
-                http_headers, (h.first + ": " + h.second).data());
+            http_headers = curl_slist_append(http_headers,
+                                             (h.first + ": " + h.second).data());
         }
 
         conn_setopt(CURLOPT_HTTPHEADER, http_headers);
@@ -377,7 +376,8 @@ void Connection::buildResponse(CURLcode code)
 {
     if (code == CURLE_OPERATION_TIMEDOUT)
     {
-        complete(HTTPP::detail::make_exception_ptr(HTTPP::UTILS::RequestTimeout()));
+        complete(
+            HTTPP::detail::make_exception_ptr(HTTPP::UTILS::RequestTimeout()));
         return;
     }
     else if (code != CURLE_OK)
@@ -406,9 +406,7 @@ void Connection::buildResponse(CURLcode code)
         {
             auto begin = std::begin(header);
             auto end = std::end(header);
-            auto it = std::search(begin,
-                                  end,
-                                  std::begin(HEADER_BODY_SEP),
+            auto it = std::search(begin, end, std::begin(HEADER_BODY_SEP),
                                   std::end(HEADER_BODY_SEP));
 
             if (it != end)
@@ -432,7 +430,6 @@ void Connection::buildResponse(CURLcode code)
             std::move(response.request))));
         return;
     }
-
 }
 
 void Connection::complete(ExceptionPtr ex)
@@ -461,8 +458,8 @@ void Connection::complete(ExceptionPtr ex)
         if (dispatch)
         {
             auto ptr = shared_from_this();
-            dispatch->post([ptr]
-                           { ptr->completion_handler(ptr->promise.get_future()); });
+            dispatch->post(
+                [ptr] { ptr->completion_handler(ptr->promise.get_future()); });
         }
         else
         {

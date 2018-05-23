@@ -16,8 +16,8 @@
 #include <mutex>
 #include <stdexcept>
 
-#include "httpp/utils/Exception.hpp"
 #include "Connection.hpp"
+#include "httpp/utils/Exception.hpp"
 
 static std::once_flag curl_init_flag;
 static void init_curl()
@@ -70,25 +70,24 @@ Manager::~Manager()
         Promise<void> promise;
         auto future = promise.get_future();
 
-        io.dispatch([this, &promise, &futures]
-                    {
-                        running = false;
+        io.dispatch([this, &promise, &futures] {
+            running = false;
 
-                        auto conns = current_connections;
+            auto conns = current_connections;
 
-                        for (auto& conn : conns)
-                        {
-                            bool expected = false;
-                            if (conn.first->cancelled.compare_exchange_strong(expected, true))
-                            {
-                                LOG(manager_logger, info)
-                                    << "Cancel one connection still alive";
-                                futures.emplace_back(cancel_connection(conn.first));
-                            }
-                        }
+            for (auto& conn : conns)
+            {
+                bool expected = false;
+                if (conn.first->cancelled.compare_exchange_strong(expected, true))
+                {
+                    LOG(manager_logger, info)
+                        << "Cancel one connection still alive";
+                    futures.emplace_back(cancel_connection(conn.first));
+                }
+            }
 
-                        promise.set_value();
-                    });
+            promise.set_value();
+        });
 
         future.get();
     }
@@ -103,11 +102,10 @@ Manager::~Manager()
     {
         Promise<void> promise;
         auto future = promise.get_future();
-        io.dispatch([this, &promise]
-                    {
-                        checkHandles();
-                        promise.set_value();
-                    });
+        io.dispatch([this, &promise] {
+            checkHandles();
+            promise.set_value();
+        });
         future.get();
     }
 
@@ -133,13 +131,13 @@ void Manager::timer_cb(const boost::system::error_code& error)
     if (!error)
     {
         int still_running = 0;
-        auto rc = curl_multi_socket_action(
-            handler, CURL_SOCKET_TIMEOUT, 0, &still_running);
+        auto rc = curl_multi_socket_action(handler, CURL_SOCKET_TIMEOUT, 0,
+                                           &still_running);
 
         if (rc != CURLM_OK)
         {
-            LOG(manager_logger, error) << "Error curl multi: "
-                                       << curl_multi_strerror(rc);
+            LOG(manager_logger, error)
+                << "Error curl multi: " << curl_multi_strerror(rc);
             throw std::runtime_error("timer_cb error");
         }
 
@@ -167,22 +165,17 @@ int Manager::curl_timer_cb(CURLM*, long timeout_ms, void* userdata)
     }
     else
     {
-        manager->io.dispatch([manager]
-                {
-                    manager->timer.cancel();
-                    boost::system::error_code error;
-                    manager->timer_cb(error);
-                });
+        manager->io.dispatch([manager] {
+            manager->timer.cancel();
+            boost::system::error_code error;
+            manager->timer_cb(error);
+        });
     }
 
     return 0;
 }
 
-int Manager::sock_cb(CURL* easy,
-                     curl_socket_t s,
-                     int what,
-                     void* multi_private,
-                     void*)
+int Manager::sock_cb(CURL* easy, curl_socket_t s, int what, void* multi_private, void*)
 {
     Manager* manager = (Manager*)multi_private;
     LOG(manager_logger, trace) << "Manager(" << manager << ") sock_cb: "
@@ -215,8 +208,8 @@ void Manager::removeHandle(CURL* easy)
 
     if (rc != CURLM_OK)
     {
-        LOG(manager_logger, error) << "Cannot unregister easy handle: "
-                                   << curl_multi_strerror(rc);
+        LOG(manager_logger, error)
+            << "Cannot unregister easy handle: " << curl_multi_strerror(rc);
     }
 }
 
@@ -226,8 +219,8 @@ void Manager::removeConnection(std::shared_ptr<Connection> conn)
     auto it = current_connections.find(conn);
     if (it == std::end(current_connections))
     {
-        LOG(manager_logger, error) << "Cannot find connection: " << conn
-                                   << " to delete";
+        LOG(manager_logger, error)
+            << "Cannot find connection: " << conn << " to delete";
         throw std::runtime_error("Cannot find connection to delete");
         return;
     }
@@ -252,8 +245,8 @@ void Manager::checkHandles()
             curl_easy_getinfo(easy, CURLINFO_PRIVATE, &conn);
             conn->poll_action = 0;
 
-            LOG(manager_logger, trace) << "CheckHandles: Connection done: "
-                                       << conn;
+            LOG(manager_logger, trace)
+                << "CheckHandles: Connection done: " << conn;
             auto shared_ptr = conn->shared_from_this();
             removeConnection(shared_ptr);
             shared_ptr->buildResponse(result);
@@ -263,8 +256,8 @@ void Manager::checkHandles()
     while (!cancelled_connections.empty())
     {
         auto cancelled = std::move(*cancelled_connections.begin());
-        LOG(manager_logger, trace) << "CheckHandles: Connection cancel: "
-                                   << cancelled.first;
+        LOG(manager_logger, trace)
+            << "CheckHandles: Connection cancel: " << cancelled.first;
 
         cancelled_connections.erase(cancelled_connections.begin());
 
@@ -279,8 +272,8 @@ void Manager::checkHandles()
         }
         else
         {
-            LOG(manager_logger, warning) << "Connection already deleted: "
-                                         << cancelled.first;
+            LOG(manager_logger, warning)
+                << "Connection already deleted: " << cancelled.first;
         }
     }
 }
@@ -290,7 +283,6 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
                         const boost::system::error_code& ec)
 {
     int still_running = 0;
-
 
     if (ec)
     {
@@ -317,9 +309,9 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
         return;
     }
 
-    LOG(manager_logger, trace) << "Manager: " << this << ", performOp: "
-                               << "Start operation: " << action
-                               << " on connection: " << connection;
+    LOG(manager_logger, trace)
+        << "Manager: " << this << ", performOp: "
+        << "Start operation: " << action << " on connection: " << connection;
     it->second = PerformIo;
 
     auto socket_native = connection->socket->native_handle();
@@ -327,13 +319,13 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
     auto rc =
         curl_multi_socket_action(handler, socket_native, action, &still_running);
 
-    LOG(manager_logger, trace) << "Manager: " << this << ", performOp: "
-                               << "Operation: " << action
-                               << " finished on socket: " << connection;
+    LOG(manager_logger, trace)
+        << "Manager: " << this << ", performOp: "
+        << "Operation: " << action << " finished on socket: " << connection;
     if (rc != CURLM_OK)
     {
-        LOG(manager_logger, error) << "Error happened in perfomOp: "
-                                   << curl_multi_strerror(rc);
+        LOG(manager_logger, error)
+            << "Error happened in perfomOp: " << curl_multi_strerror(rc);
         auto exc = HTTPP::detail::make_exception_ptr(
             std::runtime_error(curl_multi_strerror(rc)));
         connection->complete(exc);
@@ -377,24 +369,20 @@ void Manager::performOp(std::shared_ptr<Connection> connection,
 
 void Manager::poll(std::shared_ptr<Connection> connection, int action)
 {
-    auto it  = current_connections.find(connection);
+    auto it = current_connections.find(connection);
 
     if (it == std::end(current_connections))
     {
-        LOG(manager_logger, error) << "Cannot poll an untracked connection: "
-                                   << connection;
+        LOG(manager_logger, error)
+            << "Cannot poll an untracked connection: " << connection;
         return;
     }
 
     if (it->second == Default)
     {
         current_connections[connection] = Polling;
-        connection->poll(action,
-                         std::bind(&Manager::performOp,
-                                   this,
-                                   connection,
-                                   action,
-                                   std::placeholders::_1));
+        connection->poll(action, std::bind(&Manager::performOp, this, connection,
+                                           action, std::placeholders::_1));
     }
 }
 
@@ -403,10 +391,8 @@ Manager::Future<void> Manager::cancel_connection(std::shared_ptr<Connection> con
     auto promise = std::make_shared<Promise<void>>();
     auto future = promise->get_future();
 
-    io.dispatch(std::bind(&Manager::cancel_connection_io_thread,
-                          this,
-                          std::move(connection),
-                          std::move(promise)));
+    io.dispatch(std::bind(&Manager::cancel_connection_io_thread, this,
+                          std::move(connection), std::move(promise)));
     return future;
 }
 
@@ -431,8 +417,8 @@ void Manager::cancel_connection_io_thread(std::shared_ptr<Connection> connection
 
     if (current_connection_state == Cancelled)
     {
-        LOG(manager_logger, warning) << "Connection already cancelled: "
-                                     << connection;
+        LOG(manager_logger, warning)
+            << "Connection already cancelled: " << connection;
         promise.set_value();
         return;
     }
@@ -471,83 +457,75 @@ int Manager::closeSocket(curl_socket_t curl_socket)
     Promise<int> promise;
     auto future = promise.get_future();
 
-    io.dispatch([this, curl_socket, &promise]
-                {
-                    auto it = sockets.find(curl_socket);
-                    if (it == std::end(sockets))
-                    {
-                        LOG(manager_logger, error)
-                            << "Cannot find a socket to close";
-                        promise.set_value(1);
-                        return;
-                    }
+    io.dispatch([this, curl_socket, &promise] {
+        auto it = sockets.find(curl_socket);
+        if (it == std::end(sockets))
+        {
+            LOG(manager_logger, error) << "Cannot find a socket to close";
+            promise.set_value(1);
+            return;
+        }
 
-                    LOG(manager_logger, trace)
-                        << "Delete close socket: " << it->second
-                        << ", curl socket: " << curl_socket
-                        << ", socket native_handle: "
-                        << it->second->native_handle();
+        LOG(manager_logger, trace)
+            << "Delete close socket: " << it->second
+            << ", curl socket: " << curl_socket
+            << ", socket native_handle: " << it->second->native_handle();
 
-                    delete it->second;
-                    sockets.erase(it);
-                    promise.set_value(0);
-                });
+        delete it->second;
+        sockets.erase(it);
+        promise.set_value(0);
+    });
 
     return future.get();
 }
 
 void Manager::handleRequest(Method method, Connection::ConnectionPtr conn)
 {
-    io.post([this, method, conn]()
-            {
+    io.post([this, method, conn]() {
+        if (!running)
+        {
+            LOG(manager_logger, error)
+                << "Refuse connection, manager is stopped";
+            return;
+        }
 
-                if (!running)
-                {
-                    LOG(manager_logger, error)
-                        << "Refuse connection, manager is stopped";
-                    return;
-                }
+        conn->dispatch = std::addressof(dispatch);
 
-                conn->dispatch = std::addressof(dispatch);
+        try
+        {
+            conn->configureRequest(method);
+        }
+        catch (const std::exception& exc)
+        {
+            LOG(manager_logger, error)
+                << "Error when configuring the request: " << exc.what();
+            conn->complete(HTTPP::detail::current_exception());
+            return;
+        }
 
-                try
-                {
-                    conn->configureRequest(method);
-                }
-                catch (const std::exception& exc)
-                {
-                    LOG(manager_logger, error)
-                        << "Error when configuring the request: " << exc.what();
-                    conn->complete(HTTPP::detail::current_exception());
-                    return;
-                }
+        auto pair = current_connections.emplace(conn, Default);
 
-                auto pair = current_connections.emplace(conn, Default);
+        if (!pair.second)
+        {
+            LOG(manager_logger, error) << "Connection already present: " << conn;
+            conn->complete(HTTPP::detail::make_exception_ptr(std::runtime_error(
+                "Cannot schedule an operation for an already "
+                "managed connection")));
+            return;
+        }
 
-                if (!pair.second)
-                {
-                    LOG(manager_logger, error) << "Connection already present: "
-                                               << conn;
-                    conn->complete(
-                        HTTPP::detail::make_exception_ptr(std::runtime_error(
-                            "Cannot schedule an operation for an already "
-                            "managed connection")));
-                    return;
-                }
-
-                auto rc = curl_multi_add_handle(handler, conn->handle);
-                if (rc != CURLM_OK)
-                {
-                    std::string message = curl_multi_strerror(rc);
-                    LOG(manager_logger, error)
-                        << "Error scheduling a new request: " << message;
-                    removeConnection(conn);
-                    conn->complete(HTTPP::detail::make_exception_ptr(
-                        std::runtime_error(message)));
-                    return;
-                }
-
-            });
+        auto rc = curl_multi_add_handle(handler, conn->handle);
+        if (rc != CURLM_OK)
+        {
+            std::string message = curl_multi_strerror(rc);
+            LOG(manager_logger, error)
+                << "Error scheduling a new request: " << message;
+            removeConnection(conn);
+            conn->complete(
+                HTTPP::detail::make_exception_ptr(std::runtime_error(message)));
+            return;
+        }
+    });
 }
 
 } // namespace detail

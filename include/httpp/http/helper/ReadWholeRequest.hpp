@@ -26,9 +26,7 @@ struct ReadWholeRequest
                      Callback,
                      size_t size_limit = 0);
 
-    ReadWholeRequest(Connection* conn,
-                     Callback,
-                     size_t size_limit = 0);
+    ReadWholeRequest(Connection* conn, Callback, size_t size_limit = 0);
 
     void start();
     void operator()(boost::system::error_code const& errc);
@@ -43,9 +41,7 @@ struct ReadWholeRequest
 } // namespace helper
 
 template <typename Callable>
-void read_whole_request(Connection* conn,
-                        Callable&& callable,
-                        size_t size_limit = 0)
+void read_whole_request(Connection* conn, Callable&& callable, size_t size_limit = 0)
 {
     auto h = new helper::ReadWholeRequest(conn, std::forward<Callable>(callable),
                                           size_limit);

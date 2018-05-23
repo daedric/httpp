@@ -8,9 +8,9 @@
  *
  */
 
+#include <chrono>
 #include <iostream>
 #include <string>
-#include <chrono>
 
 #include <httpp/HttpServer.hpp>
 #include <httpp/http/RestDispatcher.hpp>
@@ -18,12 +18,12 @@
 #include <httpp/utils/Exception.hpp>
 
 using HTTPP::HttpServer;
-using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Connection;
-using HTTPP::HTTP::RestDispatcher;
-using HTTPP::HTTP::helper::ReadWholeRequest;
 using HTTPP::HTTP::HttpCode;
 using HTTPP::HTTP::Method;
+using HTTPP::HTTP::Request;
+using HTTPP::HTTP::RestDispatcher;
+using HTTPP::HTTP::helper::ReadWholeRequest;
 
 void handler_with_body(ReadWholeRequest::Handle handle)
 {
@@ -63,6 +63,6 @@ int main(int, char**)
         });
 
     server.bind("0.0.0.0", "8080");
-    while (true) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    while (true)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
-

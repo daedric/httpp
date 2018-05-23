@@ -49,7 +49,7 @@ public:
     {
         allowed_method.fill(false);
     }
-    
+
     Route& upon(HTTP::Method h);
 
     template <typename... Tail>

@@ -9,10 +9,10 @@
  */
 
 #ifndef _HTTPP_HTPP_UTILS_HPP_
-# define _HTTPP_HTPP_UTILS_HPP_
+#define _HTTPP_HTPP_UTILS_HPP_
 
-# include "Request.hpp"
-# include "Response.hpp"
+#include "Request.hpp"
+#include "Response.hpp"
 
 namespace HTTPP
 {

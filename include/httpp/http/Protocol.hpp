@@ -9,14 +9,14 @@
  */
 
 #ifndef HTTPP_HTTP_PROTOCOL_HPP_
-# define HTTPP_HTTP_PROTOCOL_HPP_
+#define HTTPP_HTTP_PROTOCOL_HPP_
 
-# include <string>
-# include <boost/utility/string_ref.hpp>
-# include <commonpp/core/string/std_tostring.hpp>
+#include <boost/utility/string_ref.hpp>
+#include <commonpp/core/string/std_tostring.hpp>
+#include <string>
 
-# include <httpp/detail/config.hpp>
-# include <httpp/utils/LazyDecodedValue.hpp>
+#include <httpp/detail/config.hpp>
+#include <httpp/utils/LazyDecodedValue.hpp>
 
 namespace HTTPP
 {
@@ -26,25 +26,25 @@ namespace HTTP
 using KV = std::pair<std::string, std::string>;
 using KVRef = std::pair<boost::string_ref, boost::string_ref>;
 using Header = KV;
-# if HTTPP_PARSER_BACKEND_IS_RAGEL
+#if HTTPP_PARSER_BACKEND_IS_RAGEL
 using QueryParamRef = std::pair<std::string, UTILS::LazyDecodedValue>;
 using HeaderRef = KVRef;
-# else
+#else
 using QueryParamRef = KV;
 using HeaderRef = KV;
-# endif
+#endif
 
-static char const HEADER_BODY_SEP[] = { '\r', '\n', '\r', '\n' };
+static char const HEADER_BODY_SEP[] = {'\r', '\n', '\r', '\n'};
 
 enum class Method
 {
-    HEAD    ,
-    GET     ,
-    POST    ,
-    PUT     ,
-    DELETE_ , // '_' for msvc workaround
-    OPTIONS ,
-    TRACE   ,
+    HEAD,
+    GET,
+    POST,
+    PUT,
+    DELETE_, // '_' for msvc workaround
+    OPTIONS,
+    TRACE,
     CONNECT
 };
 
@@ -112,4 +112,3 @@ const char* getDefaultMessage(HttpCode code);
 } // namespace HTTPP
 
 #endif // !HTTPP_HTTP_PROTOCOL_HPP_
-

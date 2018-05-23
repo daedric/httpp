@@ -8,24 +8,24 @@
  *
  */
 
-#include <iostream>
 #include <chrono>
-#include <thread>
+#include <iostream>
 #include <istream>
+#include <thread>
 
-#include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/test/unit_test.hpp>
+#include <boost/asio.hpp>
 #include <boost/preprocessor/stringize.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpServer.hpp"
 #include "httpp/utils/Exception.hpp"
 
 using namespace HTTPP;
 
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 static const std::string REQUEST = "GET / HTTP/1.1\r\n\r\n"
                                    "GET / HTTP/1.1\r\n\r\n"
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(pipeline)
     boost::asio::io_service io_service;
     tcp::socket s(io_service);
     tcp::resolver resolver(io_service);
-    boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
+    boost::asio::connect(s, resolver.resolve({"localhost", "8000"}));
     boost::asio::write(s, boost::asio::buffer(REQUEST));
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(pipeline)
                 ++i;
             }
 
-            //std::cout << i << std::endl;
+            // std::cout << i << std::endl;
         } while (not is.eof() || i < 3);
     }
 }
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(pipeline_with_body)
     boost::asio::io_service io_service;
     tcp::socket s(io_service);
     tcp::resolver resolver(io_service);
-    boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
+    boost::asio::connect(s, resolver.resolve({"localhost", "8000"}));
     boost::asio::write(s, boost::asio::buffer(REQUEST_BODY));
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
@@ -132,10 +132,9 @@ BOOST_AUTO_TEST_CASE(pipeline_with_body)
                 ++i;
             }
 
-            //std::cout << i << std::endl;
+            // std::cout << i << std::endl;
         } while (not is.eof() || i < 3);
     }
 
     BOOST_CHECK_EQUAL(total_size, BODY.size() * 3);
 }
-

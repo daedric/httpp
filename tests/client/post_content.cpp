@@ -10,16 +10,16 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
-#include "httpp/utils/Exception.hpp"
+#include "httpp/HttpServer.hpp"
 #include "httpp/http/RestDispatcher.hpp"
+#include "httpp/utils/Exception.hpp"
 
 using namespace HTTPP;
 
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 static const std::string EXPECTED_BODY(1024 * 100, 'a'); // 1MB
 
@@ -33,37 +33,33 @@ BOOST_AUTO_TEST_CASE(post_content)
     server.start();
 
     HTTP::RestDispatcher dispatcher(server);
-    dispatcher.add<HTTP::Method::POST>("/", [](HTTP::helper::ReadWholeRequest::Handle
-                                                   hndl) {
+    dispatcher.add<HTTP::Method::POST>(
+        "/", [](HTTP::helper::ReadWholeRequest::Handle hndl) {
+            if (hndl->body.empty())
+            {
+                hndl->connection->response()
+                    .setCode(HTTP::HttpCode::BadRequest)
+                    .setBody("Expected body!");
+                hndl->connection->sendResponse();
+                return;
+            }
 
-        if (hndl->body.empty())
-        {
+            BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()),
+                              EXPECTED_BODY);
+
             hndl->connection->response()
-                .setCode(HTTP::HttpCode::BadRequest)
-                .setBody("Expected body!");
+                .setCode(HTTP::HttpCode::Ok)
+                .connectionShouldBeClosed(true)
+                .setBody(EXPECTED_BODY);
             hndl->connection->sendResponse();
-            return;
-        }
-
-        BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()),
-                          EXPECTED_BODY);
-
-        hndl->connection->response()
-            .setCode(HTTP::HttpCode::Ok)
-            .connectionShouldBeClosed(true)
-            .setBody(EXPECTED_BODY);
-        hndl->connection->sendResponse();
-    });
+        });
 
     server.bind("localhost", "8080");
 
     HttpClient client;
 
     HttpClient::Request request;
-    request
-        .url("http://localhost:8080")
-        .addHeader("Expect", "")
-        .setContent(EXPECTED_BODY);
+    request.url("http://localhost:8080").addHeader("Expect", "").setContent(EXPECTED_BODY);
 
     auto resp = client.post(std::move(request));
     std::string str(resp.body.data(), resp.body.size());
@@ -113,35 +109,33 @@ BOOST_AUTO_TEST_CASE(https_post_content)
     server.start();
 
     HTTP::RestDispatcher dispatcher(server);
-    dispatcher.add<HTTP::Method::POST>("/", [](HTTP::helper::ReadWholeRequest::Handle
-                                                   hndl) {
+    dispatcher.add<HTTP::Method::POST>(
+        "/", [](HTTP::helper::ReadWholeRequest::Handle hndl) {
+            if (hndl->body.empty())
+            {
+                hndl->connection->response()
+                    .setCode(HTTP::HttpCode::BadRequest)
+                    .setBody("Expected body!");
+                hndl->connection->sendResponse();
+                return;
+            }
 
-        if (hndl->body.empty())
-        {
+            BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()),
+                              EXPECTED_BODY);
+
             hndl->connection->response()
-                .setCode(HTTP::HttpCode::BadRequest)
-                .setBody("Expected body!");
+                .setCode(HTTP::HttpCode::Ok)
+                .connectionShouldBeClosed(true)
+                .setBody(EXPECTED_BODY);
             hndl->connection->sendResponse();
-            return;
-        }
-
-        BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()),
-                          EXPECTED_BODY);
-
-        hndl->connection->response()
-            .setCode(HTTP::HttpCode::Ok)
-            .connectionShouldBeClosed(true)
-            .setBody(EXPECTED_BODY);
-        hndl->connection->sendResponse();
-    });
+        });
 
     server.bind("localhost", {"", "", "", cert, key, ""}, "8080");
 
     HttpClient client;
 
     HttpClient::Request request;
-    request
-        .allowInsecure()
+    request.allowInsecure()
         .url("https://localhost:8080")
         .addHeader("Expect", "")
         .setContent(EXPECTED_BODY);

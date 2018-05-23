@@ -8,15 +8,15 @@
  *
  */
 
-#include <iostream>
 #include <chrono>
-#include <thread>
+#include <iostream>
 #include <istream>
+#include <thread>
 
-#include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/test/unit_test.hpp>
+#include <boost/asio.hpp>
 #include <boost/preprocessor/stringize.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include <commonpp/core/string/stringify.hpp>
 
@@ -25,9 +25,9 @@
 
 using namespace HTTPP;
 
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 #define BODY_SIZE 8192
 
@@ -36,9 +36,10 @@ static const std::string REQUEST =
     "User-Agent: curl/7.32.0\r\n"
     "Host: localhost:8000\r\n"
     "Accept: */*\r\n"
-    "Content-Length: " BOOST_PP_STRINGIZE(BODY_SIZE) "\r\n"
-    "Content-Type: application/x-www-form-urlencoded\r\n"
-    "\r\n";
+    "Content-Length: " BOOST_PP_STRINGIZE(
+        BODY_SIZE) "\r\n"
+                   "Content-Type: application/x-www-form-urlencoded\r\n"
+                   "\r\n";
 
 std::string BODY;
 
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(read_body)
     boost::asio::io_service io_service;
     tcp::socket s(io_service);
     tcp::resolver resolver(io_service);
-    boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
+    boost::asio::connect(s, resolver.resolve({"localhost", "8000"}));
     boost::asio::write(s, boost::asio::buffer(REQUEST));
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     boost::asio::write(s, boost::asio::buffer(BODY));
@@ -110,29 +111,29 @@ BOOST_AUTO_TEST_CASE(read_body)
     std::cout << line << std::endl;
 
     BOOST_CHECK_EQUAL(line, "HTTP/1.1 200 Ok");
-
 }
 
 static void handler2(Connection* conn)
 {
-    read_whole_request(conn, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
-                                const boost::system::error_code& ec) {
-        if (ec)
-        {
-            Connection::releaseFromHandler(handler->connection);
-            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-        }
-        else
-        {
-            std::cout << "Check" << std::endl;
-            std::string str(handler->body.data(), handler->body.size());
-            BOOST_CHECK_EQUAL(str, BODY);
-            handler->connection->response()
-                .setCode(HTTP::HttpCode::Ok)
-                .connectionShouldBeClosed(true);
-            handler->connection->sendResponse();
-        }
-    });
+    read_whole_request(
+        conn, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
+                 const boost::system::error_code& ec) {
+            if (ec)
+            {
+                Connection::releaseFromHandler(handler->connection);
+                throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+            }
+            else
+            {
+                std::cout << "Check" << std::endl;
+                std::string str(handler->body.data(), handler->body.size());
+                BOOST_CHECK_EQUAL(str, BODY);
+                handler->connection->response()
+                    .setCode(HTTP::HttpCode::Ok)
+                    .connectionShouldBeClosed(true);
+                handler->connection->sendResponse();
+            }
+        });
 }
 
 BOOST_AUTO_TEST_CASE(read_everything1)
@@ -152,7 +153,7 @@ BOOST_AUTO_TEST_CASE(read_everything1)
     boost::asio::io_service io_service;
     tcp::socket s(io_service);
     tcp::resolver resolver(io_service);
-    boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
+    boost::asio::connect(s, resolver.resolve({"localhost", "8000"}));
     boost::asio::write(s, boost::asio::buffer(REQUEST));
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     boost::asio::write(s, boost::asio::buffer(BODY));
@@ -201,35 +202,37 @@ BOOST_AUTO_TEST_CASE(read_everything_with_err)
     boost::asio::io_service io_service;
     tcp::socket s(io_service);
     tcp::resolver resolver(io_service);
-    boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
+    boost::asio::connect(s, resolver.resolve({"localhost", "8000"}));
     boost::asio::write(s, boost::asio::buffer(REQUEST));
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     boost::asio::write(s, boost::asio::buffer(BODY));
     s.close();
-
 }
 
 static void handler4(Connection* conn)
 {
-    read_whole_request(conn, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
-                                const boost::system::error_code& ec) {
-        if (ec == boost::asio::error::message_size)
-        {
-            handler->connection->response().connectionShouldBeClosed(true);
-            handler->connection->sendResponse();
-            return;
-        }
-        else if (ec)
-        {
-            Connection::releaseFromHandler(handler->connection);
-            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-        }
-        else
-        {
-            BOOST_REQUIRE(false);
-            Connection::releaseFromHandler(handler->connection);
-        }
-    }, 10);
+    read_whole_request(
+        conn,
+        [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
+           const boost::system::error_code& ec) {
+            if (ec == boost::asio::error::message_size)
+            {
+                handler->connection->response().connectionShouldBeClosed(true);
+                handler->connection->sendResponse();
+                return;
+            }
+            else if (ec)
+            {
+                Connection::releaseFromHandler(handler->connection);
+                throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+            }
+            else
+            {
+                BOOST_REQUIRE(false);
+                Connection::releaseFromHandler(handler->connection);
+            }
+        },
+        10);
 }
 
 BOOST_AUTO_TEST_CASE(body_too_big)
@@ -249,7 +252,7 @@ BOOST_AUTO_TEST_CASE(body_too_big)
     boost::asio::io_service io_service;
     tcp::socket s(io_service);
     tcp::resolver resolver(io_service);
-    boost::asio::connect(s, resolver.resolve({ "localhost", "8000" }));
+    boost::asio::connect(s, resolver.resolve({"localhost", "8000"}));
     boost::asio::write(s, boost::asio::buffer(REQUEST));
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     boost::asio::write(s, boost::asio::buffer(BODY));

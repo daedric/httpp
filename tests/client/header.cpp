@@ -8,20 +8,20 @@
  *
  */
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
 #include <thread>
 
 #include <boost/test/unit_test.hpp>
 
-#include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
+#include "httpp/HttpServer.hpp"
 
 using namespace HTTPP;
 
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 void handler(Connection* connection)
 {
@@ -51,8 +51,7 @@ BOOST_AUTO_TEST_CASE(send_and_parse_header)
     HttpClient client;
 
     HttpClient::Request request;
-    request
-        .url("http://localhost:8080")
+    request.url("http://localhost:8080")
         .addHeader("test", "toto")
         .addHeader("titi", ":lol:")
         .followRedirect(true);
@@ -63,4 +62,3 @@ BOOST_AUTO_TEST_CASE(send_and_parse_header)
     BOOST_CHECK_EQUAL(headers["testy"], "lol");
     BOOST_CHECK_EQUAL(headers["coucou"], "salut");
 }
-

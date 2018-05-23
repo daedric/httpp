@@ -8,15 +8,17 @@
  *
  */
 
-#include "httpp/detail/config.hpp"
-#include "httpp/http/Parser.hpp"
+#include <boost/test/unit_test.hpp>
 
 #include <sstream>
-#include <boost/test/unit_test.hpp>
+
+#include "httpp/detail/config.hpp"
+
+#include "httpp/http/Parser.hpp"
 #include "httpp/http/Request.hpp"
 
-using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Parser;
+using HTTPP::HTTP::Request;
 
 namespace std
 {
@@ -24,7 +26,7 @@ ostream& operator<<(ostream& os, const Request::QueryParamRef& h)
 {
     return os << h.first << ": " << h.second;
 }
-}
+} // namespace std
 
 #if HTTPP_PARSER_BACKEND_IS_STREAM
 Request parse(const std::string& req)
@@ -138,10 +140,10 @@ BOOST_AUTO_TEST_CASE(test_http_header_query_parser_sorted)
 
     BOOST_CHECK_EQUAL(params["something"], "");
 
-    Request::QueryParamRef a {"a", "a"};
-    Request::QueryParamRef b {"b", "b"};
-    Request::QueryParamRef y {"y", "y"};
-    Request::QueryParamRef z {"z", "z"};
+    Request::QueryParamRef a{"a", "a"};
+    Request::QueryParamRef b{"b", "b"};
+    Request::QueryParamRef y{"y", "y"};
+    Request::QueryParamRef z{"z", "z"};
 
     BOOST_CHECK_EQUAL(params[0], a);
     BOOST_CHECK_EQUAL(params[1], b);

@@ -9,12 +9,12 @@
  */
 
 #ifndef _HTTPP__HTTP_CLIENT_REQUEST_HPP_
-# define _HTTPP__HTTP_CLIENT_REQUEST_HPP_
+#define _HTTPP__HTTP_CLIENT_REQUEST_HPP_
 
-# include <memory>
-# include <string>
-# include <vector>
-# include <chrono>
+#include <chrono>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace HTTPP
 {
@@ -26,7 +26,10 @@ namespace HTTP
 namespace client
 {
 
-namespace detail { struct Connection; }
+namespace detail
+{
+struct Connection;
+}
 
 class Request
 {
@@ -81,4 +84,3 @@ private:
 } // namespace HTTPP
 
 #endif // _HTTPP__HTTP_CLIENT_REQUEST_HPP_
-

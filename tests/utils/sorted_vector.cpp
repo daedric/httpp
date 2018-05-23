@@ -22,13 +22,14 @@ using namespace HTTPP::HTTP;
 BOOST_AUTO_TEST_CASE(case_sensitive_lookup)
 {
     SortedVectorKP<boost::string_ref, boost::string_ref> kv(
-        { { "Content-Length", "15543" },
-          { "Content-Type", "text/css" },
-          { "Date", "Wed, 05 Apr 2017 16:37:38 GMT" },
-          { "last-modified", "Tue, 07 Mar 2017 16:30:34 GMT" },
-          { "Server", "MochiWeb/1.0 (Any of you quaids got a smint?)" } });
+        {{"Content-Length", "15543"},
+         {"Content-Type", "text/css"},
+         {"Date", "Wed, 05 Apr 2017 16:37:38 GMT"},
+         {"last-modified", "Tue, 07 Mar 2017 16:30:34 GMT"},
+         {"Server", "MochiWeb/1.0 (Any of you quaids got a smint?)"}});
 
-    BOOST_REQUIRE_EQUAL("", kv["aaa"]);  // check for something that would be at the beginning of the sorted vec
+    BOOST_REQUIRE_EQUAL("", kv["aaa"]); // check for something that would be at
+                                        // the beginning of the sorted vec
     BOOST_REQUIRE_EQUAL("15543", kv["Content-Length"]);
     BOOST_REQUIRE_EQUAL("", kv["Nothing"]);
     BOOST_REQUIRE_EQUAL("", kv["Last-Modified"]);
@@ -37,20 +38,21 @@ BOOST_AUTO_TEST_CASE(case_sensitive_lookup)
 
 BOOST_AUTO_TEST_CASE(case_insensitive_lookup)
 {
-    SortedVectorKP<boost::string_ref, boost::string_ref, case_insensitive>
-        kv({ { "Content-Length", "15543" },
-             { "Content-Type", "text/css" },
-             { "Date", "Wed, 05 Apr 2017 16:37:38 GMT" },
-             { "last-modified", "Tue, 07 Mar 2017 16:30:34 GMT" },
-             { "Server", "MochiWeb/1.0 (Any of you quaids got a smint?)" } });
+    SortedVectorKP<boost::string_ref, boost::string_ref, case_insensitive> kv(
+        {{"Content-Length", "15543"},
+         {"Content-Type", "text/css"},
+         {"Date", "Wed, 05 Apr 2017 16:37:38 GMT"},
+         {"last-modified", "Tue, 07 Mar 2017 16:30:34 GMT"},
+         {"Server", "MochiWeb/1.0 (Any of you quaids got a smint?)"}});
 
-    BOOST_REQUIRE_EQUAL("", kv["aaa"]);  // check for something that would be at the beginning of the sorted vec
+    BOOST_REQUIRE_EQUAL("", kv["aaa"]); // check for something that would be at
+                                        // the beginning of the sorted vec
     BOOST_REQUIRE_EQUAL("15543", kv["Content-Length"]);
     BOOST_REQUIRE_EQUAL("", kv["Nothing"]);
     BOOST_REQUIRE_EQUAL("Tue, 07 Mar 2017 16:30:34 GMT", kv["Last-Modified"]);
-    BOOST_REQUIRE_EQUAL("MochiWeb/1.0 (Any of you quaids got a smint?)", kv["Server"]);
+    BOOST_REQUIRE_EQUAL("MochiWeb/1.0 (Any of you quaids got a smint?)",
+                        kv["Server"]);
     BOOST_REQUIRE_EQUAL("", kv["ZZZ"]); // and at the end.
-
 }
 
 #if HTTPP_RAGEL_BACKEND
@@ -63,13 +65,12 @@ BOOST_AUTO_TEST_CASE(case_insensitive_lookup_from_request)
                            "\r\n\r\n";
 
     Request req;
-    size_t consumed{ 0 };
+    size_t consumed{0};
     bool parsed_ok =
         Parser::parse(request, request + sizeof(request), consumed, req);
 
     BOOST_CHECK(parsed_ok);
-    auto headers =
-        req.getSortedHeaders<case_insensitive>();
+    auto headers = req.getSortedHeaders<case_insensitive>();
     BOOST_REQUIRE_EQUAL("www.google.com", headers["host"]);
     BOOST_REQUIRE_EQUAL("www.google.com", headers["Host"]);
     BOOST_REQUIRE_EQUAL("text/html", headers["accept"]);

@@ -24,7 +24,6 @@ namespace HTTPP
 namespace HTTP
 {
 
-
 namespace connection_detail
 {
 DECLARE_LOGGER(conn_logger_, "httpp::HttpServer::Connection");
@@ -34,8 +33,7 @@ using namespace connection_detail;
 
 Connection::Connection(HTTPP::HttpServer& handler,
                        boost::asio::io_service& service,
-                       boost::asio::ssl::context* ctx
-                       )
+                       boost::asio::ssl::context* ctx)
 : handler_(handler)
 , socket_(service)
 {
@@ -206,8 +204,8 @@ void Connection::read_request()
         std::istream is(std::addressof(buf));
         if (Parser::parse(is, request_))
         {
-            DLOG(conn_logger_, trace) << "Received a request from: " << source()
-                                      << ": " << request_;
+            DLOG(conn_logger_, trace)
+                << "Received a request from: " << source() << ": " << request_;
 
             buf.shrinkVector();
             body_buffer_.swap(request_buffer_);
@@ -221,8 +219,8 @@ void Connection::read_request()
         size_t consumed = 0;
         if (Parser::parse(begin, end, consumed, request_))
         {
-            DLOG(conn_logger_, trace) << "Received a request from: " << source()
-                                      << ": " << request_;
+            DLOG(conn_logger_, trace)
+                << "Received a request from: " << source() << ": " << request_;
 
             if (consumed != size_)
             {
@@ -242,9 +240,9 @@ void Connection::read_request()
                 << "Invalid request received from: " << source() << "\n"
                 << std::string(request_buffer_.data(), size_);
 
-            response_ = Response(
-                    HttpCode::BadRequest,
-                    std::string("An error occured in the request parsing indicating an error"));
+            response_ = Response(HttpCode::BadRequest,
+                                 std::string("An error occured in the request "
+                                             "parsing indicating an error"));
             response_.connectionShouldBeClosed(true);
 
             disown();
@@ -286,8 +284,7 @@ void Connection::sendResponse(Callback&& cb)
         return;
     }
 
-    auto handler = [cb, this](boost::system::error_code const& ec, size_t)
-    {
+    auto handler = [cb, this](boost::system::error_code const& ec, size_t) {
         disown();
         if (ec)
         {
@@ -333,9 +330,7 @@ void Connection::sendContinue(Callback&& cb)
         throw std::logic_error("Invalid connection state");
     }
 
-    response_
-        .setBody("")
-        .setCode(HttpCode::Continue);
+    response_.setBody("").setCode(HttpCode::Continue);
 
     sendResponse([this, cb] { cb(); });
 }
@@ -359,4 +354,3 @@ void Connection::recycle()
 
 } // namespace HTTP
 } // namespace HTTPP
-

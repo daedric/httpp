@@ -9,20 +9,22 @@
  */
 
 #ifndef _HTTPP_HTPP_CONNECTION_HPP_
-# define _HTTPP_HTPP_CONNECTION_HPP_
+#define _HTTPP_HTPP_CONNECTION_HPP_
 
-# include <atomic>
-# include <mutex>
-# include <string>
-# include <functional>
-# include <boost/asio.hpp>
-# include <boost/asio/ssl.hpp>
-# include <commonpp/thread/ThreadPool.hpp>
-# include <commonpp/core/LoggingInterface.hpp>
+#include <atomic>
+#include <functional>
+#include <mutex>
+#include <string>
 
-# include "helper/ReadWholeRequest.hpp"
-# include "Response.hpp"
-# include "Request.hpp"
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+
+#include <commonpp/core/LoggingInterface.hpp>
+#include <commonpp/thread/ThreadPool.hpp>
+
+#include "Request.hpp"
+#include "Response.hpp"
+#include "helper/ReadWholeRequest.hpp"
 
 namespace HTTPP
 {
@@ -47,7 +49,7 @@ class Connection
 
 public:
     static constexpr size_t BUF_SIZE = BUFSIZ;
-    using Callback = std::function<void ()>;
+    using Callback = std::function<void()>;
 
     Connection(HTTPP::HttpServer& handler,
                boost::asio::io_service& service,
@@ -92,8 +94,7 @@ public:
         {
             if (size <= body_buffer_.size())
             {
-                std::copy(begin(body_buffer_), begin(body_buffer_) + size,
-                          buffer);
+                std::copy(begin(body_buffer_), begin(body_buffer_) + size, buffer);
                 body_buffer_.erase(begin(body_buffer_),
                                    begin(body_buffer_) + size);
                 disown();
@@ -165,8 +166,8 @@ public:
         body_buffer_.resize(buf_size);
 
         async_read_some(boost::asio::buffer(body_buffer_),
-                        [body_size, callable, this](
-                            const boost::system::error_code& ec, size_t size) {
+                        [body_size, callable,
+                         this](const boost::system::error_code& ec, size_t size) {
                             disown();
 
                             if (ec)
@@ -234,8 +235,8 @@ private:
 private:
     HTTPP::HttpServer& handler_;
     // On construction, the HttpServer is the owner
-    std::atomic_bool is_owned_ = { false };
-    bool should_be_deleted_ = { false };
+    std::atomic_bool is_owned_ = {false};
+    bool should_be_deleted_ = {false};
     std::vector<char> request_buffer_;
     std::vector<char> body_buffer_;
     size_t size_ = 0;

@@ -9,8 +9,8 @@
  */
 
 #include "httpp/http/client/Request.hpp"
-#include "httpp/utils/URL.hpp"
 #include "Connection.hpp"
+#include "httpp/utils/URL.hpp"
 #include <chrono>
 
 namespace HTTPP

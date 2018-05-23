@@ -9,24 +9,25 @@
  */
 
 #include <boost/test/unit_test.hpp>
-#include <memory>
+
 #include <atomic>
-#include <string>
 #include <functional>
+#include <memory>
+#include <string>
 
 #include <commonpp/core/LoggingInterface.hpp>
 
-#include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
-#include "httpp/utils/Exception.hpp"
+#include "httpp/HttpServer.hpp"
 #include "httpp/http/Utils.hpp"
+#include "httpp/utils/Exception.hpp"
 
 using namespace HTTPP;
 
 using HTTPP::HttpServer;
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 const int DEFAULT_NUMBER_OF_CHUNKS = 3;
 const int DEFAULT_CHUNK_SIZE = 100;
@@ -37,8 +38,7 @@ const int DEFAULT_CHUNK_SIZE = 100;
 //
 std::function<std::string()> make_stream(int numChunks, int chunkSize)
 {
-    auto stream = [numChunks,chunkSize]() mutable -> std::string
-    {
+    auto stream = [numChunks, chunkSize]() mutable -> std::string {
         if (numChunks > 0)
         {
             GLOG(debug) << __FUNCTION__ << ":Sending Chunk ";
@@ -53,7 +53,6 @@ std::function<std::string()> make_stream(int numChunks, int chunkSize)
     };
     return stream;
 }
-
 
 void chunked_data_handler(Connection* connection)
 {
@@ -110,8 +109,7 @@ BOOST_AUTO_TEST_CASE(test_client_receives_expected_body)
 //
 void empty_chunk_response(Connection* connection)
 {
-    auto empty_response = []()
-    { return ""; };
+    auto empty_response = []() { return ""; };
 
     connection->response().setCode(HTTP::HttpCode::Ok).setBody(empty_response);
     connection->sendResponse();
@@ -143,9 +141,9 @@ BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
 //
 void infinite_response(Connection* connection)
 {
-    connection->response()
-        .setCode(HTTP::HttpCode::Ok)
-        .setBody([]() { return "XXX"; });
+    connection->response().setCode(HTTP::HttpCode::Ok).setBody([]() {
+        return "XXX";
+    });
     connection->sendResponse();
 }
 
@@ -162,10 +160,10 @@ BOOST_AUTO_TEST_CASE(test_cancelling_request_while_streaming_stops_functor)
         request.url("http://localhost:8080");
         HttpClient client;
 
-        auto handler = client.async_get(
-            std::move(request),
-            [](HttpClient::Future fut)
-            { BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted); });
+        auto handler =
+            client.async_get(std::move(request), [](HttpClient::Future fut) {
+                BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
+            });
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         BOOST_CHECK_EQUAL(server.getNbConnection(), 2);
@@ -190,7 +188,7 @@ std::string GetRawResponse()
 
     // send request
     const std::string REQUEST("GET / HTTP/1.1\r\n\r\n");
-    boost::asio::connect(sock, resolver.resolve({ "localhost", "8080" }));
+    boost::asio::connect(sock, resolver.resolve({"localhost", "8080"}));
     boost::asio::write(sock, boost::asio::buffer(REQUEST));
 
     // read until end-of-stream
@@ -199,10 +197,10 @@ std::string GetRawResponse()
 
     // convert buffer to a string
     auto responseData = response.data();
-    std::string str(boost::asio::buffers_begin(responseData), boost::asio::buffers_begin(responseData) + bytes);
+    std::string str(boost::asio::buffers_begin(responseData),
+                    boost::asio::buffers_begin(responseData) + bytes);
     return str;
 }
-
 
 BOOST_AUTO_TEST_CASE(test_format_of_raw_response)
 {
@@ -218,7 +216,7 @@ BOOST_AUTO_TEST_CASE(test_format_of_raw_response)
 
     // each chunk should start with "64\r\n" and end with "\r\n".
     auto chunkIterator = startOfBody;
-    for (int i=0; i<3; i++)
+    for (int i = 0; i < 3; i++)
     {
         auto chunkHeader = rawResponse.substr(chunkIterator, 4);
         BOOST_CHECK_EQUAL(chunkHeader, "64\r\n");
@@ -231,4 +229,3 @@ BOOST_AUTO_TEST_CASE(test_format_of_raw_response)
         chunkIterator += 2;
     }
 }
-

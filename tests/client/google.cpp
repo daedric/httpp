@@ -8,23 +8,21 @@
  *
  */
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
 #include <thread>
 
 #include <boost/test/unit_test.hpp>
 
-#include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
+#include "httpp/HttpServer.hpp"
 
 using namespace HTTPP;
-
 
 BOOST_AUTO_TEST_CASE(follow_redirect)
 {
     HttpClient::Request request;
-    request
-        .url("http://www.google.fr/");
+    request.url("http://www.google.fr/");
 
     HttpClient client;
     auto response = client.get(std::move(request));

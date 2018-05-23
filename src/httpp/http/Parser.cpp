@@ -12,9 +12,9 @@
 
 #include <cstring>
 
+#include <functional>
 #include <istream>
 #include <iterator>
-#include <functional>
 
 #include <commonpp/core/LoggingInterface.hpp>
 
@@ -26,7 +26,7 @@ namespace HTTPP
 namespace HTTP
 {
 
-# if HTTPP_PARSER_BACKEND_IS_STREAM
+#if HTTPP_PARSER_BACKEND_IS_STREAM
 
 CREATE_LOGGER(parser_logger, "httpp::HttpServer::Parser");
 
@@ -47,8 +47,8 @@ static bool match(Iterator& it, const char c)
 
 static bool expect(Iterator& it, const std::string& expected)
 {
-    for (auto eit = std::begin(expected), eend = std::end(expected); eit != eend;
-         ++eit)
+    for (auto eit = std::begin(expected), eend = std::end(expected);
+         eit != eend; ++eit)
     {
         if (*eit != *it)
         {
@@ -68,69 +68,69 @@ static bool parse_method(Iterator& it, Request& request)
 {
     switch (*it)
     {
-        case 'H':
-            if (expect(it, "HEAD"))
-            {
-                request.method = Method::HEAD;
-                return true;
-            }
-            break;
-        case 'G':
-            if (expect(it, "GET"))
-            {
-                request.method = Method::GET;
-                return true;
-            }
-            break;
+    case 'H':
+        if (expect(it, "HEAD"))
+        {
+            request.method = Method::HEAD;
+            return true;
+        }
+        break;
+    case 'G':
+        if (expect(it, "GET"))
+        {
+            request.method = Method::GET;
+            return true;
+        }
+        break;
 
-        case 'P':
-            ++it;
-            if (*it == 'O')
+    case 'P':
+        ++it;
+        if (*it == 'O')
+        {
+            if (expect(it, "OST"))
             {
-                if (expect(it, "OST"))
-                {
-                    request.method = Method::POST;
-                    return true;
-                }
-            }
-            else if (*it == 'U')
-            {
-                if (expect(it, "UT"))
-                {
-                    request.method = Method::PUT;
-                    return true;
-                }
-            }
-            break;
-        case 'D':
-            if (expect(it, "DELETE"))
-            {
-                request.method = Method::DELETE_;
+                request.method = Method::POST;
                 return true;
             }
-            break;
-        case 'O':
-            if (expect(it, "OPTIONS"))
+        }
+        else if (*it == 'U')
+        {
+            if (expect(it, "UT"))
             {
-                request.method = Method::OPTIONS;
+                request.method = Method::PUT;
                 return true;
             }
-            break;
-        case 'T':
-            if (expect(it, "TRACE"))
-            {
-                request.method = Method::TRACE;
-                return true;
-            }
-            break;
+        }
+        break;
+    case 'D':
+        if (expect(it, "DELETE"))
+        {
+            request.method = Method::DELETE_;
+            return true;
+        }
+        break;
+    case 'O':
+        if (expect(it, "OPTIONS"))
+        {
+            request.method = Method::OPTIONS;
+            return true;
+        }
+        break;
+    case 'T':
+        if (expect(it, "TRACE"))
+        {
+            request.method = Method::TRACE;
+            return true;
+        }
+        break;
 
-        case 'C':
-            if (expect(it, "CONNECT"))
-            {
-                request.method = Method::CONNECT;
-                return true;
-            }
-            break;
+    case 'C':
+        if (expect(it, "CONNECT"))
+        {
+            request.method = Method::CONNECT;
+            return true;
+        }
+        break;
     }
 
     return false;
@@ -175,11 +175,13 @@ static bool parse_uri(Iterator& it, Request& request)
             std::string value;
 
             bool res = consumeUntil(it, key, "&= ");
-            if (match(it, '=')) {
+            if (match(it, '='))
+            {
                 res = res && consumeUntil(it, value, "& ");
                 key = UTILS::url_decode(key);
                 value = UTILS::url_decode(value);
-                request.query_params.emplace_back(std::move(key), std::move(value));
+                request.query_params.emplace_back(std::move(key),
+                                                  std::move(value));
             }
             else
             {
@@ -214,8 +216,8 @@ static bool parse_http_version(Iterator& it, Request& request)
         }
         catch (std::exception const& ex)
         {
-            LOG(parser_logger, error) << "Cannot parse Major/Minor: "
-                                      << ex.what();
+            LOG(parser_logger, error)
+                << "Cannot parse Major/Minor: " << ex.what();
             return false;
         }
     }
@@ -290,15 +292,11 @@ bool Parser::isComplete(const char* buffer, size_t n)
         return false;
     }
 
-    static char const MARKER[] = { '\r', '\n', '\r', '\n' };
+    static char const MARKER[] = {'\r', '\n', '\r', '\n'};
 
     auto buffer_end = buffer + n;
-    return std::search(
-            buffer,
-            buffer_end,
-            std::begin(MARKER),
-            std::end(MARKER)) != buffer_end;
-
+    return std::search(buffer, buffer_end, std::begin(MARKER),
+                       std::end(MARKER)) != buffer_end;
 }
 
 } // namespace HTTP

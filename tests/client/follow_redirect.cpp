@@ -8,22 +8,22 @@
  *
  */
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
 #include <thread>
 
 #include <boost/test/unit_test.hpp>
 #include <commonpp/core/string/stringify.hpp>
 
-#include "httpp/HttpServer.hpp"
 #include "httpp/HttpClient.hpp"
+#include "httpp/HttpServer.hpp"
 #include "httpp/http/RestDispatcher.hpp"
 
 using namespace HTTPP;
 
+using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
-using HTTPP::HTTP::Connection;
 
 void handler(Connection* connection)
 {
@@ -44,9 +44,7 @@ void handler(Connection* connection)
     }
     else
     {
-        connection->response()
-            .setCode(HTTP::HttpCode::Ok)
-            .setBody("Ok");
+        connection->response().setCode(HTTP::HttpCode::Ok).setBody("Ok");
         connection->sendResponse();
     }
 }
@@ -69,9 +67,7 @@ BOOST_AUTO_TEST_CASE(follow_redirect)
     HttpClient client;
 
     HttpClient::Request request;
-    request
-        .url("http://localhost:8080")
-        .followRedirect(true);
+    request.url("http://localhost:8080").followRedirect(true);
 
     auto response = client.get(std::move(request));
     BOOST_CHECK_EQUAL(std::string(response.body.data(), response.body.size()),
@@ -100,9 +96,7 @@ BOOST_AUTO_TEST_CASE(follow_redirect2)
         connection->sendResponse();
     });
     dispatcher.add<HTTP::Method::GET>("/ok", [](Connection* connection) {
-        connection->response()
-            .setCode(HTTP::HttpCode::Ok)
-            .setBody("Ok");
+        connection->response().setCode(HTTP::HttpCode::Ok).setBody("Ok");
         connection->sendResponse();
     });
 
@@ -111,9 +105,7 @@ BOOST_AUTO_TEST_CASE(follow_redirect2)
     HttpClient client;
 
     HttpClient::Request request;
-    request
-        .url("http://localhost:8080/redirect")
-        .followRedirect(true);
+    request.url("http://localhost:8080/redirect").followRedirect(true);
 
     auto response = client.get(std::move(request));
     BOOST_CHECK_EQUAL(std::string(response.body.data(), response.body.size()),

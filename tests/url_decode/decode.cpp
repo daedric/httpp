@@ -26,10 +26,11 @@ BOOST_AUTO_TEST_CASE(basic_decode)
         "20or%20read%20a%20brief%20%0d%0aexplanation%20of%20the%20process%20of%"
         "20HTML%20encoding.%0d%0a%0d%0a";
 
-    const std::string DECODED_URL = "Type or paste in the text you want to "
-                                    "HTML encode,\r\n then press the ‘Encode’ "
-                                    "button, or read a brief \r\nexplanation of "
-                                    "the process of HTML encoding.\r\n\r\n";
+    const std::string DECODED_URL =
+        "Type or paste in the text you want to "
+        "HTML encode,\r\n then press the ‘Encode’ "
+        "button, or read a brief \r\nexplanation of "
+        "the process of HTML encoding.\r\n\r\n";
 
     BOOST_CHECK_EQUAL(url_decode(ENCODED_URL), DECODED_URL);
     BOOST_CHECK_EQUAL(url_encode(DECODED_URL), ENCODED_URL_PCT);

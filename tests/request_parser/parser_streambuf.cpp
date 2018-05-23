@@ -12,16 +12,16 @@
 
 #include "httpp/http/Parser.hpp"
 
-#include <sstream>
+#include "httpp/http/Request.hpp"
 #include "httpp/utils/VectorStreamBuf.hpp"
 #include <boost/test/unit_test.hpp>
-#include "httpp/http/Request.hpp"
+#include <sstream>
 
 #if HTTPP_PARSER_BACKEND_IS_STREAM
 
-using HTTPP::UTILS::VectorStreamBuf;
-using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Parser;
+using HTTPP::HTTP::Request;
+using HTTPP::UTILS::VectorStreamBuf;
 
 BOOST_AUTO_TEST_CASE(parser_streambuf)
 {
@@ -43,6 +43,7 @@ BOOST_AUTO_TEST_CASE(parser_streambuf)
 #else
 
 BOOST_AUTO_TEST_CASE(skip)
-{}
+{
+}
 
 #endif

@@ -9,28 +9,35 @@
  */
 
 #ifndef _HTTPP__HTTP_CLIENT_HPP_
-# define _HTTPP__HTTP_CLIENT_HPP_
+#define _HTTPP__HTTP_CLIENT_HPP_
 
-# include <string>
-# include <vector>
-# include <memory>
+#include <memory>
+#include <string>
+#include <vector>
 
-# include <boost/asio/io_service.hpp>
-# include <commonpp/thread/ThreadPool.hpp>
+#include <boost/asio/io_service.hpp>
+#include <commonpp/thread/ThreadPool.hpp>
 
-# include "detail/config.hpp"
-# include "utils/Exception.hpp"
-# include "http/Protocol.hpp"
-# include "http/client/Request.hpp"
-# include "http/client/Response.hpp"
+#include "detail/config.hpp"
+#include "http/Protocol.hpp"
+#include "http/client/Request.hpp"
+#include "http/client/Response.hpp"
+#include "utils/Exception.hpp"
 
 namespace HTTPP
 {
 
-namespace HTTP { namespace client { namespace detail {
+namespace HTTP
+{
+namespace client
+{
+namespace detail
+{
 struct Manager;
 struct Connection;
-} } }
+} // namespace detail
+} // namespace client
+} // namespace HTTP
 
 class HttpClient
 {
@@ -42,17 +49,18 @@ public:
     using Response = HTTP::client::Response;
 
     using Future = detail::Future<Response>;
-    using CompletionHandler = std::function<void (Future)>;
+    using CompletionHandler = std::function<void(Future)>;
 
     // AsyncHandler is garanteed to be always safe to call
     class AsyncHandler
     {
         friend class HttpClient;
-        public:
-            void cancelOperation();
 
-        private:
-            std::weak_ptr<HTTP::client::detail::Connection> connection_;
+    public:
+        void cancelOperation();
+
+    private:
+        std::weak_ptr<HTTP::client::detail::Connection> connection_;
     };
 
     HttpClient(size_t nb_thread = 1, const std::string& name = "");

@@ -9,16 +9,16 @@
  */
 
 #ifndef _HTTPP_HTPP_REQUEST_HPP_
-# define _HTTPP_HTPP_REQUEST_HPP_
+#define _HTTPP_HTPP_REQUEST_HPP_
 
-# include <string>
-# include <vector>
-# include <iosfwd>
-# include <chrono>
+#include <chrono>
+#include <iosfwd>
+#include <string>
+#include <vector>
 
-# include <httpp/detail/config.hpp>
-# include "Protocol.hpp"
-# include "httpp/utils/SortedVectorKP.hpp"
+#include "Protocol.hpp"
+#include "httpp/utils/SortedVectorKP.hpp"
+#include <httpp/detail/config.hpp>
 
 namespace HTTPP
 {
@@ -29,7 +29,6 @@ struct Request
 {
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
-
 
     Request()
     {
@@ -43,9 +42,9 @@ struct Request
     TimePoint received = Clock::now();
     Method method;
 
-# if HTTPP_PARSER_BACKEND_IS_RAGEL
+#if HTTPP_PARSER_BACKEND_IS_RAGEL
     boost::string_ref uri;
-# else
+#else
     std::string uri;
 #endif
 
@@ -59,7 +58,9 @@ struct Request
     template <typename Comparator = std::less<QueryParamRef::first_type>>
     auto getSortedQueryParams() const
     {
-        return UTILS::create_sorted_vector<QueryParamRef::first_type, QueryParamRef::second_type, Comparator>(query_params);
+        return UTILS::create_sorted_vector<QueryParamRef::first_type,
+                                           QueryParamRef::second_type, Comparator>(
+            query_params);
     }
 
     std::vector<HeaderRef> headers;
@@ -67,9 +68,10 @@ struct Request
     template <typename Comparator = std::less<HeaderRef::first_type>>
     auto getSortedHeaders() const
     {
-        return UTILS::create_sorted_vector<HeaderRef::first_type, HeaderRef::second_type, Comparator>(headers);
+        return UTILS::create_sorted_vector<HeaderRef::first_type,
+                                           HeaderRef::second_type, Comparator>(
+            headers);
     }
-
 };
 
 std::ostream& operator<<(std::ostream& os, const Request& request);

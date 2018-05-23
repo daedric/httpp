@@ -8,19 +8,18 @@
  *
  */
 
-#include <fstream>
 #include <boost/test/unit_test.hpp>
+#include <fstream>
 
-#include "httpp/HttpClient.hpp"
 #include "config.h"
+#include "httpp/HttpClient.hpp"
 
 using namespace HTTPP;
 
 BOOST_AUTO_TEST_CASE(file)
 {
     HttpClient::Request request;
-    request
-        .url("file://" + PROJECT_ROOT + "/README.md");
+    request.url("file://" + PROJECT_ROOT + "/README.md");
 
     HttpClient client;
     auto response = client.get(std::move(request));
@@ -33,4 +32,3 @@ BOOST_AUTO_TEST_CASE(file)
     BOOST_CHECK_EQUAL(file_content,
                       std::string(response.body.begin(), response.body.end()));
 }
-

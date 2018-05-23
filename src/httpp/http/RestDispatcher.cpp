@@ -8,9 +8,9 @@
  *
  */
 
+#include <httpp/HttpServer.hpp>
 #include <httpp/http/RestDispatcher.hpp>
 #include <httpp/http/Utils.hpp>
-#include <httpp/HttpServer.hpp>
 
 namespace HTTPP
 {
@@ -122,9 +122,7 @@ void RestDispatcher::sink(HTTP::Connection* conn)
         }
     }
 
-    conn->response()
-        .setCode(HTTP::HttpCode::NotFound)
-        .setBody("Unroutable request");
+    conn->response().setCode(HTTP::HttpCode::NotFound).setBody("Unroutable request");
     conn->sendResponse();
 }
 

@@ -9,11 +9,11 @@
  */
 
 #ifndef _HTTPP_UTILS_VECTOR_STREAMBUF_HPP
-# define _HTTPP_UTILS_VECTOR_STREAMBUF_HPP
+#define _HTTPP_UTILS_VECTOR_STREAMBUF_HPP
 
-# include <cstring>
-# include <streambuf>
-# include <vector>
+#include <cstring>
+#include <streambuf>
+#include <vector>
 
 namespace HTTPP
 {
@@ -23,13 +23,12 @@ namespace UTILS
 class VectorStreamBuf : public std::streambuf
 {
 public:
-
     VectorStreamBuf(std::vector<char>& vector)
     : VectorStreamBuf(vector, vector.size())
-    {}
+    {
+    }
 
-    VectorStreamBuf(std::vector<char>& vector,
-                    size_t assumed_size)
+    VectorStreamBuf(std::vector<char>& vector, size_t assumed_size)
     : content_(vector)
     , assumed_size_(assumed_size)
     {
@@ -47,7 +46,6 @@ public:
     }
 
 private:
-
     int_type underflow()
     {
         if (gptr() < egptr())
