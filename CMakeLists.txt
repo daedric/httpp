@@ -130,12 +130,12 @@ IF (${SEARCH_COMMONPP})
     IF (NOT ${commonpp_FOUND})
         MESSAGE(STATUS "Use bundled commonpp")
         ADD_SUBDIRECTORY(third_party/commonpp ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp)
-        INCLUDE_DIRECTORIES(third_party/commonpp/include ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp/include)
         SET(commonpp_LIBRARIES commonpp)
-        SET(EXPORT_commonpp TRUE)
     ELSE ()
         INCLUDE_DIRECTORIES(${commonpp_INCLUDE_DIRS})
     ENDIF()
+ELSE()
+    SET(commonpp_LIBRARIES commonpp)
 ENDIF()
 
 # Actual Stuff ################################################################
@@ -186,10 +186,8 @@ IF (UNIX AND NOT APPLE)
     SET (HTTPP_DEPS ${HTTPP_DEPS} rt)
 ENDIF()
 
-INCLUDE_DIRECTORIES(include/)
-INCLUDE_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/include/")
-ADD_SUBDIRECTORY(include/)
-ADD_SUBDIRECTORY(src/)
+add_subdirectory(src/)
+add_subdirectory(include/)
 
 IF (${BUILD_EXAMPLES})
     ADD_SUBDIRECTORY(examples/)
@@ -228,51 +226,3 @@ if (CLANG_FORMAT)
             ${ALL_SOURCE_FILES})
 endif()
 
-# CMake export targets
-
-IF (${EXPORT_commonpp})
-    EXPORT(TARGETS httpp ${commonpp_LIBRARIES}
-           FILE "${PROJECT_BINARY_DIR}/httpp_target.cmake")
-ELSE()
-    EXPORT(TARGETS httpp
-           FILE "${PROJECT_BINARY_DIR}/httpp_target.cmake")
-ENDIF()
-
-EXPORT(PACKAGE HTTPP)
-
-if (${CMAKE_MAJOR_VERSION} EQUAL 2
-        AND ${CMAKE_MINOR_VERSION} EQUAL 8
-        AND ${CMAKE_PATCH_VERSION} LESS 8)
-
-    CONFIGURE_FILE(
-        "contrib/HTTPPConfigVersion.cmake.in"
-        "${PROJECT_BINARY_DIR}/HTTPPConfigVersion.cmake"
-        @ONLY
-       )
-
-ELSE()
-    INCLUDE(CMakePackageConfigHelpers)
-    WRITE_BASIC_PACKAGE_VERSION_FILE("${PROJECT_BINARY_DIR}/HTTPPConfigVersion.cmake"
-                                     VERSION ${HTTPP_VERSION}
-                                     COMPATIBILITY ExactVersion)
-ENDIF()
-
-CONFIGURE_FILE("HTTPPConfig.cmake.in"
-               "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HTTPPConfig.cmake" @ONLY)
-
-INSTALL(FILES
-        "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HTTPPConfig.cmake"
-        "${PROJECT_BINARY_DIR}/HTTPPConfigVersion.cmake"
-        DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
-
-INSTALL(EXPORT httpp_target
-        DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
-
-# CPack stuff ##################################################################
-
-set(CPACK_COMPONENTS_ALL binaries libraries includes configuration tools)
-SET(CPACK_PACKAGE_VENDOR "Thomas Sanchez")
-SET(CPACK_PACKAGE_CONTACT "Thomas Sanchez <thomas.sanchz@gmail.com>")
-SET(CPACK_GENERATOR "TGZ")
-
-INCLUDE(CPack)

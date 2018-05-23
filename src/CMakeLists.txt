@@ -6,4 +6,4 @@
 # Copyright (c) 2014 Thomas Sanchez.  All rights reserved.
 #
 
-ADD_SUBDIRECTORY(httpp)
+add_subdirectory(httpp)

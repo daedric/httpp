@@ -7,7 +7,7 @@
 #
 
 
-SET(SOURCES
+set(sources
     HttpServer.cpp
     HttpClient.cpp
 
@@ -32,19 +32,9 @@ SET(SOURCES
     ${CONFIG_TO_GENERATE}
 )
 
-ADD_LIBRARY(httpp ${SOURCES})
+set_source_files_properties(http/parser_ragel.cpp PROPERTIES COMPILE_FLAGS -Wno-implicit-fallthrough)
 
-SET_TARGET_PROPERTIES(httpp PROPERTIES
-                      PUBLIC_HEADER "${VERSION_GENERATED}")
+add_library(httpp ${sources})
 
-TARGET_LINK_LIBRARIES(httpp ${HTTPP_DEPS})
-
-INSTALL(TARGETS httpp
-        EXPORT httpp_target
-        PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}/httpp" COMPONENT dev
-        ARCHIVE DESTINATION ${INSTALL_LIB_DIR} COMPONENT library
-        LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT library)
-
-INSTALL(FILES ${CONFIG_GENERATED}
-        DESTINATION "${INSTALL_INCLUDE_DIR}/httpp/detail/generated/" COMPONENT dev)
+target_link_libraries(httpp ${HTTPP_DEPS})
 
