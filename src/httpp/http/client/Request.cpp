@@ -20,9 +20,9 @@ namespace HTTP
 namespace client
 {
 
-Request& Request::url(const std::string& u)
+Request& Request::url(std::string u)
 {
-    url_ = u;
+    url_ = std::move(u);
     return *this;
 }
 
@@ -52,9 +52,9 @@ Request& Request::joinUrlPath(const std::string& dir, bool trailing_sep)
     return *this;
 }
 
-Request& Request::addUrlVariable(const std::string& var, const std::string& val)
+Request& Request::addUrlVariable(std::string var, std::string val)
 {
-    query_params_.emplace_back(var, UTILS::url_encode(val));
+    query_params_.emplace_back(std::move(var), UTILS::url_encode(val));
     return *this;
 }
 
@@ -64,37 +64,37 @@ Request& Request::followRedirect(bool b)
     return *this;
 }
 
-Request& Request::setTimeout(std::chrono::seconds timeout)
+Request& Request::setTimeout(std::chrono::milliseconds timeout)
 {
     timeout_ = timeout;
     return *this;
 }
 
-Request& Request::pushPostData(const std::string& name,
-                               const std::string& value,
+Request& Request::pushPostData(std::string name,
+                               std::string value,
                                PostEncoding encoding)
 {
     if (encoding == PostEncoding::FormUrlEncoded)
     {
-        content_ += name + "=" + UTILS::url_encode(value) + '&';
+        content_ += std::move(name) + "=" + UTILS::url_encode(value) + '&';
     }
     else
     {
-        post_params_.emplace_back(name, UTILS::url_encode(value));
+        post_params_.emplace_back(std::move(name), UTILS::url_encode(value));
     }
 
     return *this;
 }
 
-Request& Request::setContent(const std::string& buffer)
+Request& Request::setContent(std::string buffer)
 {
-    content_ = buffer;
+    content_ = std::move(buffer);
     return *this;
 }
 
-Request& Request::addHeader(const std::string& k, const std::string& v)
+Request& Request::addHeader(std::string k, std::string v)
 {
-    http_headers_.emplace_back(k, v);
+    http_headers_.emplace_back(std::move(k), std::move(v));
     return *this;
 }
 
@@ -107,7 +107,7 @@ Request& Request::allowInsecure()
 void Request::clear()
 {
     url_.clear();
-    timeout_ = std::chrono::seconds::zero();
+    timeout_ = std::chrono::milliseconds::zero();
     follow_redirect_ = false;
     allow_insecure_ = false;
     query_params_.clear();

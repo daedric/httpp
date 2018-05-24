@@ -46,7 +46,7 @@ public:
     };
 
 public:
-    Request& url(const std::string& url);
+    Request& url(std::string url);
 
     // unsafe, catenate current url + path
     Request& addToUrl(const std::string& path);
@@ -54,15 +54,15 @@ public:
     // Allow insecure certificate
     Request& allowInsecure();
 
-    Request& setTimeout(std::chrono::seconds timeout);
+    Request& setTimeout(std::chrono::milliseconds timeout);
     Request& joinUrlPath(const std::string& dir, bool trailing_sep = false);
-    Request& addUrlVariable(const std::string& var, const std::string& val);
+    Request& addUrlVariable(const std::string var, const std::string val);
     Request& followRedirect(bool b = true);
-    Request& pushPostData(const std::string& name,
-                          const std::string& value,
+    Request& pushPostData(std::string name,
+                          std::string value,
                           PostEncoding encoding = PostEncoding::Multipart);
-    Request& setContent(const std::string& buffer);
-    Request& addHeader(const std::string& k, const std::string& v);
+    Request& setContent(std::string buffer);
+    Request& addHeader(std::string k, std::string v);
 
     void clear();
 
@@ -76,7 +76,7 @@ private:
     std::vector<KV> http_headers_;
 
     std::string content_;
-    std::chrono::seconds timeout_{0};
+    std::chrono::milliseconds timeout_{0};
 };
 
 } // namespace client
