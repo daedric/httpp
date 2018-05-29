@@ -32,13 +32,11 @@ ENDIF()
 
 set(INSTALL_CMAKE_DIR "${_CMAKE_DIR}" CACHE PATH "Installation directory for CMake files")
 
-set(CPP_VERSION "c++14" CACHE STRING "C++ version to use")
-set_property(CACHE CPP_VERSION PROPERTY STRINGS "c++14" "c++1y")
+set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard for all targets.")
 
 OPTION(BUILD_TESTS "Build the tests" ON)
 OPTION(BUILD_EXAMPLES "Build the examples")
 OPTION(BUILD_SHARED_LIBS "Build shared lib instead of static ones")
-OPTION(PROFILE_HTTPP "Enable profiling")
 OPTION(SEARCH_COMMONPP "Should commonpp be looked for" ON)
 
 # Setting vars #################################################################
@@ -76,29 +74,16 @@ MESSAGE(STATUS "Source Directory     : ${HTTPP_SOURCE_DIR}")
 
 IF (${CMAKE_CXX_COMPILER_ID} MATCHES GNU OR ${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
   INCLUDE(CheckCXXCompilerFlag)
-  CHECK_CXX_COMPILER_FLAG("-std=${CPP_VERSION}" HAVE_CPP_VERSION)
   CHECK_CXX_COMPILER_FLAG(-Wno-unused-local-typedefs HAVE_NOUNUSED_LOCAL_TYPEDEF)
 
   IF (HAVE_NOUNUSED_LOCAL_TYPEDEF)
         ADD_DEFINITIONS("-Wno-unused-local-typedefs")
   ENDIF()
 
-  if (NOT HAVE_CPP_VERSION)
-      message(FATAL_ERROR "No advanced standard C++ support (-std=${CPP_VERSION} not defined).")
-  endif()
-
-  add_definitions("-std=${CPP_VERSION}")
   add_definitions("-Wextra -Wall")
   IF (${CMAKE_BUILD_TYPE} MATCHES "DEBUG")
       ADD_DEFINITIONS("-ggdb -g3")
   ENDIF ()
-
-  IF (${PROFILE_HTTPP})
-      MESSAGE(STATUS "HTTPP Profile enabled")
-      SET(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -pg)
-      SET(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -pg)
-      SET(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -pg)
-  ENDIF()
 ENDIF()
 
 IF (${BUILD_SHARED_LIBS})
