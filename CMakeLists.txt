@@ -37,7 +37,6 @@ set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard for all targets.")
 OPTION(BUILD_TESTS "Build the tests" ON)
 OPTION(BUILD_EXAMPLES "Build the examples")
 OPTION(BUILD_SHARED_LIBS "Build shared lib instead of static ones")
-OPTION(SEARCH_COMMONPP "Should commonpp be looked for" ON)
 
 # Setting vars #################################################################
 SET(HTTPP_VERSION_MAJOR "0")
@@ -99,27 +98,18 @@ IF (WIN32 AND CMAKE_SYSTEM_VERSION)
     ADD_DEFINITIONS(-D_WIN32_WINNT=${VERSION})
 endif()
 
-# commonpp
-# micro hack to allow commonpp and httpp to be configured separatly within one project
-IF (${SEARCH_COMMONPP})
-    FIND_PACKAGE(commonpp
-        PATHS
-            /usr/lib/CMake/
-            /usr/local/lib/CMake/
-            $ENV{COMMONPP_CMAKE_DIR}
-        PATH_SUFFIXES
-            commonpp
-        QUIET
-    )
+FIND_PACKAGE(commonpp
+    PATHS
+        /usr/lib/CMake/
+        /usr/local/lib/CMake/
+        $ENV{COMMONPP_CMAKE_DIR}
+    PATH_SUFFIXES
+        commonpp
+)
 
-    IF (NOT ${commonpp_FOUND})
-        MESSAGE(STATUS "Use bundled commonpp")
-        ADD_SUBDIRECTORY(third_party/commonpp ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp)
-        SET(commonpp_LIBRARIES commonpp)
-    ELSE ()
-        INCLUDE_DIRECTORIES(${commonpp_INCLUDE_DIRS})
-    ENDIF()
-ELSE()
+IF (NOT ${commonpp_FOUND})
+    MESSAGE(STATUS "Use bundled commonpp")
+    ADD_SUBDIRECTORY(third_party/commonpp ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp)
     SET(commonpp_LIBRARIES commonpp)
 ENDIF()
 
@@ -130,7 +120,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${HTTPP_SOURCE_DIR}/CMakeScripts)
 FIND_PACKAGE(Threads REQUIRED)
 
 FIND_PACKAGE(OpenSSL REQUIRED)
-INCLUDE_DIRECTORIES(${OPENSSL_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(SYSTEM ${OPENSSL_INCLUDE_DIR})
 
 #Boost
 IF (${BUILD_SHARED_LIBS})
@@ -154,11 +144,11 @@ FIND_PACKAGE(Boost 1.54.0
     REQUIRED
 )
 
-INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(SYSTEM ${Boost_INCLUDE_DIR})
 LINK_DIRECTORIES(${Boost_LIBRARY_DIR})
 
 FIND_PACKAGE(CURL REQUIRED)
-INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(SYSTEM ${CURL_INCLUDE_DIRS})
 
 SET(HTTPP_DEPS
     ${commonpp_LIBRARIES}
