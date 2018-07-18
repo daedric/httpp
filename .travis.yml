@@ -37,7 +37,6 @@ script:
     - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} -DBUILD_TESTS=${BUILD_TESTS} -DBUILD_EXAMPLES=${BUILD_EXAMPLES} -DHTTPP_PARSER_BACKEND=${HTTPP_PARSER_BACKEND} ..
     - make VERBOSE=1
     - if [ "${COVERITY_SCAN_BRANCH}" != 1 ]; then make test || cat Testing/Temporary/LastTest.log ; fi
-    - make package
 
 #addons:
 #  coverity_scan:
