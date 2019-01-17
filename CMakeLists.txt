@@ -98,21 +98,24 @@ IF (WIN32 AND CMAKE_SYSTEM_VERSION)
     ADD_DEFINITIONS(-D_WIN32_WINNT=${VERSION})
 endif()
 
-FIND_PACKAGE(commonpp
-    PATHS
-        /usr/lib/CMake/
-        /usr/local/lib/CMake/
-        $ENV{COMMONPP_CMAKE_DIR}
-    PATH_SUFFIXES
-        commonpp
-)
-
-IF (NOT ${commonpp_FOUND})
-    MESSAGE(STATUS "Use bundled commonpp")
-    ADD_SUBDIRECTORY(third_party/commonpp ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp)
+if (TARGET commonpp)
     SET(commonpp_LIBRARIES commonpp)
-ENDIF()
+else()
+    FIND_PACKAGE(commonpp
+        PATHS
+            /usr/lib/CMake/
+            /usr/local/lib/CMake/
+            $ENV{COMMONPP_CMAKE_DIR}
+        PATH_SUFFIXES
+            commonpp
+    )
 
+    IF (NOT ${commonpp_FOUND})
+        MESSAGE(STATUS "Use bundled commonpp")
+        ADD_SUBDIRECTORY(third_party/commonpp ${CMAKE_CURRENT_BINARY_DIR}/third_party/commonpp)
+        SET(commonpp_LIBRARIES commonpp)
+    ENDIF()
+endif()
 # Actual Stuff ################################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${HTTPP_SOURCE_DIR}/CMakeScripts)
 
