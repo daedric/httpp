@@ -129,7 +129,6 @@ std::string Connection::source() const
 
     if (ec)
     {
-        handler_.connection_error(const_cast<Connection*>(this), ec);
         return ec.message();
     }
 
