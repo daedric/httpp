@@ -12,13 +12,14 @@
 #define HTTPP_HTTP_CLIENT_DETAIL_CONNECTION_HPP_
 
 #include <atomic>
-#include <curl/curl.h>
 #include <future>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <vector>
 
 #include <boost/asio.hpp>
+#include <curl/curl.h>
 
 #include <commonpp/core/LoggingInterface.hpp>
 #include <commonpp/thread/ThreadPool.hpp>
