@@ -127,7 +127,8 @@ public:
             boost::asio::async_write(
                 writer, buffers,
                 [this, &writer,
-                 writeHandler](boost::system::error_code const& ec, size_t size) {
+                 writeHandler](boost::system::error_code const& ec, size_t size)
+                {
                     // if there was an error sending the headers, notify the
                     // caller, otherwise start sending the chunks.
                     if (ec)
@@ -151,6 +152,11 @@ public:
     {
         should_be_closed_ = b;
         return *this;
+    }
+
+    std::vector<char>& mutable_body() noexcept
+    {
+        return body_;
     }
 
     const std::vector<char>& body() const noexcept
@@ -194,7 +200,8 @@ private:
             boost::asio::async_write(
                 writer, buffers,
                 [this, &writer,
-                 writeHandler](boost::system::error_code const& ec, size_t size) {
+                 writeHandler](boost::system::error_code const& ec, size_t size)
+                {
                     if (ec)
                     {
                         // notify the original caller that an error occured
