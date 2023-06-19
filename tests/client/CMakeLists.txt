@@ -6,6 +6,10 @@
 # Copyright (c) 2014 Thomas Sanchez.  All rights reserved.
 #
 
+if (NOT ${BUILD_CLIENT})
+    return()
+endif()
+
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 

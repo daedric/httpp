@@ -9,7 +9,6 @@
 
 set(sources
     HttpServer.cpp
-    HttpClient.cpp
 
     http/helper/ReadWholeRequest.cpp
     http/Connection.cpp
@@ -21,16 +20,22 @@ set(sources
     http/Utils.cpp
     http/RestDispatcher.cpp
 
-    http/client/curl_parser.cpp
-    http/client/Connection.cpp
-    http/client/Manager.cpp
-    http/client/Request.cpp
-
     utils/LazyDecodedValue.cpp
 
     ${VERSION_TO_GENERATE}
     ${CONFIG_TO_GENERATE}
 )
+
+if (${BUILD_CLIENT})
+    set(sources
+        ${sources}
+        HttpClient.cpp
+        http/client/curl_parser.cpp
+        http/client/Connection.cpp
+        http/client/Manager.cpp
+        http/client/Request.cpp
+    )
+ENDIF()
 
 set_source_files_properties(http/parser_ragel.cpp PROPERTIES COMPILE_FLAGS -Wno-implicit-fallthrough)
 
