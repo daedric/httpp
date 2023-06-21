@@ -47,7 +47,7 @@ void Request::setDate()
 
 void Request::clear()
 {
-    uri.clear();
+    uri = "";
     headers.clear();
     query_params.clear();
     major = minor = 0;

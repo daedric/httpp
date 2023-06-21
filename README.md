@@ -86,8 +86,7 @@ one based on stream. I found out after having finished that
 [Mongel](https://github.com/mongrel/mongrel/) did the same way before me, so I
 might try to import it if it makes sense.
 
-At the same time, the parser avoids as much as possible copies by using
-[boost::string_ref](http://www.boost.org/doc/libs/1_59_0/libs/utility/doc/html/string_ref.html).
+At the same time, the parser avoids as much as possible copies by using `std::string_view`.
 
 One of the reason is that HTTPP is designed to be used in a REST server
 exposing an API and developed for

@@ -21,7 +21,7 @@ using namespace HTTPP::HTTP;
 
 BOOST_AUTO_TEST_CASE(case_sensitive_lookup)
 {
-    SortedVectorKP<boost::string_ref, boost::string_ref> kv(
+    SortedVectorKP<std::string_view, std::string_view> kv(
         {{"Content-Length", "15543"},
          {"Content-Type", "text/css"},
          {"Date", "Wed, 05 Apr 2017 16:37:38 GMT"},
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(case_sensitive_lookup)
 
 BOOST_AUTO_TEST_CASE(case_insensitive_lookup)
 {
-    SortedVectorKP<boost::string_ref, boost::string_ref, case_insensitive> kv(
+    SortedVectorKP<std::string_view, std::string_view, case_insensitive> kv(
         {{"Content-Length", "15543"},
          {"Content-Type", "text/css"},
          {"Date", "Wed, 05 Apr 2017 16:37:38 GMT"},

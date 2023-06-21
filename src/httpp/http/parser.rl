@@ -21,7 +21,7 @@
 #if HTTPP_PARSER_BACKEND_IS_RAGEL
 
 #define TOKEN_LEN size_t(token_end - token_begin)
-#define TOKEN_REF boost::string_ref(token_begin, TOKEN_LEN)
+#define TOKEN_REF std::string_view(token_begin, TOKEN_LEN)
 
 %%{
     machine http;
@@ -45,7 +45,7 @@ action start_key {
 
 action end_key {
     token_end = fpc;
-    request.headers.emplace_back(std::make_pair<boost::string_ref>(TOKEN_REF, ""));
+    request.headers.emplace_back(std::make_pair<std::string_view>(TOKEN_REF, ""));
     token_begin = token_end = nullptr;
 }
 
@@ -65,7 +65,7 @@ action start_qkey {
 
 action end_qkey {
     token_end = fpc;
-    request.query_params.emplace_back(std::make_pair<std::string, boost::string_ref>({UTILS::url_decode(token_begin, token_end)}, ""));
+    request.query_params.emplace_back(std::make_pair<std::string, std::string_view>({UTILS::url_decode(token_begin, token_end)}, ""));
     token_begin = token_end = nullptr;
 }
 

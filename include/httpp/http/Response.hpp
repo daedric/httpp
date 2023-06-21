@@ -41,7 +41,7 @@ public:
 
     Response() = default;
     Response(HttpCode code);
-    Response(HttpCode code, const boost::string_ref& body);
+    Response(HttpCode code, const std::string_view& body);
     Response(HttpCode code, ChunkedResponseCallback&& callback);
 
     Response& setCode(HttpCode code)
@@ -58,7 +58,7 @@ public:
     void clear();
 
     Response& addHeader(std::string k, std::string v);
-    Response& setBody(const boost::string_ref& body);
+    Response& setBody(const std::string_view& body);
     Response& setBody(ChunkedResponseCallback&& callback);
 
     template <typename Writer, typename WriteHandler>

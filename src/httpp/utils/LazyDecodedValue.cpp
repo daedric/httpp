@@ -20,7 +20,7 @@ namespace HTTPP
 namespace UTILS
 {
 
-LazyDecodedValue::LazyDecodedValue(boost::string_ref str)
+LazyDecodedValue::LazyDecodedValue(std::string_view str)
 : raw_value_(std::move(str))
 {
 }
@@ -50,7 +50,7 @@ const std::string& LazyDecodedValue::string() const
     return decoded_value_;
 }
 
-const boost::string_ref& LazyDecodedValue::ref() const noexcept
+std::string_view LazyDecodedValue::raw() const noexcept
 {
     return raw_value_;
 }
@@ -70,22 +70,12 @@ bool operator==(const char* lhs, const LazyDecodedValue& rhs)
     return lhs == rhs.string();
 }
 
-bool operator==(const LazyDecodedValue& lhs, const std::string& rhs)
+bool operator==(const LazyDecodedValue& lhs, std::string_view rhs)
 {
     return lhs.string() == rhs;
 }
 
-bool operator==(const std::string& lhs, const LazyDecodedValue& rhs)
-{
-    return lhs == rhs.string();
-}
-
-bool operator==(const LazyDecodedValue& lhs, const boost::string_ref& rhs)
-{
-    return lhs.string() == rhs;
-}
-
-bool operator==(const boost::string_ref& lhs, const LazyDecodedValue& rhs)
+bool operator==(std::string_view lhs, const LazyDecodedValue& rhs)
 {
     return lhs == rhs.string();
 }

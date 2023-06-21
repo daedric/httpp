@@ -41,7 +41,7 @@ Response::Response(HttpCode code)
     setBody(getDefaultMessage(code_));
 }
 
-Response::Response(HttpCode code, const boost::string_ref& body)
+Response::Response(HttpCode code, const std::string_view& body)
 {
     setCode(code);
     setBody(body);
@@ -89,7 +89,7 @@ Response& Response::addHeader(std::string k, std::string v)
     return *this;
 }
 
-Response& Response::setBody(const boost::string_ref& body)
+Response& Response::setBody(const std::string_view& body)
 {
     chunkedBodyCallback_ = nullptr;
     body_.reserve(body.size());

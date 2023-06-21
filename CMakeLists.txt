@@ -44,7 +44,7 @@ set(INSTALL_CMAKE_DIR
     CACHE PATH "Installation directory for CMake files")
 
 set(CMAKE_CXX_STANDARD
-    14
+    17
     CACHE STRING "C++ standard for all targets.")
 
 option(BUILD_CLIENT "Build client" false)

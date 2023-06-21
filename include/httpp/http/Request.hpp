@@ -43,7 +43,7 @@ struct Request
     Method method;
 
 #if HTTPP_PARSER_BACKEND_IS_RAGEL
-    boost::string_ref uri;
+    std::string_view uri;
 #else
     std::string uri;
 #endif

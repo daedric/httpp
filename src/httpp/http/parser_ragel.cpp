@@ -23,7 +23,7 @@
 #if HTTPP_PARSER_BACKEND_IS_RAGEL
 
 #    define TOKEN_LEN size_t(token_end - token_begin)
-#    define TOKEN_REF boost::string_ref(token_begin, TOKEN_LEN)
+#    define TOKEN_REF std::string_view(token_begin, TOKEN_LEN)
 
 #    line 30 "parser_ragel.cpp"
 static const int http_start = 1;
@@ -306,7 +306,7 @@ bool Parser::parse(const char* start,
             {
                 token_end = p;
                 request.query_params.emplace_back(
-                    std::make_pair<std::string, boost::string_ref>(
+                    std::make_pair<std::string, std::string_view>(
                         {UTILS::url_decode(token_begin, token_end)}, ""));
                 token_begin = token_end = nullptr;
             }
@@ -316,7 +316,7 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.query_params.emplace_back(
-                std::make_pair<std::string, boost::string_ref>(
+                std::make_pair<std::string, std::string_view>(
                     {UTILS::url_decode(token_begin, token_end)}, ""));
             token_begin = token_end = nullptr;
         }
@@ -574,7 +574,7 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<boost::string_ref>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, ""));
             token_begin = token_end = nullptr;
         }
             goto st24;
@@ -605,7 +605,7 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<boost::string_ref>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, ""));
             token_begin = token_end = nullptr;
         }
             goto st25;
@@ -708,7 +708,7 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<boost::string_ref>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, ""));
             token_begin = token_end = nullptr;
         }
             goto st28;
@@ -1172,7 +1172,7 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<boost::string_ref>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, ""));
             token_begin = token_end = nullptr;
         }
             goto st33;
@@ -1236,7 +1236,7 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<boost::string_ref>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, ""));
             token_begin = token_end = nullptr;
         }
 #    line 56 "parser.rl"
@@ -1427,7 +1427,7 @@ bool Parser::parse(const char* start,
             {
                 token_end = p;
                 request.query_params.emplace_back(
-                    std::make_pair<std::string, boost::string_ref>(
+                    std::make_pair<std::string, std::string_view>(
                         {UTILS::url_decode(token_begin, token_end)}, ""));
                 token_begin = token_end = nullptr;
             }
@@ -1437,7 +1437,7 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.query_params.emplace_back(
-                std::make_pair<std::string, boost::string_ref>(
+                std::make_pair<std::string, std::string_view>(
                     {UTILS::url_decode(token_begin, token_end)}, ""));
             token_begin = token_end = nullptr;
         }
@@ -1585,7 +1585,7 @@ bool Parser::parse(const char* start,
             {
                 token_end = p;
                 request.query_params.emplace_back(
-                    std::make_pair<std::string, boost::string_ref>(
+                    std::make_pair<std::string, std::string_view>(
                         {UTILS::url_decode(token_begin, token_end)}, ""));
                 token_begin = token_end = nullptr;
             }
@@ -1595,7 +1595,7 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.query_params.emplace_back(
-                std::make_pair<std::string, boost::string_ref>(
+                std::make_pair<std::string, std::string_view>(
                     {UTILS::url_decode(token_begin, token_end)}, ""));
             token_begin = token_end = nullptr;
         }

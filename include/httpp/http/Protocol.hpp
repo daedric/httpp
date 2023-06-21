@@ -11,9 +11,9 @@
 #ifndef HTTPP_HTTP_PROTOCOL_HPP_
 #define HTTPP_HTTP_PROTOCOL_HPP_
 
-#include <boost/utility/string_ref.hpp>
-#include <commonpp/core/string/std_tostring.hpp>
 #include <string>
+
+#include <commonpp/core/string/std_tostring.hpp>
 
 #include <httpp/detail/config.hpp>
 #include <httpp/utils/LazyDecodedValue.hpp>
@@ -24,7 +24,7 @@ namespace HTTP
 {
 
 using KV = std::pair<std::string, std::string>;
-using KVRef = std::pair<boost::string_ref, boost::string_ref>;
+using KVRef = std::pair<std::string_view, std::string_view>;
 using Header = KV;
 #if HTTPP_PARSER_BACKEND_IS_RAGEL
 using QueryParamRef = std::pair<std::string, UTILS::LazyDecodedValue>;
