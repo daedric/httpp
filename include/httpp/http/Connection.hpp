@@ -81,7 +81,7 @@ public:
     }
 
     template <typename Callable>
-    void read(size_t size, char* buffer, Callable&& callable)
+    void read(size_t size, char* buffer, Callable callable)
     {
         if (!own())
         {
@@ -111,8 +111,9 @@ public:
         }
 
         async_read(boost::asio::buffer(buffer + offset, size),
-                   [buffer, size, callable,
-                    this](const boost::system::error_code& ec, size_t) {
+                   [callable = std::move(callable),
+                    this](const boost::system::error_code& ec, size_t) mutable
+                   {
                        disown();
 
                        if (ec)
@@ -128,7 +129,7 @@ public:
     }
 
     template <typename Callable, size_t BUFFER_SIZE = BUF_SIZE>
-    void read(size_t body_size, Callable&& callable)
+    void read(size_t body_size, Callable callable)
     {
         if (!own())
         {
@@ -166,8 +167,9 @@ public:
         body_buffer_.resize(buf_size);
 
         async_read_some(boost::asio::buffer(body_buffer_),
-                        [body_size, callable,
-                         this](const boost::system::error_code& ec, size_t size) {
+                        [body_size, callable = std::move(callable), this](
+                            const boost::system::error_code& ec, size_t size) mutable
+                        {
                             disown();
 
                             if (ec)
@@ -179,7 +181,7 @@ public:
                             }
 
                             body_buffer_.resize(size);
-                            read(body_size, callable);
+                            read(body_size, std::move(callable));
                         });
     }
 
