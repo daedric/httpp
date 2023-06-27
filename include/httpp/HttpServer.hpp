@@ -28,6 +28,15 @@ namespace HTTP
 class Connection;
 } // namespace HTTP
 
+struct EventHandler
+{
+    virtual ~EventHandler() = default;
+
+    virtual void connection_created(HTTP::Connection*) = 0;
+    virtual void connection_destroyed(HTTP::Connection*) = 0;
+    virtual void response_send(HTTP::Connection*) = 0;
+};
+
 class HttpServer
 {
 public:
@@ -57,6 +66,7 @@ public:
     HttpServer(ThreadPool& pool);
     ~HttpServer();
 
+    void eventHandler(EventHandler& hndl);
     void bind(const std::string& address, const std::string& port = "8000");
     void bind(
         const std::string& address,
@@ -106,6 +116,7 @@ private:
     std::atomic_int connection_count_ = {0};
     std::vector<AcceptorPtr> acceptors_;
     SinkCb sink_;
+    EventHandler* ev_hndl_ = nullptr;
 
     std::mutex connections_mutex_;
     std::vector<ConnectionPtr> connections_;

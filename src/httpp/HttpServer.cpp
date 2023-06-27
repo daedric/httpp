@@ -130,6 +130,11 @@ void HttpServer::stopListeners()
     }
 }
 
+void HttpServer::eventHandler(EventHandler& hndl)
+{
+    ev_hndl_ = std::addressof(hndl);
+}
+
 void HttpServer::stop()
 {
     if (!running_)
@@ -195,6 +200,11 @@ void HttpServer::mark(ConnectionPtr connection)
     ++connection_count_;
     std::lock_guard<std::mutex> lock(connections_mutex_);
     connections_.emplace_back(connection);
+
+    if (ev_hndl_)
+    {
+        ev_hndl_->connection_created(connection);
+    }
 }
 
 void HttpServer::destroy(ConnectionPtr connection, bool release)
@@ -219,6 +229,10 @@ void HttpServer::destroy(ConnectionPtr connection, bool release)
         {
             --connection_count_;
             connections_.erase(it);
+            if (ev_hndl_)
+            {
+                ev_hndl_->connection_destroyed(connection);
+            }
         }
     }
 

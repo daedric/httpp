@@ -289,6 +289,11 @@ void Connection::sendResponse(Callback&& cb)
         return;
     }
 
+    if (handler_.ev_hndl_)
+    {
+        handler_.ev_hndl_->response_send(this);
+    }
+
     auto handler = [cb, this](const boost::system::error_code& ec, size_t)
     {
         disown();
