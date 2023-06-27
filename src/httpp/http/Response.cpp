@@ -17,22 +17,34 @@ namespace HTTPP
 {
 namespace HTTP
 {
-char const Response::HTTP_START[] = {
-    'H', 'T', 'T', 'P', '/', '1', '.', '1', ' ',
-};
-char const Response::SPACE[] = {
+const char Response::HTTP_START[] = {
+    'H',
+    'T',
+    'T',
+    'P',
+    '/',
+    '1',
+    '.',
+    '1',
     ' ',
 };
-char const Response::HTTP_DELIMITER[] = {
+const char Response::SPACE[] = {
+    ' ',
+};
+const char Response::HTTP_DELIMITER[] = {
     '\r',
     '\n',
 };
-char const Response::HEADER_SEPARATOR[] = {
+const char Response::HEADER_SEPARATOR[] = {
     ':',
     ' ',
 };
-char const Response::END_OF_STREAM_MARKER[] = {
-    '0', '\r', '\n', '\r', '\n',
+const char Response::END_OF_STREAM_MARKER[] = {
+    '0',
+    '\r',
+    '\n',
+    '\r',
+    '\n',
 };
 
 Response::Response(HttpCode code)
@@ -76,13 +88,15 @@ Response& Response::addHeader(std::string k, std::string v)
     if (k == "Transfer-Encoding")
     {
         throw std::invalid_argument(
-            "Transfer-Encoding header should not be set.");
+            "Transfer-Encoding header should not be set."
+        );
     }
 
     if (k.empty() || v.empty())
     {
         throw std::invalid_argument(
-            "Attempting to addHeader with an empty key or value");
+            "Attempting to addHeader with an empty key or value"
+        );
     }
 
     headers_.emplace_back(std::move(k), std::move(v));
@@ -108,7 +122,8 @@ Response& Response::setBody(ChunkedResponseCallback&& callback)
     else
     {
         throw std::invalid_argument(
-            "Setting chunked response body to an empty callback");
+            "Setting chunked response body to an empty callback"
+        );
     }
 }
 

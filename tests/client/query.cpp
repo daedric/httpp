@@ -8,11 +8,13 @@
  *
  */
 
-#include <boost/test/unit_test.hpp>
 #include <iostream>
+
+#include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpClient.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 
 using namespace HTTPP;
 
@@ -28,7 +30,7 @@ void handler(Connection* connection)
     auto& request = connection->request();
     BOOST_CHECK_EQUAL(request.uri, "/test/kiki/");
 
-    auto const& query_params = request.query_params;
+    const auto& query_params = request.query_params;
     for (const auto& q : query_params)
     {
         BOOST_CHECK_EQUAL(map.at(q.first), q.second);

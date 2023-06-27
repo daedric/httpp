@@ -12,6 +12,7 @@
 
 #include "httpp/HttpClient.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 #include "httpp/http/RestDispatcher.hpp"
 #include "httpp/utils/Exception.hpp"
 
@@ -34,7 +35,9 @@ BOOST_AUTO_TEST_CASE(post_content)
 
     HTTP::RestDispatcher dispatcher(server);
     dispatcher.add<HTTP::Method::POST>(
-        "/", [](HTTP::helper::ReadWholeRequest::Handle hndl) {
+        "/",
+        [](HTTP::helper::ReadWholeRequest::Handle hndl)
+        {
             if (hndl->body.empty())
             {
                 hndl->connection->response()
@@ -44,15 +47,15 @@ BOOST_AUTO_TEST_CASE(post_content)
                 return;
             }
 
-            BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()),
-                              EXPECTED_BODY);
+            BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()), EXPECTED_BODY);
 
             hndl->connection->response()
                 .setCode(HTTP::HttpCode::Ok)
                 .connectionShouldBeClosed(true)
                 .setBody(EXPECTED_BODY);
             hndl->connection->sendResponse();
-        });
+        }
+    );
 
     server.bind("localhost", "8080");
 
@@ -110,7 +113,9 @@ BOOST_AUTO_TEST_CASE(https_post_content)
 
     HTTP::RestDispatcher dispatcher(server);
     dispatcher.add<HTTP::Method::POST>(
-        "/", [](HTTP::helper::ReadWholeRequest::Handle hndl) {
+        "/",
+        [](HTTP::helper::ReadWholeRequest::Handle hndl)
+        {
             if (hndl->body.empty())
             {
                 hndl->connection->response()
@@ -120,15 +125,15 @@ BOOST_AUTO_TEST_CASE(https_post_content)
                 return;
             }
 
-            BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()),
-                              EXPECTED_BODY);
+            BOOST_CHECK_EQUAL(std::string(hndl->body.data(), hndl->body.size()), EXPECTED_BODY);
 
             hndl->connection->response()
                 .setCode(HTTP::HttpCode::Ok)
                 .connectionShouldBeClosed(true)
                 .setBody(EXPECTED_BODY);
             hndl->connection->sendResponse();
-        });
+        }
+    );
 
     server.bind("localhost", {"", "", "", cert, key, ""}, "8080");
 

@@ -12,8 +12,6 @@
 
 #include <sstream>
 
-#include "httpp/detail/config.hpp"
-
 #include "httpp/HttpServer.hpp"
 #include "httpp/detail/config.hpp"
 #include "httpp/http/Parser.hpp"
@@ -31,9 +29,9 @@ DECLARE_LOGGER(conn_logger_, "httpp::HttpServer::Connection");
 
 using namespace connection_detail;
 
-Connection::Connection(HTTPP::HttpServer& handler,
-                       boost::asio::io_service& service,
-                       boost::asio::ssl::context* ctx)
+Connection::Connection(
+    HTTPP::HttpServer& handler, boost::asio::io_service& service, boost::asio::ssl::context* ctx
+)
 : handler_(handler)
 , socket_(service)
 {
@@ -133,8 +131,7 @@ std::string Connection::source() const
     }
 
     std::ostringstream source;
-    source << remote_endpoint.address().to_string() << ':'
-           << remote_endpoint.port();
+    source << remote_endpoint.address().to_string() << ':' << remote_endpoint.port();
 
     return source.str();
 }
@@ -169,16 +166,19 @@ void Connection::start()
     if (ssl_socket_ && need_handshake_)
     {
         need_handshake_ = false;
-        ssl_socket_->async_handshake(boost::asio::ssl::stream_base::server,
-                                     [this](boost::system::error_code const& ec) {
-                                         if (ec)
-                                         {
-                                             disown();
-                                             handler_.connection_error(this, ec);
-                                             return;
-                                         }
-                                         read_request();
-                                     });
+        ssl_socket_->async_handshake(
+            boost::asio::ssl::stream_base::server,
+            [this](const boost::system::error_code& ec)
+            {
+                if (ec)
+                {
+                    disown();
+                    handler_.connection_error(this, ec);
+                    return;
+                }
+                read_request();
+            }
+        );
     }
     else
     {
@@ -223,9 +223,11 @@ void Connection::read_request()
 
             if (consumed != size_)
             {
-                body_buffer_.insert(body_buffer_.begin(),
-                                    request_buffer_.begin() + consumed,
-                                    request_buffer_.begin() + size_);
+                body_buffer_.insert(
+                    body_buffer_.begin(),
+                    request_buffer_.begin() + consumed,
+                    request_buffer_.begin() + size_
+                );
                 request_buffer_.resize(consumed);
             }
 
@@ -239,9 +241,11 @@ void Connection::read_request()
                 << "Invalid request received from: " << source() << "\n"
                 << std::string(request_buffer_.data(), size_);
 
-            response_ = Response(HttpCode::BadRequest,
-                                 std::string("An error occured in the request "
-                                             "parsing indicating an error"));
+            response_ = Response(
+                HttpCode::BadRequest,
+                std::string("An error occured in the request "
+                            "parsing indicating an error")
+            );
             response_.connectionShouldBeClosed(true);
 
             disown();
@@ -260,7 +264,8 @@ void Connection::read_request()
 
         async_read_some(
             boost::asio::buffer(data, request_buffer_.capacity() - size_),
-            [this](boost::system::error_code const& ec, size_t size) {
+            [this](const boost::system::error_code& ec, size_t size)
+            {
                 if (ec)
                 {
                     disown();
@@ -270,7 +275,8 @@ void Connection::read_request()
 
                 this->size_ += size;
                 read_request();
-            });
+            }
+        );
     }
 }
 
@@ -283,7 +289,8 @@ void Connection::sendResponse(Callback&& cb)
         return;
     }
 
-    auto handler = [cb, this](boost::system::error_code const& ec, size_t) {
+    auto handler = [cb, this](const boost::system::error_code& ec, size_t)
+    {
         disown();
         if (ec)
         {
@@ -318,7 +325,12 @@ void Connection::sendResponse()
         throw std::logic_error("Invalid connection state");
     }
 
-    sendResponse([this] { recycle(); });
+    sendResponse(
+        [this]
+        {
+            recycle();
+        }
+    );
 }
 
 void Connection::sendContinue(Callback&& cb)
@@ -331,7 +343,12 @@ void Connection::sendContinue(Callback&& cb)
 
     response_.setBody("").setCode(HttpCode::Continue);
 
-    sendResponse([this, cb] { cb(); });
+    sendResponse(
+        [this, cb]
+        {
+            cb();
+        }
+    );
 }
 
 void Connection::recycle()

@@ -19,8 +19,6 @@
 #include <vector>
 
 #include <boost/asio.hpp>
-#include <curl/curl.h>
-
 #include <commonpp/core/LoggingInterface.hpp>
 #include <commonpp/thread/ThreadPool.hpp>
 
@@ -28,6 +26,7 @@
 #include "httpp/http/Protocol.hpp"
 #include "httpp/http/client/Request.hpp"
 #include "httpp/http/client/Response.hpp"
+#include <curl/curl.h>
 
 namespace HTTPP
 {
@@ -94,14 +93,13 @@ struct Connection : public std::enable_shared_from_this<Connection>
     }
 
     void init(std::map<curl_socket_t, boost::asio::ip::tcp::socket*>& sockets);
-    static ConnectionPtr createConnection(Manager& manager,
-                                          boost::asio::io_service& service);
+    static ConnectionPtr
+    createConnection(Manager& manager, boost::asio::io_service& service);
 
     static size_t writefn(char* buffer, size_t size, size_t nmemb, void* userdata);
     static size_t writeHd(char* buffer, size_t size, size_t nmemb, void* userdata);
-    static curl_socket_t opensocket(void* clientp,
-                                    curlsocktype purpose,
-                                    struct curl_sockaddr* address);
+    static curl_socket_t
+    opensocket(void* clientp, curlsocktype purpose, struct curl_sockaddr* address);
 
     static int closesocket(void* clientp, curl_socket_t socket);
 
@@ -126,7 +124,8 @@ struct Connection : public std::enable_shared_from_this<Connection>
                 << "Unknow poll operation requested: " << action;
 
             complete(HTTPP::detail::make_exception_ptr(
-                std::runtime_error("Unknow poll operation requested")));
+                std::runtime_error("Unknow poll operation requested")
+            ));
             break;
         case CURL_POLL_IN:
             socket->async_read_some(boost::asio::null_buffers(), cb);

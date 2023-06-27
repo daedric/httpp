@@ -15,6 +15,7 @@
 #include <system_error>
 
 #include <boost/system/error_code.hpp>
+
 #include <httpp/detail/config.hpp>
 #include <httpp/http/client/Request.hpp>
 
@@ -68,7 +69,7 @@ private:
 };
 
 static inline std::system_error
-convert_boost_ec_to_std_ec(boost::system::error_code const& err)
+convert_boost_ec_to_std_ec(const boost::system::error_code& err)
 {
     if (err.category() == boost::system::system_category())
     {

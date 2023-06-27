@@ -15,7 +15,6 @@
 #include <stdexcept>
 
 #include <boost/container/flat_map.hpp>
-
 #include <commonpp/core/Utils.hpp>
 
 #include "Protocol.hpp"
@@ -41,8 +40,7 @@ struct Route
 
     using AllowedMethod = std::array<bool, 8>;
     using WithoutBodyHandler = std::function<void(HTTP::Connection*)>;
-    using WithBodyHandler =
-        std::function<void(HTTP::helper::ReadWholeRequest::Handle)>;
+    using WithBodyHandler = std::function<void(HTTP::helper::ReadWholeRequest::Handle)>;
 
 public:
     Route()
@@ -76,7 +74,6 @@ public:
 
 class RestDispatcher
 {
-
 public:
     RestDispatcher(HttpServer& server);
     ~RestDispatcher();

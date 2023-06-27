@@ -9,6 +9,7 @@
  */
 
 #include "httpp/http/Protocol.hpp"
+
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -56,8 +57,7 @@ std::string to_string(Method method)
 Method method_from(const std::string& str)
 {
 #define fn(name, e)                                                            \
-    if (str == #name)                                                          \
-        return Method::e;
+    if (str == #name) return Method::e;
     APPLY_ON_METHOD(fn)
 #undef fn
 
@@ -67,12 +67,10 @@ Method method_from(const std::string& str)
 Method method_from(const char* str)
 {
 #define my_strlen(str)                                                         \
-    (__extension__(__builtin_constant_p(str) ? __builtin_strlen(str)           \
-                                             : ::strlen(str)))
+    (__extension__(__builtin_constant_p(str) ? __builtin_strlen(str) : ::strlen(str)))
 
 #define fn(name, e)                                                            \
-    if (::strncmp(#name, str, my_strlen(#name)) == 0)                          \
-        return Method::e;
+    if (::strncmp(#name, str, my_strlen(#name)) == 0) return Method::e;
     APPLY_ON_METHOD(fn)
 #undef fn
 
@@ -126,7 +124,6 @@ const char* getDefaultMessage(HttpCode code)
 {
     switch (code)
     {
-
     default:
         return "Unknown";
 

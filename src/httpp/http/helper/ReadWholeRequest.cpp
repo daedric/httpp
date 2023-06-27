@@ -12,10 +12,7 @@ namespace HTTP
 namespace helper
 {
 
-ReadWholeRequest::ReadWholeRequest(Connection* conn,
-                                   std::vector<char>& dest,
-                                   Callback cb,
-                                   size_t size_limit)
+ReadWholeRequest::ReadWholeRequest(Connection* conn, std::vector<char>& dest, Callback cb, size_t size_limit)
 : connection(conn)
 , cb(std::move(cb))
 , body(dest)
@@ -36,9 +33,13 @@ void ReadWholeRequest::start()
 {
     auto& request = connection->request();
     auto it = std::find_if(
-        request.headers.begin(), request.headers.end(), [](const HeaderRef& s) {
+        request.headers.begin(),
+        request.headers.end(),
+        [](const HeaderRef& s)
+        {
             return ::strncasecmp("Content-Length", s.first.data(), 14) == 0;
-        });
+        }
+    );
 
     size_t size = 0;
     if (it != request.headers.end())
@@ -68,7 +69,7 @@ void ReadWholeRequest::start()
     }
 }
 
-void ReadWholeRequest::operator()(boost::system::error_code const& errc)
+void ReadWholeRequest::operator()(const boost::system::error_code& errc)
 {
     cb(Handle(this), errc);
 }

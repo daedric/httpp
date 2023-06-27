@@ -11,7 +11,6 @@
 #include "httpp/http/Parser.hpp"
 
 #include <cstring>
-
 #include <functional>
 #include <istream>
 #include <iterator>
@@ -47,8 +46,7 @@ static bool match(Iterator& it, const char c)
 
 static bool expect(Iterator& it, const std::string& expected)
 {
-    for (auto eit = std::begin(expected), eend = std::end(expected);
-         eit != eend; ++eit)
+    for (auto eit = std::begin(expected), eend = std::end(expected); eit != eend; ++eit)
     {
         if (*eit != *it)
         {
@@ -163,7 +161,6 @@ static bool consumeUntil(Iterator& it, std::string& acc, const char* charset)
 
 static bool parse_uri(Iterator& it, Request& request)
 {
-
     skipws(it);
 
     consumeUntil(it, request.uri, "? ");
@@ -180,8 +177,7 @@ static bool parse_uri(Iterator& it, Request& request)
                 res = res && consumeUntil(it, value, "& ");
                 key = UTILS::url_decode(key);
                 value = UTILS::url_decode(value);
-                request.query_params.emplace_back(std::move(key),
-                                                  std::move(value));
+                request.query_params.emplace_back(std::move(key), std::move(value));
             }
             else
             {
@@ -214,10 +210,9 @@ static bool parse_http_version(Iterator& it, Request& request)
             request.major = std::stoi(major);
             request.minor = std::stoi(minor);
         }
-        catch (std::exception const& ex)
+        catch (const std::exception& ex)
         {
-            LOG(parser_logger, error)
-                << "Cannot parse Major/Minor: " << ex.what();
+            LOG(parser_logger, error) << "Cannot parse Major/Minor: " << ex.what();
             return false;
         }
     }
@@ -292,11 +287,10 @@ bool Parser::isComplete(const char* buffer, size_t n)
         return false;
     }
 
-    static char const MARKER[] = {'\r', '\n', '\r', '\n'};
+    static const char MARKER[] = {'\r', '\n', '\r', '\n'};
 
     auto buffer_end = buffer + n;
-    return std::search(buffer, buffer_end, std::begin(MARKER),
-                       std::end(MARKER)) != buffer_end;
+    return std::search(buffer, buffer_end, std::begin(MARKER), std::end(MARKER)) != buffer_end;
 }
 
 } // namespace HTTP

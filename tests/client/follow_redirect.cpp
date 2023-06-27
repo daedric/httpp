@@ -17,6 +17,7 @@
 
 #include "httpp/HttpClient.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 #include "httpp/http/RestDispatcher.hpp"
 
 using namespace HTTPP;
@@ -30,9 +31,8 @@ void handler(Connection* connection)
     auto& request = connection->request();
     auto headers = request.getSortedHeaders();
 
-    auto const& host = headers["Host"];
-    auto port =
-        std::stoi(commonpp::string::stringify(host.substr(host.find(':') + 1)));
+    const auto& host = headers["Host"];
+    auto port = std::stoi(commonpp::string::stringify(host.substr(host.find(':') + 1)));
 
     if (port < 8084)
     {
@@ -70,8 +70,9 @@ BOOST_AUTO_TEST_CASE(follow_redirect)
     request.url("http://localhost:8080").followRedirect(true);
 
     auto response = client.get(std::move(request));
-    BOOST_CHECK_EQUAL(std::string(response.body.data(), response.body.size()),
-                      "Ok");
+    BOOST_CHECK_EQUAL(
+        std::string(response.body.data(), response.body.size()), "Ok"
+    );
     for (const auto& h : response.headers)
     {
         std::cout << h.first << ": " << h.second << std::endl;
@@ -88,17 +89,25 @@ BOOST_AUTO_TEST_CASE(follow_redirect2)
     server.start();
 
     HTTP::RestDispatcher dispatcher(server);
-    dispatcher.add<HTTP::Method::GET>("/redirect", [](Connection* connection) {
-        connection->response()
-            .setCode(HTTP::HttpCode::MovedPermanently)
-            .addHeader("Location", "/ok")
-            .setBody("");
-        connection->sendResponse();
-    });
-    dispatcher.add<HTTP::Method::GET>("/ok", [](Connection* connection) {
-        connection->response().setCode(HTTP::HttpCode::Ok).setBody("Ok");
-        connection->sendResponse();
-    });
+    dispatcher.add<HTTP::Method::GET>(
+        "/redirect",
+        [](Connection* connection)
+        {
+            connection->response()
+                .setCode(HTTP::HttpCode::MovedPermanently)
+                .addHeader("Location", "/ok")
+                .setBody("");
+            connection->sendResponse();
+        }
+    );
+    dispatcher.add<HTTP::Method::GET>(
+        "/ok",
+        [](Connection* connection)
+        {
+            connection->response().setCode(HTTP::HttpCode::Ok).setBody("Ok");
+            connection->sendResponse();
+        }
+    );
 
     server.bind("localhost", "8080");
 
@@ -108,8 +117,9 @@ BOOST_AUTO_TEST_CASE(follow_redirect2)
     request.url("http://localhost:8080/redirect").followRedirect(true);
 
     auto response = client.get(std::move(request));
-    BOOST_CHECK_EQUAL(std::string(response.body.data(), response.body.size()),
-                      "Ok");
+    BOOST_CHECK_EQUAL(
+        std::string(response.body.data(), response.body.size()), "Ok"
+    );
     for (const auto& h : response.headers)
     {
         std::cout << h.first << ": " << h.second << std::endl;

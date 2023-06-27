@@ -9,6 +9,7 @@
  */
 
 #include <httpp/HttpServer.hpp>
+#include <httpp/http/Connection.hpp>
 #include <httpp/http/RestDispatcher.hpp>
 #include <httpp/http/Utils.hpp>
 
@@ -69,16 +70,19 @@ bool Route::handle(HTTP::Connection* conn) const
         without_body_hndl(conn);
         break;
     case RouteType::WithBody:
-        read_whole_request(conn, [this](helper::ReadWholeRequest::Handle handle,
-                                        const boost::system::error_code& ec) {
-            if (ec)
+        read_whole_request(
+            conn,
+            [this](helper::ReadWholeRequest::Handle handle, const boost::system::error_code& ec)
             {
-                HTTPP::HTTP::Connection::releaseFromHandler(handle->connection);
-                return;
-            }
+                if (ec)
+                {
+                    HTTPP::HTTP::Connection::releaseFromHandler(handle->connection);
+                    return;
+                }
 
-            this->with_body_handler(std::move(handle));
-        });
+                this->with_body_handler(std::move(handle));
+            }
+        );
         break;
     }
 
@@ -122,7 +126,9 @@ void RestDispatcher::sink(HTTP::Connection* conn)
         }
     }
 
-    conn->response().setCode(HTTP::HttpCode::NotFound).setBody("Unroutable request");
+    conn->response()
+        .setCode(HTTP::HttpCode::NotFound)
+        .setBody("Unroutable request");
     conn->sendResponse();
 }
 

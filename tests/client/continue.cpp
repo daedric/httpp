@@ -12,6 +12,7 @@
 
 #include "httpp/HttpClient.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 #include "httpp/utils/Exception.hpp"
 
 using namespace HTTPP;
@@ -26,22 +27,27 @@ void handler(Connection* connection)
     auto headers = request.getSortedHeaders();
     if (headers["Expect"] == "100-continue")
     {
-        connection->sendContinue([connection] {
-            read_whole_request(
-                connection,
-                [](std::unique_ptr<HTTPP::HTTP::helper::ReadWholeRequest> hndl,
-                   const boost::system::error_code& ec) {
-                    if (ec)
+        connection->sendContinue(
+            [connection]
+            {
+                read_whole_request(
+                    connection,
+                    [](std::unique_ptr<HTTPP::HTTP::helper::ReadWholeRequest> hndl,
+                       const boost::system::error_code& ec)
                     {
-                        throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-                    }
+                        if (ec)
+                        {
+                            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+                        }
 
-                    hndl->connection->response()
-                        .setCode(HTTP::HttpCode::Ok)
-                        .setBody("Body received");
-                    hndl->connection->sendResponse();
-                });
-        });
+                        hndl->connection->response()
+                            .setCode(HTTP::HttpCode::Ok)
+                            .setBody("Body received");
+                        hndl->connection->sendResponse();
+                    }
+                );
+            }
+        );
     }
 }
 

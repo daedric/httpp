@@ -13,6 +13,7 @@
 #include <string>
 
 #include <httpp/HttpServer.hpp>
+#include <httpp/http/Connection.hpp>
 #include <httpp/http/Utils.hpp>
 #include <httpp/utils/Exception.hpp>
 
@@ -24,8 +25,10 @@ using HTTPP::HTTP::Request;
 void handler(Connection* connection)
 {
     read_whole_request(
-        connection, [](std::unique_ptr<HTTPP::HTTP::helper::ReadWholeRequest> hndl,
-                       const boost::system::error_code& ec) {
+        connection,
+        [](std::unique_ptr<HTTPP::HTTP::helper::ReadWholeRequest> hndl,
+           const boost::system::error_code& ec)
+        {
             const auto& body = hndl->body;
             const auto& connection = hndl->connection;
             const auto& request = connection->request();
@@ -48,20 +51,22 @@ void handler(Connection* connection)
             {
                 connection->response()
                     .setCode(HttpCode::Ok)
-                    .setBody("request received entirely: " + out.str() +
-                             ", body size: " + std::to_string(body.size()));
+                    .setBody(
+                        "request received entirely: " + out.str()
+                        + ", body size: " + std::to_string(body.size())
+                    );
             }
 
-            HTTPP::HTTP::setShouldConnectionBeClosed(request,
-                                                     connection->response());
+            HTTPP::HTTP::setShouldConnectionBeClosed(request, connection->response());
             connection->sendResponse(); // connection pointer may become invalid
 
             auto end = Request::Clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
-                end - request.received);
-            std::cout << "Request handled in: " << elapsed.count() << "us"
-                      << std::endl;
-        });
+                end - request.received
+            );
+            std::cout << "Request handled in: " << elapsed.count() << "us" << std::endl;
+        }
+    );
 }
 
 int main(int, char**)

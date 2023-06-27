@@ -17,10 +17,10 @@
 #include <boost/asio.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/test/unit_test.hpp>
-
 #include <commonpp/core/string/stringify.hpp>
 
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 #include "httpp/utils/Exception.hpp"
 
 using namespace HTTPP;
@@ -32,18 +32,20 @@ using HTTPP::HTTP::Response;
 #define BODY_SIZE 8192
 
 static const std::string REQUEST =
+// clang-format off
     "POST / HTTP/1.1\r\n"
     "User-Agent: curl/7.32.0\r\n"
     "Host: localhost:8000\r\n"
     "Accept: */*\r\n"
-    "Content-Length: " BOOST_PP_STRINGIZE(
-        BODY_SIZE) "\r\n"
-                   "Content-Type: application/x-www-form-urlencoded\r\n"
-                   "\r\n";
+    "Content-Length: " BOOST_PP_STRINGIZE(BODY_SIZE) "\r\n"
+    "Content-Type: application/x-www-form-urlencoded\r\n"
+    "\r\n";
+// clang-format on
 
 std::string BODY;
 
 static Connection* gconnection = nullptr;
+
 void body_handler(const boost::system::error_code& ec, const char* buffer, size_t n)
 {
     static std::string body_read;
@@ -54,9 +56,7 @@ void body_handler(const boost::system::error_code& ec, const char* buffer, size_
     {
         std::cout << "Check" << std::endl;
         BOOST_CHECK_EQUAL(body_read, BODY);
-        gconnection->response()
-            .setCode(HTTP::HttpCode::Ok)
-            .connectionShouldBeClosed(true);
+        gconnection->response().setCode(HTTP::HttpCode::Ok).connectionShouldBeClosed(true);
         gconnection->sendResponse();
     }
     else if (ec)
@@ -75,8 +75,7 @@ void handler(Connection* connection)
     gconnection = connection;
     std::cout << "got a request" << std::endl;
     auto headers = request.getSortedHeaders();
-    auto size =
-        std::stoi(commonpp::string::stringify(headers["Content-Length"]));
+    auto size = std::stoi(commonpp::string::stringify(headers["Content-Length"]));
     connection->read(size, &body_handler);
 }
 
@@ -116,8 +115,10 @@ BOOST_AUTO_TEST_CASE(read_body)
 static void handler2(Connection* conn)
 {
     read_whole_request(
-        conn, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
-                 const boost::system::error_code& ec) {
+        conn,
+        [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
+           const boost::system::error_code& ec)
+        {
             if (ec)
             {
                 Connection::releaseFromHandler(handler->connection);
@@ -128,12 +129,11 @@ static void handler2(Connection* conn)
                 std::cout << "Check" << std::endl;
                 std::string str(handler->body.data(), handler->body.size());
                 BOOST_CHECK_EQUAL(str, BODY);
-                handler->connection->response()
-                    .setCode(HTTP::HttpCode::Ok)
-                    .connectionShouldBeClosed(true);
+                handler->connection->response().setCode(HTTP::HttpCode::Ok).connectionShouldBeClosed(true);
                 handler->connection->sendResponse();
             }
-        });
+        }
+    );
 }
 
 BOOST_AUTO_TEST_CASE(read_everything1)
@@ -172,8 +172,10 @@ BOOST_AUTO_TEST_CASE(read_everything1)
 static void handler3(Connection* conn)
 {
     read_whole_request(
-        conn, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
-                 const boost::system::error_code& ec) {
+        conn,
+        [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
+           const boost::system::error_code& ec)
+        {
             if (ec)
             {
                 Connection::releaseFromHandler(handler->connection);
@@ -182,7 +184,8 @@ static void handler3(Connection* conn)
             {
                 BOOST_REQUIRE(false);
             }
-        });
+        }
+    );
 }
 
 BOOST_AUTO_TEST_CASE(read_everything_with_err)
@@ -214,7 +217,8 @@ static void handler4(Connection* conn)
     read_whole_request(
         conn,
         [](std::unique_ptr<HTTP::helper::ReadWholeRequest> handler,
-           const boost::system::error_code& ec) {
+           const boost::system::error_code& ec)
+        {
             if (ec == boost::asio::error::message_size)
             {
                 handler->connection->response().connectionShouldBeClosed(true);
@@ -232,7 +236,8 @@ static void handler4(Connection* conn)
                 Connection::releaseFromHandler(handler->connection);
             }
         },
-        10);
+        10
+    );
 }
 
 BOOST_AUTO_TEST_CASE(body_too_big)

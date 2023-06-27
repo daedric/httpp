@@ -8,12 +8,11 @@
  *
  */
 
-#include <boost/test/unit_test.hpp>
-
 #include <sstream>
 
-#include "httpp/detail/config.hpp"
+#include <boost/test/unit_test.hpp>
 
+#include "httpp/detail/config.hpp"
 #include "httpp/http/Parser.hpp"
 #include "httpp/http/Request.hpp"
 
@@ -46,8 +45,7 @@ Request parse(const std::string& req)
 
     Request request;
     size_t consumed;
-    bool b = Parser::parse(query.data(), query.data() + query.size(), consumed,
-                           request);
+    bool b = Parser::parse(query.data(), query.data() + query.size(), consumed, request);
     BOOST_CHECK(b);
     return request;
 }
@@ -63,9 +61,7 @@ BOOST_AUTO_TEST_CASE(test_http_header_query_parser_no_var)
     parse("/bid?&");
 }
 
-void testQueryParam(const Request& request,
-                    const std::string& var,
-                    const std::string& expectedValue)
+void testQueryParam(const Request& request, const std::string& var, const std::string& expectedValue)
 {
     for (const auto& p : request.query_params)
     {

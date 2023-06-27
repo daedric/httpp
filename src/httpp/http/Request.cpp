@@ -8,11 +8,12 @@
  *
  */
 
+#include "httpp/http/Request.hpp"
+
+#include <ostream>
+
 #include <commonpp/core/string/std_tostring.hpp>
 #include <commonpp/core/string/stringify.hpp>
-
-#include "httpp/http/Request.hpp"
-#include <ostream>
 
 namespace HTTPP
 {
@@ -25,14 +26,14 @@ std::ostream& operator<<(std::ostream& os, const Request& request)
     if (!request.query_params.empty())
     {
         uri += '?';
-        for (auto const& q : request.query_params)
+        for (const auto& q : request.query_params)
         {
             uri += q.first + "=" + to_string(q.second) + "&";
         }
     }
 
     os << uri << " HTTP/" << request.major << "." << request.minor << "\n";
-    for (auto const& h : request.headers)
+    for (const auto& h : request.headers)
     {
         os << h.first << ": " << h.second << "\n";
     }

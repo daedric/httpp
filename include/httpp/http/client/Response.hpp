@@ -28,8 +28,8 @@ struct Response
 {
     HTTPP::HTTP::HttpCode code;
     std::vector<Header> headers;
-    auto getSortedHeaders() const
-        -> decltype(UTILS::create_sorted_vector(headers))
+
+    auto getSortedHeaders() const -> decltype(UTILS::create_sorted_vector(headers))
     {
         return UTILS::create_sorted_vector(headers);
     }

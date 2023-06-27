@@ -8,14 +8,14 @@
  *
  */
 
-#include <httpp/detail/config.hpp>
+#include <sstream>
+
+#include <boost/test/unit_test.hpp>
 
 #include "httpp/http/Parser.hpp"
-
 #include "httpp/http/Request.hpp"
 #include "httpp/utils/VectorStreamBuf.hpp"
-#include <boost/test/unit_test.hpp>
-#include <sstream>
+#include <httpp/detail/config.hpp>
 
 #if HTTPP_PARSER_BACKEND_IS_STREAM
 

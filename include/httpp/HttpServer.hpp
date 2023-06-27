@@ -18,15 +18,16 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-
 #include <commonpp/core/LoggingInterface.hpp>
 #include <commonpp/thread/ThreadPool.hpp>
 
-#include "http/Connection.hpp"
-#include "http/Request.hpp"
-
 namespace HTTPP
 {
+namespace HTTP
+{
+class Connection;
+} // namespace HTTP
+
 
 class HttpServer
 {
@@ -58,9 +59,11 @@ public:
     ~HttpServer();
 
     void bind(const std::string& address, const std::string& port = "8000");
-    void bind(const std::string& address,
-              SSLContext ctx,
-              const std::string& port = "443");
+    void bind(
+        const std::string& address,
+        SSLContext ctx,
+        const std::string& port = "443"
+    );
 
     void setSink(SinkCb cb)
     {
@@ -79,13 +82,12 @@ public:
 
 private:
     void start_accept(AcceptorPtr acceptor);
-    void accept_callback(const boost::system::error_code& error,
-                         AcceptorPtr acceptor,
-                         ConnectionPtr connection);
+    void accept_callback(
+        const boost::system::error_code& error, AcceptorPtr acceptor, ConnectionPtr connection
+    );
 
-    static AcceptorPtr bind(boost::asio::io_service&,
-                            const std::string& address,
-                            const std::string& port);
+    static AcceptorPtr
+    bind(boost::asio::io_service&, const std::string& address, const std::string& port);
 
 private: // called by Connection
     friend class ::HTTPP::HTTP::Connection;
@@ -93,8 +95,7 @@ private: // called by Connection
     void mark(ConnectionPtr connection);
     void destroy(ConnectionPtr connection, bool release = true);
 
-    void connection_error(ConnectionPtr connection,
-                          const boost::system::error_code& err);
+    void connection_error(ConnectionPtr connection, const boost::system::error_code& err);
 
     void connection_notify_request(ConnectionPtr connection);
     void connection_recycle(ConnectionPtr connection);

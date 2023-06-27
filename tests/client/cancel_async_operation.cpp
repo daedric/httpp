@@ -8,13 +8,14 @@
  *
  */
 
-#include <boost/test/unit_test.hpp>
 #include <iostream>
 
+#include <boost/test/unit_test.hpp>
 #include <commonpp/core/LoggingInterface.hpp>
 
 #include "httpp/HttpClient.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 
 using namespace HTTPP;
 
@@ -23,6 +24,7 @@ using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 
 static Connection* gconn = nullptr;
+
 void handler(Connection* connection)
 {
     gconn = connection;
@@ -40,10 +42,13 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
     HttpClient::Request request;
     request.url("http://localhost:8080").joinUrlPath("test").joinUrlPath("kiki", true);
 
-    auto handler =
-        client.async_get(std::move(request), [](HttpClient::Future fut) {
+    auto handler = client.async_get(
+        std::move(request),
+        [](HttpClient::Future fut)
+        {
             BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
-        });
+        }
+    );
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     handler.cancelOperation();
@@ -56,6 +61,7 @@ BOOST_AUTO_TEST_CASE(cancel_async_operation)
 
 static std::atomic_int nb_gconns = {0};
 static std::vector<Connection*> gconns;
+
 void handler_push(Connection* connection)
 {
     ++nb_gconns;
@@ -81,10 +87,13 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
         for (int i = 0; i < NB_CONN; ++i)
         {
             client.async_get(
-                HttpClient::Request{request}, [&nb_cb](HttpClient::Future fut) {
+                HttpClient::Request{request},
+                [&nb_cb](HttpClient::Future fut)
+                {
                     ++nb_cb;
                     BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
-                });
+                }
+            );
         }
 
         while (nb_gconns != NB_CONN)
@@ -94,8 +103,7 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection)
     }
 
     server.stopListeners();
-    std::for_each(std::begin(gconns), std::end(gconns),
-                  &Connection::releaseFromHandler);
+    std::for_each(std::begin(gconns), std::end(gconns), &Connection::releaseFromHandler);
     server.stop();
 
     BOOST_CHECK_EQUAL(nb_cb.load(), NB_CONN);
@@ -110,9 +118,13 @@ BOOST_AUTO_TEST_CASE(delete_pending_connection_google)
 
     for (int i = 0; i < 10; ++i)
     {
-        client.async_get(HttpClient::Request{request}, [](HttpClient::Future fut) {
-            BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
-        });
+        client.async_get(
+            HttpClient::Request{request},
+            [](HttpClient::Future fut)
+            {
+                BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
+            }
+        );
     }
 }
 
@@ -135,12 +147,15 @@ BOOST_AUTO_TEST_CASE(late_cancel)
     request.url("http://localhost:8080");
 
     bool ok = false;
-    auto handler =
-        client.async_get(std::move(request), [&ok](HttpClient::Future fut) {
+    auto handler = client.async_get(
+        std::move(request),
+        [&ok](HttpClient::Future fut)
+        {
             ok = true;
             GLOG(debug) << "Response received";
             fut.get();
-        });
+        }
+    );
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     BOOST_CHECK(ok);

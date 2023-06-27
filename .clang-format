@@ -1,44 +1,76 @@
 ---
-IndentPPDirectives: AfterHash
 AccessModifierOffset: -4
-AlignEscapedNewlinesLeft: false
 AlignTrailingComments: true
+AlignAfterOpenBracket: BlockIndent
+AlignOperands: AlignAfterOperator
 AllowAllParametersOfDeclarationOnNextLine: true
-AllowAllParametersOfDeclarationOnNextLine: true
+AllowAllArgumentsOnNextLine: true
 AllowShortFunctionsOnASingleLine: false
-AllowShortIfStatementsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: WithoutElse
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakBeforeMultilineStrings: false
+AllowShortLambdasOnASingleLine: Empty
+AllowShortBlocksOnASingleLine: Empty
+AlwaysBreakBeforeMultilineStrings: true
 AlwaysBreakTemplateDeclarations: true
+BasedOnStyle: LLVM
+BinPackArguments: false
 BinPackParameters: false
-BreakBeforeBinaryOperators: false
+BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Allman
-BreakConstructorInitializersBeforeComma: true
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
-ConstructorInitializerIndentWidth: 0
+BreakBeforeConceptDeclarations: Always
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+BreakAfterAttributes: Always
+ColumnLimit: 80
+ConstructorInitializerIndentWidth : 0
+ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
-DerivePointerBinding: false
+EmptyLineBeforeAccessModifier: LogicalBlock
 ExperimentalAutoDetectBinPacking: false
 IndentCaseLabels: false
-IndentFunctionDeclarationAfterType: false
-IndentWidth:     4
+IndentPPDirectives: AfterHash
+IndentWidth: 4
+KeepEmptyLinesAtTheStartOfBlocks: false
+LambdaBodyIndentation: Signature
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
-ObjCSpaceBeforeProtocolList: true
-PenaltyBreakComment: 60
-PenaltyBreakFirstLessLess: 100
-PenaltyBreakString: 1000
-PenaltyExcessCharacter: 8
-PenaltyReturnTypeOnItsOwnLine: 99
-PointerBindsToType: true
-SpaceAfterControlStatementKeyword: true
+#PackConstructorInitializers: NextLineOnly
+PenaltyBreakComment: 1
+PenaltyBreakOpenParenthesis: 1
+PenaltyBreakFirstLessLess: 1
+PenaltyBreakString: 400
+PenaltyExcessCharacter: 1
+PenaltyReturnTypeOnItsOwnLine: 10
+PenaltyIndentedWhitespace: 1
+PointerAlignment: Left
+QualifierAlignment: Custom
+QualifierOrder: ['static', 'inline', 'const', 'type']
+RequiresClausePosition: OwnLine
+IndentRequiresClause: false
+SeparateDefinitionBlocks: Always
+ShortNamespaceLines: 0
+SpaceAfterTemplateKeyword: true
 SpaceBeforeAssignmentOperators: true
 SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 1
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+    AfterControlStatements: true
+    AfterRequiresInClause: true
+    AfterRequiresInExpression: true
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
-Standard:        Cpp11
-TabWidth:        4
-UseTab:          Never
+Standard: c++20
+UseTab: Never
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^<[a-z_]+>$'
+    Priority:        1
+  - Regex:           '^<[a-z_]+\.h>$'
+    Priority:        2
+  - Regex:           '^(<|")(boost|commonpp).*'
+    Priority:        3
+  - Regex:           '.*'
+    Priority:        4
+WhitespaceSensitiveMacros: ['BOOST_PP_STRINGIZE']
 ...
-

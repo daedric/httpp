@@ -13,6 +13,7 @@
 #include <string>
 
 #include <httpp/HttpServer.hpp>
+#include <httpp/http/Connection.hpp>
 #include <httpp/http/Utils.hpp>
 #include <httpp/utils/Exception.hpp>
 
@@ -24,19 +25,23 @@ using HTTPP::HTTP::helper::ReadWholeRequest;
 
 void handler(Connection* connection)
 {
-    read_whole_request(connection, [](std::unique_ptr<ReadWholeRequest> handle,
-                                      const boost::system::error_code& ec) {
-        if (ec)
+    read_whole_request(
+        connection,
+        [](std::unique_ptr<ReadWholeRequest> handle, const boost::system::error_code& ec)
         {
-            throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
-        }
+            if (ec)
+            {
+                throw HTTPP::UTILS::convert_boost_ec_to_std_ec(ec);
+            }
 
-        auto connection = handle->connection;
-        connection->response().setCode(HttpCode::Ok);
-        HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(),
-                                                 connection->response());
-        connection->sendResponse(); // connection pointer may become invalid
-    });
+            auto connection = handle->connection;
+            connection->response().setCode(HttpCode::Ok);
+            HTTPP::HTTP::setShouldConnectionBeClosed(
+                connection->request(), connection->response()
+            );
+            connection->sendResponse(); // connection pointer may become invalid
+        }
+    );
 }
 
 int main(int ac, char** av)

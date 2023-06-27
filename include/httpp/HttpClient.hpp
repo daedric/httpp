@@ -41,7 +41,6 @@ struct Connection;
 
 class HttpClient
 {
-
 public:
     using ThreadPool = commonpp::thread::ThreadPool;
 
@@ -85,10 +84,9 @@ public:
 #undef METHOD
 
 private:
-    std::pair<Future, AsyncHandler>
-    handle_request(HTTP::Method method,
-                   Request request,
-                   CompletionHandler handler = CompletionHandler());
+    std::pair<Future, AsyncHandler> handle_request(
+        HTTP::Method method, Request request, CompletionHandler handler = CompletionHandler()
+    );
 
 private:
     ThreadPool pool_io_;

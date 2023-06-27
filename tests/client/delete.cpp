@@ -12,6 +12,7 @@
 
 #include "httpp/HttpClient.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 
 using namespace HTTPP;
 

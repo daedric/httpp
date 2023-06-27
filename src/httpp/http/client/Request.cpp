@@ -9,9 +9,11 @@
  */
 
 #include "httpp/http/client/Request.hpp"
+
+#include <chrono>
+
 #include "Connection.hpp"
 #include "httpp/utils/URL.hpp"
-#include <chrono>
 
 namespace HTTPP
 {
@@ -70,9 +72,7 @@ Request& Request::setTimeout(std::chrono::milliseconds timeout)
     return *this;
 }
 
-Request& Request::pushPostData(std::string name,
-                               std::string value,
-                               PostEncoding encoding)
+Request& Request::pushPostData(std::string name, std::string value, PostEncoding encoding)
 {
     if (encoding == PostEncoding::FormUrlEncoded)
     {

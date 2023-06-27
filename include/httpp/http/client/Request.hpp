@@ -29,7 +29,7 @@ namespace client
 namespace detail
 {
 struct Connection;
-}
+} // namespace detail
 
 class Request
 {
@@ -58,9 +58,9 @@ public:
     Request& joinUrlPath(const std::string& dir, bool trailing_sep = false);
     Request& addUrlVariable(const std::string var, const std::string val);
     Request& followRedirect(bool b = true);
-    Request& pushPostData(std::string name,
-                          std::string value,
-                          PostEncoding encoding = PostEncoding::Multipart);
+    Request& pushPostData(
+        std::string name, std::string value, PostEncoding encoding = PostEncoding::Multipart
+    );
     Request& setContent(std::string buffer);
     Request& addHeader(std::string k, std::string v);
 

@@ -13,6 +13,7 @@
 #include <string>
 
 #include <httpp/HttpServer.hpp>
+#include <httpp/http/Connection.hpp>
 #include <httpp/http/RestDispatcher.hpp>
 #include <httpp/http/Utils.hpp>
 #include <httpp/utils/Exception.hpp>
@@ -30,16 +31,14 @@ void handler_with_body(ReadWholeRequest::Handle handle)
     auto connection = handle->connection;
     // do something with handle->body
     connection->response().setCode(HttpCode::Ok);
-    HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(),
-                                             connection->response());
+    HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(), connection->response());
     connection->sendResponse(); // connection pointer may become invalid
 }
 
 void handler_without_body(Connection* connection)
 {
     connection->response().setCode(HttpCode::Ok);
-    HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(),
-                                             connection->response());
+    HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(), connection->response());
     connection->sendResponse(); // connection pointer may become invalid
 }
 
@@ -55,12 +54,16 @@ int main(int, char**)
     dispatcher.add<Method::GET>("/", &handler_without_body);
 
     dispatcher.add<Method::PUT, Method::DELETE_, Method::HEAD, Method::CONNECT>(
-        "/", [](Connection* connection) {
+        "/",
+        [](Connection* connection)
+        {
             connection->response().setCode(HttpCode::Forbidden);
-            HTTPP::HTTP::setShouldConnectionBeClosed(connection->request(),
-                                                     connection->response());
+            HTTPP::HTTP::setShouldConnectionBeClosed(
+                connection->request(), connection->response()
+            );
             connection->sendResponse(); // connection pointer may become invalid
-        });
+        }
+    );
 
     server.bind("0.0.0.0", "8080");
     while (true)

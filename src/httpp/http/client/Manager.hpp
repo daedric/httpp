@@ -11,7 +11,6 @@
 #ifndef HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
 #define HTTPP_HTTP_CLIENT_DETAIL_MANAGER_HPP_
 
-#include <curl/curl.h>
 #include <future>
 #include <map>
 #include <memory>
@@ -19,12 +18,12 @@
 #include <stdexcept>
 
 #include <boost/asio.hpp>
-
 #include <commonpp/core/LoggingInterface.hpp>
 #include <commonpp/thread/ThreadPool.hpp>
 
 #include "httpp/detail/config.hpp"
 #include "httpp/http/Protocol.hpp"
+#include <curl/curl.h>
 
 namespace HTTPP
 {
@@ -72,22 +71,20 @@ struct Manager
     void timer_cb(const boost::system::error_code& error);
     static int curl_timer_cb(CURLM*, long timeout_ms, void* userdata);
 
-    static int sock_cb(CURL* easy,
-                       curl_socket_t s,
-                       int what,
-                       void* multi_private,
-                       void* socket_private);
+    static int
+    sock_cb(CURL* easy, curl_socket_t s, int what, void* multi_private, void* socket_private);
 
     void checkHandles();
-    void performOp(std::shared_ptr<Connection> connection,
-                   int action,
-                   const boost::system::error_code& ec);
+    void performOp(
+        std::shared_ptr<Connection> connection, int action, const boost::system::error_code& ec
+    );
     void poll(std::shared_ptr<Connection> connection, int action);
 
     void cancelConnection(std::shared_ptr<Connection> connection);
     Future<void> cancel_connection(std::shared_ptr<Connection> connection);
-    void cancel_connection_io_thread(std::shared_ptr<Connection> connection,
-                                     std::shared_ptr<Promise<void>> promise);
+    void cancel_connection_io_thread(
+        std::shared_ptr<Connection> connection, std::shared_ptr<Promise<void>> promise
+    );
 
     int closeSocket(curl_socket_t curl_socket);
 

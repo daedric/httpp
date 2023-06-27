@@ -8,17 +8,17 @@
  *
  */
 
-#include <boost/test/unit_test.hpp>
-
 #include <atomic>
 #include <functional>
 #include <memory>
 #include <string>
 
+#include <boost/test/unit_test.hpp>
 #include <commonpp/core/LoggingInterface.hpp>
 
 #include "httpp/HttpClient.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 #include "httpp/http/Utils.hpp"
 #include "httpp/utils/Exception.hpp"
 
@@ -38,7 +38,8 @@ const int DEFAULT_CHUNK_SIZE = 100;
 //
 std::function<std::string()> make_stream(int numChunks, int chunkSize)
 {
-    auto stream = [numChunks, chunkSize]() mutable -> std::string {
+    auto stream = [numChunks, chunkSize]() mutable -> std::string
+    {
         if (numChunks > 0)
         {
             GLOG(debug) << __FUNCTION__ << ":Sending Chunk ";
@@ -109,7 +110,10 @@ BOOST_AUTO_TEST_CASE(test_client_receives_expected_body)
 //
 void empty_chunk_response(Connection* connection)
 {
-    auto empty_response = []() { return ""; };
+    auto empty_response = []()
+    {
+        return "";
+    };
 
     connection->response().setCode(HTTP::HttpCode::Ok).setBody(empty_response);
     connection->sendResponse();
@@ -131,8 +135,9 @@ BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
 
     BOOST_CHECK_EQUAL(headers["Transfer-Encoding"], "chunked");
     BOOST_CHECK_EQUAL(true, response.body.empty());
-    BOOST_CHECK_EQUAL(getDefaultMessage(HTTP::HttpCode::Ok),
-                      getDefaultMessage(response.code));
+    BOOST_CHECK_EQUAL(
+        getDefaultMessage(HTTP::HttpCode::Ok), getDefaultMessage(response.code)
+    );
 }
 
 //
@@ -141,9 +146,14 @@ BOOST_AUTO_TEST_CASE(test_empty_chunk_response)
 //
 void infinite_response(Connection* connection)
 {
-    connection->response().setCode(HTTP::HttpCode::Ok).setBody([]() {
-        return "XXX";
-    });
+    connection->response()
+        .setCode(HTTP::HttpCode::Ok)
+        .setBody(
+            []()
+            {
+                return "XXX";
+            }
+        );
     connection->sendResponse();
 }
 
@@ -160,10 +170,13 @@ BOOST_AUTO_TEST_CASE(test_cancelling_request_while_streaming_stops_functor)
         request.url("http://localhost:8080");
         HttpClient client;
 
-        auto handler =
-            client.async_get(std::move(request), [](HttpClient::Future fut) {
+        auto handler = client.async_get(
+            std::move(request),
+            [](HttpClient::Future fut)
+            {
                 BOOST_CHECK_THROW(fut.get(), HTTPP::UTILS::OperationAborted);
-            });
+            }
+        );
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         BOOST_CHECK_EQUAL(server.getNbConnection(), 2);
@@ -197,8 +210,9 @@ std::string GetRawResponse()
 
     // convert buffer to a string
     auto responseData = response.data();
-    std::string str(boost::asio::buffers_begin(responseData),
-                    boost::asio::buffers_begin(responseData) + bytes);
+    std::string str(
+        boost::asio::buffers_begin(responseData), boost::asio::buffers_begin(responseData) + bytes
+    );
     return str;
 }
 

@@ -8,8 +8,9 @@
  *
  */
 
-#include "httpp/utils/URL.hpp"
 #include <boost/test/unit_test.hpp>
+
+#include "httpp/utils/URL.hpp"
 
 using namespace HTTPP::UTILS;
 

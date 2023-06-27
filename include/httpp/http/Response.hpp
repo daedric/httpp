@@ -26,11 +26,11 @@ namespace HTTP
 
 class Response
 {
-    static char const HTTP_START[9];
-    static char const SPACE[1];
-    static char const HTTP_DELIMITER[2];
-    static char const HEADER_SEPARATOR[2];
-    static char const END_OF_STREAM_MARKER[5];
+    static const char HTTP_START[9];
+    static const char SPACE[1];
+    static const char HTTP_DELIMITER[2];
+    static const char HEADER_SEPARATOR[2];
+    static const char END_OF_STREAM_MARKER[5];
 
 public:
     // A ChunkedResponseCallback is responsible for generating individual
@@ -70,8 +70,7 @@ public:
         { // HTTP/1.1
             buffers.emplace_back(boost::asio::buffer(HTTP_START));
             snprintf(code_str_, 4, "%i", int(code_));
-            buffers.emplace_back(
-                boost::asio::buffer(code_str_, strlen(code_str_)));
+            buffers.emplace_back(boost::asio::buffer(code_str_, strlen(code_str_)));
             buffers.emplace_back(boost::asio::buffer(SPACE));
 
             auto message = getDefaultMessage(code_);
@@ -79,7 +78,7 @@ public:
         }
 
         buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
-        for (auto const& header : headers_)
+        for (const auto& header : headers_)
         {
             buffers.emplace_back(boost::asio::buffer(header.first));
             buffers.emplace_back(boost::asio::buffer(HEADER_SEPARATOR));
@@ -104,8 +103,7 @@ public:
                 buffers.emplace_back(boost::asio::buffer(HEADER_SEPARATOR));
 
                 snprintf(body_size_, 16, "%lu", body_.size());
-                buffers.emplace_back(
-                    boost::asio::buffer(body_size_, strlen(body_size_)));
+                buffers.emplace_back(boost::asio::buffer(body_size_, strlen(body_size_)));
                 buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
             }
         }
@@ -125,9 +123,9 @@ public:
         {
             // send headers, then each chunks individually.
             boost::asio::async_write(
-                writer, buffers,
-                [this, &writer,
-                 writeHandler](boost::system::error_code const& ec, size_t size)
+                writer,
+                buffers,
+                [this, &writer, writeHandler](const boost::system::error_code& ec, size_t size)
                 {
                     // if there was an error sending the headers, notify the
                     // caller, otherwise start sending the chunks.
@@ -139,7 +137,8 @@ public:
                     {
                         write_chunk(writer, writeHandler);
                     }
-                });
+                }
+            );
         }
     }
 
@@ -177,8 +176,10 @@ private:
     {
         if (!is_chunked_enconding())
         {
-            throw std::runtime_error("Call to write_chunk for a response which "
-                                     "is not using chunked encoding");
+            throw std::runtime_error(
+                "Call to write_chunk for a response which "
+                "is not using chunked encoding"
+            );
         }
 
         // try to generate the next chunk. This may block.
@@ -198,9 +199,9 @@ private:
             buffers.emplace_back(boost::asio::buffer(HTTP_DELIMITER));
 
             boost::asio::async_write(
-                writer, buffers,
-                [this, &writer,
-                 writeHandler](boost::system::error_code const& ec, size_t size)
+                writer,
+                buffers,
+                [this, &writer, writeHandler](const boost::system::error_code& ec, size_t size)
                 {
                     if (ec)
                     {
@@ -213,15 +214,15 @@ private:
                         // write the next chunk.
                         write_chunk(writer, writeHandler);
                     }
-                });
+                }
+            );
         }
         else
         {
             // Send end of stream marker, notify the client handler that the
             // response is complete, potentially with an error if the
             // this write fails.
-            boost::asio::async_write(
-                writer, boost::asio::buffer(END_OF_STREAM_MARKER), writeHandler);
+            boost::asio::async_write(writer, boost::asio::buffer(END_OF_STREAM_MARKER), writeHandler);
         }
     }
 

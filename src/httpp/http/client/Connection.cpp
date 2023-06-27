@@ -10,7 +10,6 @@
 
 #include "Connection.hpp"
 
-#include <curl/curl.h>
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -20,12 +19,12 @@
 #include <boost/asio.hpp>
 #include <boost/exception_ptr.hpp>
 
+#include "Manager.hpp"
 #include "httpp/http/Protocol.hpp"
 #include "httpp/http/client/Request.hpp"
 #include "httpp/http/client/Response.hpp"
 #include "httpp/utils/Exception.hpp"
-
-#include "Manager.hpp"
+#include <curl/curl.h>
 
 namespace HTTPP
 {
@@ -54,7 +53,6 @@ Connection::Connection(Manager& manager, boost::asio::io_service& service)
 
 Connection::~Connection()
 {
-
     LOG(client_connection_logger, trace)
         << "Destroy Connection: " << this << ", socket: " << socket;
 
@@ -78,7 +76,8 @@ Connection::~Connection()
             LOG(client_connection_logger, error)
                 << "Destroy a not completed connection: " << this;
             complete(HTTPP::detail::make_exception_ptr(
-                std::runtime_error("Destroy a non completed connection")));
+                std::runtime_error("Destroy a non completed connection")
+            ));
         }
         catch (const std::exception& ex)
         {
@@ -156,9 +155,8 @@ size_t Connection::writefn(char* buffer, size_t size, size_t nmemb, void* userda
     return actual_size;
 }
 
-curl_socket_t Connection::opensocket(void* clientp,
-                                     curlsocktype purpose,
-                                     struct curl_sockaddr* address)
+curl_socket_t
+Connection::opensocket(void* clientp, curlsocktype purpose, struct curl_sockaddr* address)
 {
     Connection* conn = (Connection*)clientp;
 
@@ -228,8 +226,7 @@ void Connection::setSocket(curl_socket_t curl_socket)
     if (it == std::end(*sockets))
     {
         socket = nullptr;
-        throw std::runtime_error("Cannot find socket: " +
-                                 std::to_string(curl_socket));
+        throw std::runtime_error("Cannot find socket: " + std::to_string(curl_socket));
     }
 
     LOG(client_connection_logger, trace)
@@ -300,7 +297,8 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
     if (!request.post_params_.empty() && !request.content_.empty())
     {
         throw std::runtime_error(
-            "Cannot mix multipart and x-formurl-encoded post data");
+            "Cannot mix multipart and x-formurl-encoded post data"
+        );
     }
 
     struct curl_httppost* post = NULL;
@@ -309,8 +307,15 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
     {
         for (const auto& e : request.post_params_)
         {
-            curl_formadd(&post, &last, CURLFORM_COPYNAME, e.first.data(),
-                         CURLFORM_COPYCONTENTS, e.second.data(), CURLFORM_END);
+            curl_formadd(
+                &post,
+                &last,
+                CURLFORM_COPYNAME,
+                e.first.data(),
+                CURLFORM_COPYCONTENTS,
+                e.second.data(),
+                CURLFORM_END
+            );
         }
 
         conn_setopt(CURLOPT_HTTPPOST, post);
@@ -330,15 +335,15 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
         conn_setopt(CURLOPT_TIMEOUT_MS, request.timeout_.count());
     }
 
-     conn_setopt(CURLOPT_TCP_KEEPALIVE, 1L);
+    conn_setopt(CURLOPT_TCP_KEEPALIVE, 1L);
 
     if (!request.http_headers_.empty())
     {
         http_headers = nullptr;
         for (const auto& h : request.http_headers_)
         {
-            http_headers = curl_slist_append(http_headers,
-                                             (h.first + ": " + h.second).data());
+            http_headers =
+                curl_slist_append(http_headers, (h.first + ": " + h.second).data());
         }
 
         conn_setopt(CURLOPT_HTTPHEADER, http_headers);
@@ -364,7 +369,9 @@ void Connection::cancel()
 
 using HTTPP::UTILS::RequestError;
 
-struct RequestNestedError : public RequestError, public std::nested_exception
+struct RequestNestedError
+: public RequestError
+, public std::nested_exception
 {
     RequestNestedError(const std::string& str, HTTP::client::Request&& request)
     : RequestError(str, std::move(request))
@@ -376,15 +383,14 @@ void Connection::buildResponse(CURLcode code)
 {
     if (code == CURLE_OPERATION_TIMEDOUT)
     {
-        complete(
-            HTTPP::detail::make_exception_ptr(HTTPP::UTILS::RequestTimeout()));
+        complete(HTTPP::detail::make_exception_ptr(HTTPP::UTILS::RequestTimeout()));
         return;
     }
     else if (code != CURLE_OK)
     {
         complete(HTTPP::detail::make_exception_ptr(RequestError(
-            curl_easy_strerror(code) + std::string(this->error_buffer),
-            std::move(request))));
+            curl_easy_strerror(code) + std::string(this->error_buffer), std::move(request)
+        )));
         return;
     }
 
@@ -392,8 +398,8 @@ void Connection::buildResponse(CURLcode code)
 
     try
     {
-        response.code = static_cast<HTTPP::HTTP::HttpCode>(
-            conn_getinfo<long>(CURLINFO_RESPONSE_CODE));
+        response.code =
+            static_cast<HTTPP::HTTP::HttpCode>(conn_getinfo<long>(CURLINFO_RESPONSE_CODE));
 
         long redirection = 0;
         if (request.follow_redirect_)
@@ -406,8 +412,7 @@ void Connection::buildResponse(CURLcode code)
         {
             auto begin = std::begin(header);
             auto end = std::end(header);
-            auto it = std::search(begin, end, std::begin(HEADER_BODY_SEP),
-                                  std::end(HEADER_BODY_SEP));
+            auto it = std::search(begin, end, std::begin(HEADER_BODY_SEP), std::end(HEADER_BODY_SEP));
 
             if (it != end)
             {
@@ -427,7 +432,8 @@ void Connection::buildResponse(CURLcode code)
             << "Error when building the response: " << exc.what();
         complete(HTTPP::detail::make_exception_ptr(RequestNestedError(
             "Exception happened during buildResponse " + std::string(exc.what()),
-            std::move(response.request))));
+            std::move(response.request)
+        )));
         return;
     }
 }
@@ -459,7 +465,11 @@ void Connection::complete(ExceptionPtr ex)
         {
             auto ptr = shared_from_this();
             dispatch->post(
-                [ptr] { ptr->completion_handler(ptr->promise.get_future()); });
+                [ptr]
+                {
+                    ptr->completion_handler(ptr->promise.get_future());
+                }
+            );
         }
         else
         {

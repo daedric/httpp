@@ -19,6 +19,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 #include "httpp/utils/Exception.hpp"
 
 using namespace HTTPP;
@@ -27,18 +28,19 @@ using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 
-static const std::string REQUEST = "GET / HTTP/1.1\r\n\r\n"
-                                   "GET / HTTP/1.1\r\n\r\n"
-                                   "GET / HTTP/1.1\r\n\r\n";
+static const std::string REQUEST =
+    "GET / HTTP/1.1\r\n\r\n"
+    "GET / HTTP/1.1\r\n\r\n"
+    "GET / HTTP/1.1\r\n\r\n";
 
 static const std::string BODY(8192, 'a');
 
-static const std::string REQUEST_BODY_ = "GET / HTTP/1.1\r\n"
-                                         "Content-Length: 8192\r\n"
-                                         "\r\n" +
-                                         BODY;
-static const std::string REQUEST_BODY =
-    REQUEST_BODY_ + REQUEST_BODY_ + REQUEST_BODY_;
+static const std::string REQUEST_BODY_ =
+    "GET / HTTP/1.1\r\n"
+    "Content-Length: 8192\r\n"
+    "\r\n"
+    + BODY;
+static const std::string REQUEST_BODY = REQUEST_BODY_ + REQUEST_BODY_ + REQUEST_BODY_;
 
 void handler(Connection* connection)
 {
@@ -88,8 +90,10 @@ size_t total_size = 0;
 void handler_w_body(Connection* connection)
 {
     read_whole_request(
-        connection, [](std::unique_ptr<HTTP::helper::ReadWholeRequest> hndl,
-                       const boost::system::error_code& ec) {
+        connection,
+        [](std::unique_ptr<HTTP::helper::ReadWholeRequest> hndl,
+           const boost::system::error_code& ec)
+        {
             if (ec)
             {
                 throw UTILS::convert_boost_ec_to_std_ec(ec);
@@ -97,7 +101,8 @@ void handler_w_body(Connection* connection)
             total_size += hndl->body.size();
             hndl->connection->response().setCode(HTTP::HttpCode::Ok).setBody("");
             hndl->connection->sendResponse();
-        });
+        }
+    );
 }
 
 BOOST_AUTO_TEST_CASE(pipeline_with_body)

@@ -23,8 +23,7 @@ namespace UTILS
 struct case_insensitive
 {
     template <typename StringLike>
-    bool operator()(const StringLike& left, const StringLike& right) const
-        noexcept
+    bool operator()(const StringLike& left, const StringLike& right) const noexcept
     {
         if (left.size() < right.size())
         {
@@ -63,7 +62,7 @@ public:
         std::sort(begin(), end(), &comparator);
     }
 
-    Value const& find(const Key& key) const
+    const Value& find(const Key& key) const
     {
         const value_type value{key, not_found_};
         auto it = std::lower_bound(begin(), end(), value, &comparator);
@@ -76,7 +75,7 @@ public:
         return not_found_;
     }
 
-    Value const& operator[](const Key& key) const
+    const Value& operator[](const Key& key) const
     {
         return find(key);
     }
@@ -86,8 +85,7 @@ private:
 };
 
 template <typename K, typename V, typename C = std::less<K>>
-SortedVectorKP<K, V, C>
-create_sorted_vector(const std::vector<std::pair<K, V>>& vector)
+SortedVectorKP<K, V, C> create_sorted_vector(const std::vector<std::pair<K, V>>& vector)
 {
     return SortedVectorKP<K, V, C>(vector);
 }

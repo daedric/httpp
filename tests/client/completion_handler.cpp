@@ -8,11 +8,13 @@
  *
  */
 
-#include <boost/test/unit_test.hpp>
 #include <iostream>
+
+#include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpClient.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 
 using namespace HTTPP;
 
@@ -22,7 +24,9 @@ using HTTPP::HTTP::Response;
 
 void handler(Connection* connection)
 {
-    connection->response().setCode(HTTPP::HTTP::HttpCode::Ok).setBody("Hello world");
+    connection->response()
+        .setCode(HTTPP::HTTP::HttpCode::Ok)
+        .setBody("Hello world");
     connection->sendResponse();
 }
 
@@ -38,12 +42,16 @@ BOOST_AUTO_TEST_CASE(completion_handler)
     HttpClient::Request request;
     request.url("http://localhost:8080");
     bool b = true;
-    client.async_get(std::move(request), [&b](HttpClient::Future future) {
-        auto response = future.get();
-        std::string body(response.body.data(), response.body.size());
-        BOOST_CHECK_EQUAL(body, "Hello world");
-        b = false;
-    });
+    client.async_get(
+        std::move(request),
+        [&b](HttpClient::Future future)
+        {
+            auto response = future.get();
+            std::string body(response.body.data(), response.body.size());
+            BOOST_CHECK_EQUAL(body, "Hello world");
+            b = false;
+        }
+    );
 
     while (b)
     {

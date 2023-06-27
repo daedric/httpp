@@ -8,9 +8,8 @@
  *
  */
 
-#include <cstring>
-
 #include <algorithm>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -25,7 +24,6 @@ namespace client
 
 void parseCurlResponseHeader(const std::vector<char>& headers, Response& response)
 {
-
     auto it = std::begin(headers);
     auto end = std::end(headers);
 
@@ -43,7 +41,13 @@ void parseCurlResponseHeader(const std::vector<char>& headers, Response& respons
         std::string value;
 
         auto key_end = std::find_if(
-            it, end, [](const char c) { return strchr(": \r", c) != nullptr; });
+            it,
+            end,
+            [](const char c)
+            {
+                return strchr(": \r", c) != nullptr;
+            }
+        );
 
         key.assign(it, key_end);
 
@@ -82,8 +86,10 @@ void parseCurlResponseHeader(const std::vector<char>& headers, Response& respons
 
         if (!(*it == '\r' && *(it + 1) == '\n'))
         {
-            throw std::runtime_error("Invalid Header, expect \\r\\n at "
-                                     "the end of an header");
+            throw std::runtime_error(
+                "Invalid Header, expect \\r\\n at "
+                "the end of an header"
+            );
         }
         ++it;
         ++it;

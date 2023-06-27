@@ -8,11 +8,12 @@
  *
  */
 
-#include "httpp/utils/VectorStreamBuf.hpp"
-
-#include <boost/test/unit_test.hpp>
 #include <istream>
 #include <iterator>
+
+#include <boost/test/unit_test.hpp>
+
+#include "httpp/utils/VectorStreamBuf.hpp"
 
 using HTTPP::UTILS::VectorStreamBuf;
 

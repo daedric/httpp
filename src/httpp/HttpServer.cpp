@@ -10,6 +10,8 @@
 
 #include "httpp/HttpServer.hpp"
 
+#include "httpp/http/Connection.hpp"
+#include "httpp/http/Request.hpp"
 #include "httpp/http/Utils.hpp"
 #include "httpp/utils/Exception.hpp"
 
@@ -27,45 +29,43 @@ struct HttpServer::Acceptor : boost::asio::ip::tcp::acceptor
 
     void setSSLContext(SSLContext ctx)
     {
-        ssl_ctx.reset(
-            new boost::asio::ssl::context(boost::asio::ssl::context::sslv23));
-        if (!((ctx.cert_file.empty() ^ ctx.cert_buffer.empty()) &&
-              (ctx.key_file.empty() ^ ctx.key_buffer.empty())))
+        ssl_ctx.reset(new boost::asio::ssl::context(boost::asio::ssl::context::sslv23));
+        if (!((ctx.cert_file.empty() ^ ctx.cert_buffer.empty())
+              && (ctx.key_file.empty() ^ ctx.key_buffer.empty())))
         {
-            throw std::invalid_argument(
-                "Cert and Key file/buffer are required");
+            throw std::invalid_argument("Cert and Key file/buffer are required");
         }
 
-        auto flags = boost::asio::ssl::context::default_workarounds |
-                     boost::asio::ssl::context::no_sslv2 |
-                     boost::asio::ssl::context::no_sslv3 |
+        auto flags =
+            boost::asio::ssl::context::default_workarounds
+            | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::no_sslv3 |
 #ifndef __APPLE__
-                     boost::asio::ssl::context::no_tlsv1 |
+            boost::asio::ssl::context::no_tlsv1 |
 #endif
-                     boost::asio::ssl::context::single_dh_use;
+            boost::asio::ssl::context::single_dh_use;
 
         ssl_ctx->set_options(flags);
 
         if (!ctx.cert_file.empty())
         {
-            ssl_ctx->use_certificate_file(ctx.cert_file,
-                                          boost::asio::ssl::context::pem);
+            ssl_ctx->use_certificate_file(ctx.cert_file, boost::asio::ssl::context::pem);
         }
         else
         {
-            ssl_ctx->use_certificate(boost::asio::buffer(ctx.cert_buffer),
-                                     boost::asio::ssl::context::pem);
+            ssl_ctx->use_certificate(
+                boost::asio::buffer(ctx.cert_buffer), boost::asio::ssl::context::pem
+            );
         }
 
         if (!ctx.key_file.empty())
         {
-            ssl_ctx->use_private_key_file(ctx.key_file,
-                                          boost::asio::ssl::context::pem);
+            ssl_ctx->use_private_key_file(ctx.key_file, boost::asio::ssl::context::pem);
         }
         else
         {
-            ssl_ctx->use_private_key(boost::asio::buffer(ctx.key_buffer),
-                                     boost::asio::ssl::context::pem);
+            ssl_ctx->use_private_key(
+                boost::asio::buffer(ctx.key_buffer), boost::asio::ssl::context::pem
+            );
         }
 
         if (!ctx.dh_file.empty())
@@ -162,31 +162,29 @@ void HttpServer::bind(const std::string& address, const std::string& port)
     if (not running_)
     {
         throw std::logic_error(
-            "Http server must be started before bind is called");
+            "Http server must be started before bind is called"
+        );
     }
 
     auto acc = HttpServer::bind(pool_->getService(), address, port);
-    LOG(server_logger, debug)
-        << "Bind address: " << address << " on port: " << port;
+    LOG(server_logger, debug) << "Bind address: " << address << " on port: " << port;
     acceptors_.push_back(acc);
     ++running_acceptors_;
     start_accept(acc);
 }
 
-void HttpServer::bind(const std::string& address,
-                      SSLContext ctx,
-                      const std::string& port)
+void HttpServer::bind(const std::string& address, SSLContext ctx, const std::string& port)
 {
     if (not running_)
     {
         throw std::logic_error(
-            "Http server must be started before bind is called");
+            "Http server must be started before bind is called"
+        );
     }
 
     auto acc = HttpServer::bind(pool_->getService(), address, port);
     acc->setSSLContext(std::move(ctx));
-    LOG(server_logger, debug)
-        << "SSL bind address: " << address << " on port: " << port;
+    LOG(server_logger, debug) << "SSL bind address: " << address << " on port: " << port;
     acceptors_.push_back(acc);
     ++running_acceptors_;
     start_accept(acc);
@@ -205,9 +203,14 @@ void HttpServer::destroy(ConnectionPtr connection, bool release)
 
     {
         std::lock_guard<std::mutex> lock(connections_mutex_);
-        auto it =
-            std::find_if(std::begin(connections_), std::end(connections_),
-                         [&](ConnectionPtr conn) { return connection == conn; });
+        auto it = std::find_if(
+            std::begin(connections_),
+            std::end(connections_),
+            [&](ConnectionPtr conn)
+            {
+                return connection == conn;
+            }
+        );
         if (it == std::end(connections_))
         {
             return;
@@ -229,23 +232,21 @@ void HttpServer::start_accept(AcceptorPtr acceptor)
 {
     if (running_)
     {
-
-        auto connection = new HTTP::Connection(*this, pool_->getService(),
-                                               acceptor->ssl_ctx.get());
+        auto connection =
+            new HTTP::Connection(*this, pool_->getService(), acceptor->ssl_ctx.get());
         mark(connection);
 
-        acceptor->async_accept(connection->socket_,
-                               std::bind(&HttpServer::accept_callback, this,
-                                         std::placeholders::_1, acceptor,
-                                         connection));
+        acceptor->async_accept(
+            connection->socket_,
+            std::bind(&HttpServer::accept_callback, this, std::placeholders::_1, acceptor, connection)
+        );
     }
 }
 
-void HttpServer::accept_callback(const boost::system::error_code& error,
-                                 AcceptorPtr acceptor,
-                                 ConnectionPtr connection)
+void HttpServer::accept_callback(
+    const boost::system::error_code& error, AcceptorPtr acceptor, ConnectionPtr connection
+)
 {
-
     if (error)
     {
         destroy(connection);
@@ -256,8 +257,7 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
         }
         else
         {
-            LOG(server_logger, error)
-                << "Error during accept: " << error.message();
+            LOG(server_logger, error) << "Error during accept: " << error.message();
         }
 
         --running_acceptors_;
@@ -280,9 +280,9 @@ void HttpServer::accept_callback(const boost::system::error_code& error,
     start_accept(acceptor);
 }
 
-HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
-                                         const std::string& host,
-                                         const std::string& port)
+HttpServer::AcceptorPtr HttpServer::bind(
+    boost::asio::io_service& service, const std::string& host, const std::string& port
+)
 {
     auto acceptor = AcceptorPtr(new Acceptor(service));
     boost::system::error_code error;
@@ -292,8 +292,7 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
     {
         boost::asio::ip::tcp::resolver resolver(service);
         boost::asio::ip::tcp::resolver::query query(host, port);
-        boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query),
-                                                 end;
+        boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query), end;
 
         if (it == end)
         {
@@ -314,11 +313,9 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
     }
 
     acceptor->open(endpoint.protocol());
-    acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true),
-                         error);
+    acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true), error);
     if (error)
     {
-
         LOG(server_logger, warning)
             << "Cannot set REUSEADDR on " << host << " on " << port
             << ", error msg: " << error.message();
@@ -327,7 +324,6 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
     acceptor->bind(endpoint, error);
     if (error)
     {
-
         LOG(server_logger, error) << "Cannot bind " << host << " on " << port
                                   << " error msg: " << error.message();
         throw UTILS::convert_boost_ec_to_std_ec(error);
@@ -343,15 +339,12 @@ HttpServer::AcceptorPtr HttpServer::bind(boost::asio::io_service& service,
     return acceptor;
 }
 
-void HttpServer::connection_error(ConnectionPtr connection,
-                                  const boost::system::error_code& ec)
+void HttpServer::connection_error(ConnectionPtr connection, const boost::system::error_code& ec)
 {
-    if (ec != boost::asio::error::eof &&
-        ec != boost::asio::error::connection_reset &&
-        ec != boost::asio::error::operation_aborted)
+    if (ec != boost::asio::error::eof && ec != boost::asio::error::connection_reset
+        && ec != boost::asio::error::operation_aborted)
     {
-        LOG(server_logger, warning)
-            << "Got an error from a Connection: " << ec.message();
+        LOG(server_logger, warning) << "Got an error from a Connection: " << ec.message();
     }
 
     destroy(connection);
@@ -371,8 +364,7 @@ void HttpServer::connection_notify_request(ConnectionPtr connection)
     else
     {
         connection->response().setCode(HTTP::HttpCode::NoContent).setBody("");
-        HTTP::setShouldConnectionBeClosed(connection->request(),
-                                          connection->response());
+        HTTP::setShouldConnectionBeClosed(connection->request(), connection->response());
         connection->sendResponse();
     }
 }

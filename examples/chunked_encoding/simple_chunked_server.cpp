@@ -13,6 +13,7 @@
 #include <string>
 
 #include <httpp/HttpServer.hpp>
+#include <httpp/http/Connection.hpp>
 #include <httpp/http/Utils.hpp>
 #include <httpp/utils/Exception.hpp>
 
@@ -27,7 +28,8 @@ void chunked_handler(Connection* connection)
     auto numChunks = 10;
     auto chunkSize = 8192;
 
-    auto body = [numChunks, chunkSize]() mutable -> std::string {
+    auto body = [numChunks, chunkSize]() mutable -> std::string
+    {
         if (numChunks-- > 0)
         {
             return std::string(chunkSize, 'X');

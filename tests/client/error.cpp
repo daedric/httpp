@@ -8,12 +8,13 @@
  *
  */
 
-#include <boost/test/unit_test.hpp>
-
 #include <functional>
+
+#include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpClient.hpp"
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 
 using namespace HTTPP;
 
@@ -71,7 +72,8 @@ BOOST_AUTO_TEST_CASE(bad_server)
 
     boost::asio::ip::tcp::acceptor acceptor(service);
     auto endpoint = boost::asio::ip::tcp::endpoint(
-        boost::asio::ip::address::from_string("0.0.0.0"), 8080);
+        boost::asio::ip::address::from_string("0.0.0.0"), 8080
+    );
     acceptor.open(endpoint.protocol());
     acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
     acceptor.bind(endpoint);
@@ -79,32 +81,38 @@ BOOST_AUTO_TEST_CASE(bad_server)
 
     boost::asio::ip::tcp::socket socket(service);
 
-    acceptor.async_accept(socket, [&](const boost::system::error_code& error) {
-        GLOG(debug) << "Connection received";
-        if (error)
+    acceptor.async_accept(
+        socket,
+        [&](const boost::system::error_code& error)
         {
-            throw UTILS::convert_boost_ec_to_std_ec(error);
-        }
-        boost::asio::streambuf buffer;
-        boost::asio::read_until(socket, buffer, "\r\n\r\n");
-        std::istream is(&buffer);
-        while (is)
-        {
-            std::string str;
-            is >> str;
-            GLOG(debug) << "receive: " << str;
-        }
+            GLOG(debug) << "Connection received";
+            if (error)
+            {
+                throw UTILS::convert_boost_ec_to_std_ec(error);
+            }
+            boost::asio::streambuf buffer;
+            boost::asio::read_until(socket, buffer, "\r\n\r\n");
+            std::istream is(&buffer);
+            while (is)
+            {
+                std::string str;
+                is >> str;
+                GLOG(debug) << "receive: " << str;
+            }
 
-        GLOG(debug) << "Send payload";
+            GLOG(debug) << "Send payload";
 
-        boost::asio::write(socket,
-                           boost::asio::buffer("HTTP/1.1 200 OK\r\n"
-                                               "Content-Length: 0\r\n"
-                                               "Connection: Close\r\n"
-                                               "This is an invalid header\r\n"
-                                               "\r\n"));
-        GLOG(debug) << "Payload sent";
-    });
+            boost::asio::write(
+                socket,
+                boost::asio::buffer("HTTP/1.1 200 OK\r\n"
+                                    "Content-Length: 0\r\n"
+                                    "Connection: Close\r\n"
+                                    "This is an invalid header\r\n"
+                                    "\r\n")
+            );
+            GLOG(debug) << "Payload sent";
+        }
+    );
 
     HttpClient client;
     HttpClient::Request request;
@@ -144,10 +152,14 @@ BOOST_AUTO_TEST_CASE(manager_deletion)
         HttpClient client;
         HttpClient::Request request;
         request.url("http://localhost:8080");
-        client.async_get(std::move(request), [&notif](HttpClient::Future future) {
-            notif = true;
-            BOOST_CHECK_THROW(future.get(), HTTPP::UTILS::OperationAborted);
-        });
+        client.async_get(
+            std::move(request),
+            [&notif](HttpClient::Future future)
+            {
+                notif = true;
+                BOOST_CHECK_THROW(future.get(), HTTPP::UTILS::OperationAborted);
+            }
+        );
 
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
     }

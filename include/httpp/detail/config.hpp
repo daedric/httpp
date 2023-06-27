@@ -10,12 +10,11 @@
 
 #pragma once
 
+#include <future>
 #include <type_traits>
 
 #include <httpp/detail/generated/config.hpp>
 #include <httpp/version.hpp>
-
-#include <future>
 
 #define HTTPP_RAGEL_BACKEND 0
 #define HTTPP_STREAM_BACKEND 1
@@ -45,13 +44,13 @@ static inline ExceptionPtr make_exception_ptr(const T& ex)
     return std::make_exception_ptr(ex);
 }
 
-static inline ExceptionPtr
-current_exception() noexcept(noexcept(std::current_exception()))
+static inline ExceptionPtr current_exception() noexcept(noexcept(std::current_exception()))
 {
     return std::current_exception();
 }
 
-[[noreturn]] static void inline rethrow_exception(const ExceptionPtr& ex)
+[[noreturn]]
+static inline void rethrow_exception(const ExceptionPtr& ex)
 {
     std::rethrow_exception(ex);
 }

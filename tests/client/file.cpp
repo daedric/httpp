@@ -8,8 +8,9 @@
  *
  */
 
-#include <boost/test/unit_test.hpp>
 #include <fstream>
+
+#include <boost/test/unit_test.hpp>
 
 #include "config.h"
 #include "httpp/HttpClient.hpp"
@@ -29,6 +30,7 @@ BOOST_AUTO_TEST_CASE(file)
     std::istream_iterator<char> it(file), end;
     std::string file_content(it, end);
 
-    BOOST_CHECK_EQUAL(file_content,
-                      std::string(response.body.begin(), response.body.end()));
+    BOOST_CHECK_EQUAL(
+        file_content, std::string(response.body.begin(), response.body.end())
+    );
 }

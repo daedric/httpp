@@ -34,7 +34,7 @@ using QueryParamRef = KV;
 using HeaderRef = KV;
 #endif
 
-static char const HEADER_BODY_SEP[] = {'\r', '\n', '\r', '\n'};
+static const char HEADER_BODY_SEP[] = {'\r', '\n', '\r', '\n'};
 
 enum class Method
 {

@@ -40,10 +40,7 @@ namespace HTTPP
 {
 namespace HTTP
 {
-bool Parser::parse(const char* start,
-                   const char* end,
-                   size_t& consumed,
-                   Request& request)
+bool Parser::parse(const char* start, const char* end, size_t& consumed, Request& request)
 {
     const char* p = start;
     int cs;
@@ -305,9 +302,9 @@ bool Parser::parse(const char* start,
 #    line 66 "parser.rl"
             {
                 token_end = p;
-                request.query_params.emplace_back(
-                    std::make_pair<std::string, std::string_view>(
-                        {UTILS::url_decode(token_begin, token_end)}, ""));
+                request.query_params.emplace_back(std::make_pair<std::string, std::string_view>(
+                    {UTILS::url_decode(token_begin, token_end)}, ""
+                ));
                 token_begin = token_end = nullptr;
             }
             goto st11;
@@ -315,9 +312,9 @@ bool Parser::parse(const char* start,
 #    line 66 "parser.rl"
         {
             token_end = p;
-            request.query_params.emplace_back(
-                std::make_pair<std::string, std::string_view>(
-                    {UTILS::url_decode(token_begin, token_end)}, ""));
+            request.query_params.emplace_back(std::make_pair<std::string, std::string_view>(
+                {UTILS::url_decode(token_begin, token_end)}, ""
+            ));
             token_begin = token_end = nullptr;
         }
             goto st11;
@@ -574,7 +571,8 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<std::string_view>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, "")
+            );
             token_begin = token_end = nullptr;
         }
             goto st24;
@@ -605,7 +603,8 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<std::string_view>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, "")
+            );
             token_begin = token_end = nullptr;
         }
             goto st25;
@@ -708,7 +707,8 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<std::string_view>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, "")
+            );
             token_begin = token_end = nullptr;
         }
             goto st28;
@@ -1172,7 +1172,8 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<std::string_view>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, "")
+            );
             token_begin = token_end = nullptr;
         }
             goto st33;
@@ -1236,7 +1237,8 @@ bool Parser::parse(const char* start,
         {
             token_end = p;
             request.headers.emplace_back(
-                std::make_pair<std::string_view>(TOKEN_REF, ""));
+                std::make_pair<std::string_view>(TOKEN_REF, "")
+            );
             token_begin = token_end = nullptr;
         }
 #    line 56 "parser.rl"
@@ -1426,9 +1428,9 @@ bool Parser::parse(const char* start,
 #    line 66 "parser.rl"
             {
                 token_end = p;
-                request.query_params.emplace_back(
-                    std::make_pair<std::string, std::string_view>(
-                        {UTILS::url_decode(token_begin, token_end)}, ""));
+                request.query_params.emplace_back(std::make_pair<std::string, std::string_view>(
+                    {UTILS::url_decode(token_begin, token_end)}, ""
+                ));
                 token_begin = token_end = nullptr;
             }
             goto st37;
@@ -1436,9 +1438,9 @@ bool Parser::parse(const char* start,
 #    line 66 "parser.rl"
         {
             token_end = p;
-            request.query_params.emplace_back(
-                std::make_pair<std::string, std::string_view>(
-                    {UTILS::url_decode(token_begin, token_end)}, ""));
+            request.query_params.emplace_back(std::make_pair<std::string, std::string_view>(
+                {UTILS::url_decode(token_begin, token_end)}, ""
+            ));
             token_begin = token_end = nullptr;
         }
             goto st37;
@@ -1584,9 +1586,9 @@ bool Parser::parse(const char* start,
 #    line 66 "parser.rl"
             {
                 token_end = p;
-                request.query_params.emplace_back(
-                    std::make_pair<std::string, std::string_view>(
-                        {UTILS::url_decode(token_begin, token_end)}, ""));
+                request.query_params.emplace_back(std::make_pair<std::string, std::string_view>(
+                    {UTILS::url_decode(token_begin, token_end)}, ""
+                ));
                 token_begin = token_end = nullptr;
             }
             goto st39;
@@ -1594,9 +1596,9 @@ bool Parser::parse(const char* start,
 #    line 66 "parser.rl"
         {
             token_end = p;
-            request.query_params.emplace_back(
-                std::make_pair<std::string, std::string_view>(
-                    {UTILS::url_decode(token_begin, token_end)}, ""));
+            request.query_params.emplace_back(std::make_pair<std::string, std::string_view>(
+                {UTILS::url_decode(token_begin, token_end)}, ""
+            ));
             token_begin = token_end = nullptr;
         }
             goto st39;
@@ -1952,8 +1954,7 @@ bool Parser::parse(const char* start,
 
     if (cs < http_first_final)
     {
-        GLOG(error) << "Invalid request read, cannot parse: "
-                    << std::string(p, end);
+        GLOG(error) << "Invalid request read, cannot parse: " << std::string(p, end);
         return false;
     }
 

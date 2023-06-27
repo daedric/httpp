@@ -18,7 +18,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-
 #include <commonpp/core/LoggingInterface.hpp>
 #include <commonpp/thread/ThreadPool.hpp>
 
@@ -37,7 +36,7 @@ namespace HTTP
 namespace connection_detail
 {
 FWD_DECLARE_LOGGER(conn_logger_, commonpp::core::Logger);
-}
+} // namespace connection_detail
 
 class Connection
 {
@@ -51,9 +50,11 @@ public:
     static constexpr size_t BUF_SIZE = BUFSIZ;
     using Callback = std::function<void()>;
 
-    Connection(HTTPP::HttpServer& handler,
-               boost::asio::io_service& service,
-               boost::asio::ssl::context* ctx = nullptr);
+    Connection(
+        HTTPP::HttpServer& handler,
+        boost::asio::io_service& service,
+        boost::asio::ssl::context* ctx = nullptr
+    );
 
 private:
     ~Connection();
@@ -95,8 +96,7 @@ public:
             if (size <= body_buffer_.size())
             {
                 std::copy(begin(body_buffer_), begin(body_buffer_) + size, buffer);
-                body_buffer_.erase(begin(body_buffer_),
-                                   begin(body_buffer_) + size);
+                body_buffer_.erase(begin(body_buffer_), begin(body_buffer_) + size);
                 disown();
                 callable(boost::system::error_code());
                 return;
@@ -110,22 +110,23 @@ public:
             }
         }
 
-        async_read(boost::asio::buffer(buffer + offset, size),
-                   [callable = std::move(callable),
-                    this](const boost::system::error_code& ec, size_t) mutable
-                   {
-                       disown();
+        async_read(
+            boost::asio::buffer(buffer + offset, size),
+            [callable = std::move(callable), this](const boost::system::error_code& ec, size_t) mutable
+            {
+                disown();
 
-                       if (ec)
-                       {
-                           LOG(connection_detail::conn_logger_, error)
-                               << "Error detected while reading the body";
-                           callable(ec);
-                           return;
-                       }
+                if (ec)
+                {
+                    LOG(connection_detail::conn_logger_, error)
+                        << "Error detected while reading the body";
+                    callable(ec);
+                    return;
+                }
 
-                       callable(boost::system::error_code());
-                   });
+                callable(boost::system::error_code());
+            }
+        );
     }
 
     template <typename Callable, size_t BUFFER_SIZE = BUF_SIZE>
@@ -140,16 +141,17 @@ public:
         {
             if (body_size <= body_buffer_.size())
             {
-                callable(boost::system::error_code(), body_buffer_.data(),
-                         body_size);
-                body_buffer_.erase(begin(body_buffer_),
-                                   begin(body_buffer_) + body_size);
+                callable(boost::system::error_code(), body_buffer_.data(), body_size);
+                body_buffer_.erase(begin(body_buffer_), begin(body_buffer_) + body_size);
                 body_size = 0;
             }
             else
             {
-                callable(boost::system::error_code(), body_buffer_.data(),
-                         body_buffer_.size());
+                callable(
+                    boost::system::error_code(),
+                    body_buffer_.data(),
+                    body_buffer_.size()
+                );
                 body_size -= body_buffer_.size();
                 body_buffer_.clear();
             }
@@ -166,23 +168,26 @@ public:
 
         body_buffer_.resize(buf_size);
 
-        async_read_some(boost::asio::buffer(body_buffer_),
-                        [body_size, callable = std::move(callable), this](
-                            const boost::system::error_code& ec, size_t size) mutable
-                        {
-                            disown();
+        async_read_some(
+            boost::asio::buffer(body_buffer_),
+            [body_size,
+             callable = std::move(callable),
+             this](const boost::system::error_code& ec, size_t size) mutable
+            {
+                disown();
 
-                            if (ec)
-                            {
-                                LOG(connection_detail::conn_logger_, error)
-                                    << "Error detected while reading the body";
-                                callable(ec, nullptr, 0);
-                                return;
-                            }
+                if (ec)
+                {
+                    LOG(connection_detail::conn_logger_, error)
+                        << "Error detected while reading the body";
+                    callable(ec, nullptr, 0);
+                    return;
+                }
 
-                            body_buffer_.resize(size);
-                            read(body_size, std::move(callable));
-                        });
+                body_buffer_.resize(size);
+                read(body_size, std::move(callable));
+            }
+        );
     }
 
     void sendResponse();

@@ -18,6 +18,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "httpp/HttpServer.hpp"
+#include "httpp/http/Connection.hpp"
 
 using namespace HTTPP;
 
@@ -25,11 +26,13 @@ using HTTPP::HTTP::Connection;
 using HTTPP::HTTP::Request;
 using HTTPP::HTTP::Response;
 
-static const std::string REQUEST = "GET / HTTP/1.1\r\n"
-                                   "Host: localhost:8000\r\n"
-                                   "\r\n";
+static const std::string REQUEST =
+    "GET / HTTP/1.1\r\n"
+    "Host: localhost:8000\r\n"
+    "\r\n";
 
 static Connection* gconn = nullptr;
+
 void handler(Connection* connection)
 {
     std::cout << "Got a request";
@@ -55,11 +58,15 @@ BOOST_AUTO_TEST_CASE(simple)
     boost::asio::write(s, boost::asio::buffer(REQUEST));
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::async(std::launch::async, [] {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        gconn->response().setBody("Helloworld");
-        gconn->sendResponse();
-    });
+    std::async(
+        std::launch::async,
+        []
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            gconn->response().setBody("Helloworld");
+            gconn->sendResponse();
+        }
+    );
 
     server.stop();
 }
