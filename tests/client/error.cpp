@@ -117,18 +117,7 @@ BOOST_AUTO_TEST_CASE(bad_server)
     HttpClient client;
     HttpClient::Request request;
     request.url("http://localhost:8080");
-    try
-    {
-        client.get(std::move(request));
-    }
-    catch (const RequestError& ex)
-    {
-        BOOST_CHECK_THROW(std::rethrow_if_nested(ex), std::runtime_error);
-    }
-    catch (...)
-    {
-        BOOST_CHECK(false);
-    }
+    BOOST_CHECK_THROW(client.get(std::move(request)), RequestError);
 
     pool.stop();
 }

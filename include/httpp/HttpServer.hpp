@@ -28,7 +28,6 @@ namespace HTTP
 class Connection;
 } // namespace HTTP
 
-
 class HttpServer
 {
 public:

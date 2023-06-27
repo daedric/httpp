@@ -170,7 +170,7 @@ int Manager::curl_timer_cb(CURLM*, long timeout_ms, void* userdata)
     }
     else
     {
-        manager->io.dispatch(
+        manager->io.post(
             [manager]
             {
                 manager->timer.cancel();
