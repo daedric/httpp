@@ -1,6 +1,9 @@
 [![Build Status](http://travis-ci.org/daedric/httpp.png)](http://travis-ci.org/daedric/httpp)
 [![Coverity Status](https://scan.coverity.com/projects/6818/badge.svg)](https://scan.coverity.com/projects/daedric-httpp)
 
+**While the server works well, the client based on curl needs some migration to
+the latest version.**
+
 httpp
 =====
 
