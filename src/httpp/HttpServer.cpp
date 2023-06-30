@@ -20,10 +20,13 @@ namespace HTTPP
 
 CREATE_LOGGER(server_logger, "httpp::HttpServer");
 
-struct HttpServer::Acceptor : boost::asio::ip::tcp::acceptor
+using AsioAcceptor =
+    boost::asio::basic_socket_acceptor<boost::asio::ip::tcp, boost::asio::io_context::executor_type>;
+
+struct HttpServer::Acceptor : AsioAcceptor
 {
     Acceptor(boost::asio::io_service& service)
-    : boost::asio::ip::tcp::acceptor(service)
+    : AsioAcceptor(service)
     {
     }
 

@@ -42,8 +42,9 @@ class Connection
 {
     friend class ::HTTPP::HttpServer;
 
-    using DefaultSocket = boost::asio::ip::tcp::socket;
-    using SSLSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>;
+    using DefaultSocket =
+        boost::asio::basic_stream_socket<boost::asio::ip::tcp, boost::asio::io_context::executor_type>;
+    using SSLSocket = boost::asio::ssl::stream<DefaultSocket&>;
     using ThreadPool = commonpp::thread::ThreadPool;
 
 public:
