@@ -349,7 +349,7 @@ void Connection::sendContinue(Callback&& cb)
     response_.setBody("").setCode(HttpCode::Continue);
 
     sendResponse(
-        [this, cb]
+        [cb]
         {
             cb();
         }
