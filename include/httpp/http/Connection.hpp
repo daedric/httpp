@@ -147,11 +147,13 @@ public:
             if (body_size <= already_read)
             {
                 offset_body_end_ = offset_body_start_ + body_size;
+                disown();
                 callable(boost::system::error_code(), body_start, already_read);
                 body_size = 0;
             }
             else
             {
+                disown();
                 callable(boost::system::error_code(), body_start, already_read);
                 body_size -= already_read;
             }
@@ -174,7 +176,7 @@ public:
             reparse();
         }
 
-        request_buffer_.resize(offset_body_start_ + buf_size);
+        request_buffer_.resize(request_buffer_.capacity(), 0);
         async_read_some(
             boost::asio::buffer(request_buffer_.data() + offset_body_start_, buf_size),
             [body_size,
@@ -211,6 +213,7 @@ public:
         {
             if (body_size <= already_read)
             {
+                disown();
                 callable(boost::system::error_code());
                 return;
             }
@@ -225,7 +228,6 @@ public:
 
         auto missing = body_size - already_read;
 
-        // +1 for an hypothetical \0
         auto capacity = offset_body_end_ + 1;
         if (request_buffer_.capacity() < capacity)
         {
@@ -235,7 +237,7 @@ public:
             reparse();
         }
 
-        request_buffer_.resize(offset_body_end_);
+        request_buffer_.resize(capacity, 0);
         async_read(
             boost::asio::buffer(request_buffer_.data() + offset_body_end_ - missing, missing),
             [callable = std::move(callable),
@@ -251,6 +253,7 @@ public:
                     return;
                 }
 
+                request_buffer_.resize(offset_body_end_);
                 callable(boost::system::error_code());
             }
         );
