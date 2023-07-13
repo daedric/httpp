@@ -45,7 +45,7 @@ action start_key {
 
 action end_key {
     token_end = fpc;
-    request.headers.emplace_back(std::make_pair<std::string_view>(TOKEN_REF, ""));
+    request.headers.emplace_back(TOKEN_REF, "");
     token_begin = token_end = nullptr;
 }
 
@@ -65,7 +65,7 @@ action start_qkey {
 
 action end_qkey {
     token_end = fpc;
-    request.query_params.emplace_back(std::make_pair<std::string, std::string_view>({UTILS::url_decode(token_begin, token_end)}, ""));
+    request.query_params.emplace_back(UTILS::url_decode(token_begin, token_end), "");
     token_begin = token_end = nullptr;
 }
 
@@ -84,16 +84,16 @@ action start_method {
 }
 
 action end_method {
+    token_end = fpc;
     try
     {
-        request.method = method_from(token_begin);
+        request.method = method_from(TOKEN_REF);
     }
     catch(...)
     {
         fbreak;
     }
-
-    token_begin = nullptr;
+    token_begin = token_end = nullptr;
 }
 
 }%%
@@ -124,7 +124,7 @@ bool Parser::parse(const char* start,
 
         major = digit >{ request.major = fc - '0';};
         minor = digit >{request.minor = fc - '0';};
-        status_line = (method >start_method @end_method) space query space "HTTP/" major "." minor "\r\n";
+        status_line = (method >start_method %end_method) space query space "HTTP/" major "." minor "\r\n";
 
         key = identifier >start_key %end_key;
         value = (any+ -- "\r\n") >start_value %end_value;

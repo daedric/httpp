@@ -22,9 +22,9 @@ namespace HTTP
 namespace client
 {
 
-Request& Request::url(std::string u)
+Request& Request::url(std::string_view u)
 {
-    url_ = std::move(u);
+    url_.assign(u.begin(), u.end());
     return *this;
 }
 

@@ -41,12 +41,13 @@ Request parse(const std::string& req)
 #elif HTTPP_PARSER_BACKEND_IS_RAGEL
 Request parse(const std::string& req)
 {
-    const std::string query = "GET " + req + " HTTP/1.1\r\n\r\n";
+    // leak all the things!
+    auto query = new std::string("GET " + req + " HTTP/1.1\r\n\r\n");
 
     Request request;
     size_t consumed;
-    bool b = Parser::parse(query.data(), query.data() + query.size(), consumed, request);
-    BOOST_CHECK(b);
+    bool b = Parser::parse(query->data(), query->data() + query->size(), consumed, request);
+    BOOST_REQUIRE(b);
     return request;
 }
 #endif

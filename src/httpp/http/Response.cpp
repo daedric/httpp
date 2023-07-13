@@ -53,7 +53,7 @@ Response::Response(HttpCode code)
     setBody(getDefaultMessage(code_));
 }
 
-Response::Response(HttpCode code, const std::string_view& body)
+Response::Response(HttpCode code, std::string_view body)
 {
     setCode(code);
     setBody(body);
@@ -72,8 +72,8 @@ void Response::clear()
 
     should_be_closed_ = false;
     chunkedBodyCallback_ = nullptr;
-    current_chunk_.clear();
-    current_chunk_header_.clear();
+    current_chunk_ = "";
+    current_chunk_header_[0] = 0;
     status_string_.clear();
     headers_.clear();
 }
@@ -103,7 +103,7 @@ Response& Response::addHeader(std::string k, std::string v)
     return *this;
 }
 
-Response& Response::setBody(const std::string_view& body)
+Response& Response::setBody(std::string_view body)
 {
     chunkedBodyCallback_ = nullptr;
     body_.reserve(body.size());
@@ -111,7 +111,7 @@ Response& Response::setBody(const std::string_view& body)
     return *this;
 }
 
-Response& Response::setBody(ChunkedResponseCallback&& callback)
+Response& Response::setBody(ChunkedResponseCallback callback)
 {
     if (callback)
     {
@@ -119,12 +119,9 @@ Response& Response::setBody(ChunkedResponseCallback&& callback)
         chunkedBodyCallback_ = std::move(callback);
         return *this;
     }
-    else
-    {
-        throw std::invalid_argument(
-            "Setting chunked response body to an empty callback"
-        );
-    }
+    throw std::invalid_argument(
+        "Setting chunked response body to an empty callback"
+    );
 }
 
 } // namespace HTTP

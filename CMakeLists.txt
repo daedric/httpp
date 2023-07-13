@@ -54,8 +54,8 @@ option(BUILD_SHARED_LIBS "Build shared lib instead of static ones")
 
 # Setting vars #################################################################
 set(HTTPP_VERSION_MAJOR "0")
-set(HTTPP_VERSION_MINOR "8")
-set(HTTPP_VERSION_PATCH "0")
+set(HTTPP_VERSION_MINOR "9")
+set(HTTPP_VERSION_PATCH "0~pre-alpha")
 
 set(CPACK_PACKAGE_VERSION_MAJOR ${HTTPP_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${HTTPP_VERSION_MINOR})

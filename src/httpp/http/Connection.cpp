@@ -144,22 +144,12 @@ void Connection::start()
     }
 
     // Maybe we have the beginning of the next request in the
-    // body_buffer_
-    if (not body_buffer_.empty())
+    // request_buffer_
+    if (!request_buffer_.empty())
     {
-        request_buffer_.swap(body_buffer_);
+        request_buffer_.erase(request_buffer_.begin(), request_buffer_.begin() + offset_body_end_);
         size_ = request_buffer_.size();
     }
-    else
-    {
-        size_ = 0;
-    }
-
-    request_buffer_.resize(BUF_SIZE, 0);
-
-    body_buffer_.clear();
-    body_buffer_.reserve(BUF_SIZE);
-
     request_.clear();
     response_.clear();
 
@@ -195,7 +185,7 @@ void Connection::read_request()
         return;
     }
 
-    if (Parser::isComplete(request_buffer_.data(), size_))
+    if (Parser::isComplete(request_buffer_.data(), request_buffer_.size()))
     {
         request_.setDate();
 #if HTTPP_PARSER_BACKEND_IS_STREAM
@@ -221,16 +211,7 @@ void Connection::read_request()
             DLOG(conn_logger_, trace)
                 << "Received a request from: " << source() << ": " << request_;
 
-            if (consumed != size_)
-            {
-                body_buffer_.insert(
-                    body_buffer_.begin(),
-                    request_buffer_.begin() + consumed,
-                    request_buffer_.begin() + size_
-                );
-                request_buffer_.resize(consumed);
-            }
-
+            offset_body_end_ = offset_body_start_ = consumed;
             disown();
             handler_.connection_notify_request(this);
         }
@@ -241,19 +222,19 @@ void Connection::read_request()
                 << "Invalid request received from: " << source() << "\n"
                 << std::string(request_buffer_.data(), size_);
 
-            response_ = Response(
-                HttpCode::BadRequest,
-                std::string("An error occured in the request "
-                            "parsing indicating an error")
-            );
-            response_.connectionShouldBeClosed(true);
-
+            response_.setCode(HttpCode::BadRequest)
+                .setBody(
+                    "An error occured in the request parsing indicating an "
+                    "error"
+                )
+                .connectionShouldBeClosed(true);
             disown();
             sendResponse();
         }
     }
     else
     {
+        request_buffer_.resize(request_buffer_.capacity());
         if (size_ == request_buffer_.size())
         {
             request_buffer_.resize(request_buffer_.size() + BUF_SIZE);
@@ -263,7 +244,7 @@ void Connection::read_request()
         data += size_;
 
         async_read_some(
-            boost::asio::buffer(data, request_buffer_.capacity() - size_),
+            boost::asio::buffer(data, BUF_SIZE),
             [this](const boost::system::error_code& ec, size_t size)
             {
                 if (ec)
@@ -273,11 +254,21 @@ void Connection::read_request()
                     return;
                 }
 
-                this->size_ += size;
+                size_ += size;
+                request_buffer_.resize(size_);
                 read_request();
             }
         );
     }
+}
+
+void Connection::reparse()
+{
+    request_.clear();
+    const char* begin = request_buffer_.data();
+    const char* end = begin + offset_body_start_;
+    size_t consumed = 0;
+    Parser::parse(begin, end, consumed, request_);
 }
 
 void Connection::sendResponse(Callback&& cb)
@@ -371,6 +362,11 @@ void Connection::recycle()
             handler_.connection_recycle(this);
         }
     }
+}
+
+std::pair<char*, size_t> Connection::mutable_body()
+{
+    return {request_buffer_.data() + offset_body_start_, offset_body_end_ - offset_body_start_};
 }
 
 } // namespace HTTP

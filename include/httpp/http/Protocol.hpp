@@ -12,6 +12,7 @@
 #define HTTPP_HTTP_PROTOCOL_HPP_
 
 #include <string>
+#include <string_view>
 
 #include <commonpp/core/string/std_tostring.hpp>
 
@@ -48,9 +49,8 @@ enum class Method
     CONNECT
 };
 
-std::string to_string(Method method);
-Method method_from(const std::string& str);
-Method method_from(const char* str);
+std::string_view to_string(Method method);
+Method method_from(std::string_view str);
 
 enum class HttpCode : unsigned int
 {
@@ -106,7 +106,7 @@ enum class HttpCode : unsigned int
     HttpVersionNotSupported = 505
 };
 
-const char* getDefaultMessage(HttpCode code);
+std::string_view getDefaultMessage(HttpCode code);
 
 } // namespace HTTP
 } // namespace HTTPP

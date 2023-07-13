@@ -33,7 +33,22 @@ static const std::string REQUEST =
     "GET / HTTP/1.1\r\n\r\n"
     "GET / HTTP/1.1\r\n\r\n";
 
-static const std::string BODY(8192, 'a');
+static const std::string BODY = []
+{
+    std::string s;
+    s.reserve(8192);
+    for (char a = 'a'; a < 'z'; a++)
+    {
+        s.append(256, a);
+    }
+
+    for (char a = 'A'; a < 'Z' && s.size() != 8192; a++)
+    {
+        s.append(256, a);
+    }
+
+    return s;
+}();
 
 static const std::string REQUEST_BODY_ =
     "GET / HTTP/1.1\r\n"
@@ -86,21 +101,50 @@ BOOST_AUTO_TEST_CASE(pipeline)
 }
 
 size_t total_size = 0;
+std::atomic_int r = 0;
 
 void handler_w_body(Connection* connection)
 {
-    read_whole_request(
-        connection,
-        [](std::unique_ptr<HTTP::helper::ReadWholeRequest> hndl,
-           const boost::system::error_code& ec)
+    if (r++ == 0)
+    {
+        read_whole_request(
+            connection,
+            [](std::unique_ptr<HTTP::helper::ReadWholeRequest> hndl,
+               const boost::system::error_code& ec)
+            {
+                if (ec)
+                {
+                    throw UTILS::convert_boost_ec_to_std_ec(ec);
+                }
+                BOOST_REQUIRE_EQUAL(
+                    std::string_view(hndl->body.data(), hndl->body.size()), BODY
+                );
+                total_size += hndl->body.size();
+                hndl->connection->response()
+                    .setCode(HTTP::HttpCode::Ok)
+                    .setBody("");
+                hndl->connection->sendResponse();
+            }
+        );
+        return;
+    }
+
+    connection->read_whole(
+        BODY.size(),
+        [connection](const boost::system::error_code& ec)
         {
             if (ec)
             {
                 throw UTILS::convert_boost_ec_to_std_ec(ec);
             }
-            total_size += hndl->body.size();
-            hndl->connection->response().setCode(HTTP::HttpCode::Ok).setBody("");
-            hndl->connection->sendResponse();
+
+            auto [ptr, sz] = connection->mutable_body();
+            BOOST_REQUIRE_EQUAL(sz, BODY.size());
+            BOOST_REQUIRE_EQUAL(std::string_view(ptr, sz), BODY);
+
+            total_size += sz;
+            connection->response().setCode(HTTP::HttpCode::Ok).setBody("");
+            connection->sendResponse();
         }
     );
 }
@@ -117,7 +161,9 @@ BOOST_AUTO_TEST_CASE(pipeline_with_body)
     tcp::socket s(io_service);
     tcp::resolver resolver(io_service);
     boost::asio::connect(s, resolver.resolve({"localhost", "8000"}));
-    boost::asio::write(s, boost::asio::buffer(REQUEST_BODY));
+    auto n = boost::asio::write(s, boost::asio::buffer(REQUEST_BODY));
+    BOOST_REQUIRE_EQUAL(n, REQUEST_BODY.size());
+
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     int i = 0;

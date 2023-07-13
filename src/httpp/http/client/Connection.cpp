@@ -254,7 +254,7 @@ void Connection::configureRequest(HTTPP::HTTP::Method method)
     case HTTPP::HTTP::Method::OPTIONS:
     case HTTPP::HTTP::Method::TRACE:
     case HTTPP::HTTP::Method::CONNECT:
-        std::string method_str = to_string(method);
+        auto method_str = to_string(method);
         conn_setopt(CURLOPT_CUSTOMREQUEST, method_str.data());
         break;
     }

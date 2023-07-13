@@ -76,9 +76,9 @@ BOOST_AUTO_TEST_CASE(parser_ragel)
     std::vector<char> vect(std::begin(query), std::end(query));
 
     Request request;
-    size_t consumed;
+    size_t consumed = 0;
     bool b = Parser::parse(query.data(), query.data() + query.size(), consumed, request);
-    BOOST_CHECK(b);
+    BOOST_REQUIRE(b);
     vect.erase(vect.begin(), vect.begin() + consumed);
 
     std::string remaining(vect.data(), vect.size());

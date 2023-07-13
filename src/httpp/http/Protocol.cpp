@@ -18,29 +18,30 @@ namespace HTTPP
 {
 namespace HTTP
 {
+using namespace std::string_view_literals;
 
-std::string to_string(Method method)
+std::string_view to_string(Method method)
 {
     switch (method)
     {
     default:
-        return "UNKNOWN";
+        return "UNKNOWN"sv;
     case Method::GET:
-        return "GET";
+        return "GET"sv;
     case Method::POST:
-        return "POST";
+        return "POST"sv;
     case Method::PUT:
-        return "PUT";
+        return "PUT"sv;
     case Method::HEAD:
-        return "HEAD";
+        return "HEAD"sv;
     case Method::CONNECT:
-        return "CONNECT";
+        return "CONNECT"sv;
     case Method::TRACE:
-        return "TRACE";
+        return "TRACE"sv;
     case Method::OPTIONS:
-        return "OPTIONS";
+        return "OPTIONS"sv;
     case Method::DELETE_:
-        return "DELETE";
+        return "DELETE"sv;
     }
 }
 
@@ -54,27 +55,17 @@ std::string to_string(Method method)
     FN(TRACE, TRACE)                                                           \
     FN(CONNECT, CONNECT)
 
-Method method_from(const std::string& str)
+Method method_from(std::string_view str)
 {
 #define fn(name, e)                                                            \
-    if (str == #name) return Method::e;
+    if (str == #name##sv)                                                      \
+    {                                                                          \
+        return Method::e;                                                      \
+    }
     APPLY_ON_METHOD(fn)
 #undef fn
 
-    throw std::runtime_error("Unknown method");
-}
-
-Method method_from(const char* str)
-{
-#define my_strlen(str)                                                         \
-    (__extension__(__builtin_constant_p(str) ? __builtin_strlen(str) : ::strlen(str)))
-
-#define fn(name, e)                                                            \
-    if (::strncmp(#name, str, my_strlen(#name)) == 0) return Method::e;
-    APPLY_ON_METHOD(fn)
-#undef fn
-
-    throw std::runtime_error("Unknown method");
+    throw std::runtime_error("Unknown method: " + std::string(str));
 }
 
 #define APPLY_ON_HTTP_CODE(FN)                                                 \
@@ -120,7 +111,7 @@ Method method_from(const char* str)
     FN(GatewayTimeout)                                                         \
     FN(HttpVersionNotSupported)
 
-const char* getDefaultMessage(HttpCode code)
+std::string_view getDefaultMessage(HttpCode code)
 {
     switch (code)
     {
@@ -129,7 +120,7 @@ const char* getDefaultMessage(HttpCode code)
 
 #define FN(code)                                                               \
     case HttpCode::code:                                                       \
-        return #code;
+        return #code##sv;
         APPLY_ON_HTTP_CODE(FN)
 #undef FN
     }

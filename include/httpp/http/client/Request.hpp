@@ -46,7 +46,7 @@ public:
     };
 
 public:
-    Request& url(std::string url);
+    Request& url(std::string_view url);
 
     // unsafe, catenate current url + path
     Request& addToUrl(const std::string& path);

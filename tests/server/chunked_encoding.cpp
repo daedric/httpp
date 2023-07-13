@@ -36,21 +36,21 @@ const int DEFAULT_CHUNK_SIZE = 100;
 // Helper that constructs a stream functor for the specified number of chunks,
 // each chunk being 'chunkSize' bytes.
 //
-std::function<std::string()> make_stream(int numChunks, int chunkSize)
+std::function<std::string_view()> make_stream(int numChunks, int chunkSize)
 {
     auto stream = [numChunks, chunkSize]() mutable -> std::string
     {
+        static std::string s;
         if (numChunks > 0)
         {
             GLOG(debug) << __FUNCTION__ << ":Sending Chunk ";
             numChunks--;
-            return std::string(chunkSize, 'X');
+            s = std::string(chunkSize, 'X');
+            return s;
         }
-        else
-        {
-            GLOG(debug) << __FUNCTION__ << ":End of Stream ";
-            return "";
-        }
+
+        GLOG(debug) << __FUNCTION__ << ":End of Stream ";
+        return "";
     };
     return stream;
 }
