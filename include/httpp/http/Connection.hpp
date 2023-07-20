@@ -147,13 +147,11 @@ public:
             if (body_size <= already_read)
             {
                 offset_body_end_ = offset_body_start_ + body_size;
-                disown();
                 callable(boost::system::error_code(), body_start, already_read);
                 body_size = 0;
             }
             else
             {
-                disown();
                 callable(boost::system::error_code(), body_start, already_read);
                 body_size -= already_read;
             }
